@@ -4,6 +4,7 @@
 #include "esp_system.h"
 #include "esp_mac.h"
 #include "driver/gpio.h"
+#include "i2s_driver.h"
 
 #define BLINK_GPIO 2
 
@@ -18,5 +19,6 @@ void simpleTask(void *parameters){
 
 void app_main(void)
 {
-    xTaskCreate(&simpleTask, "simple task", 2048, NULL, 5, NULL);
+    xTaskCreate(&simpleTask, "simple task", 2048, NULL, 1, NULL);
+    i2s_driver_init();
 }
