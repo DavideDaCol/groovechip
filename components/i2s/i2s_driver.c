@@ -92,6 +92,7 @@ static void i2s_example_write_task(void *args)
                                           BUFF_SIZE * 2 * sizeof(int16_t),
                                           &w_bytes,
                                           portMAX_DELAY));
+        vTaskDelay(pdMS_TO_TICKS(10));
     }
     free(i2s_buf);
     vTaskDelete(NULL);
