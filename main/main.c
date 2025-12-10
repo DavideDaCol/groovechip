@@ -19,6 +19,6 @@ void simpleTask(void *parameters){
 void app_main(void)
 {
     // xTaskCreate(&simpleTask, "simple task", 2048, NULL, 5, NULL);
-    printf("Aspetto...");
+    // printf("Aspetto...");
     init();
 }

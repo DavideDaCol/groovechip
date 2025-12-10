@@ -20,7 +20,7 @@ const sample_mode MODE_ONESHOT = {
 };
 
 const sample_mode MODE_ONESHOT_LOOP = {
-    .on_press   = action_start_sample,
+    .on_press   = action_start_or_stop_sample,
     .on_release = action_ignore,
     .on_finish  = action_restart_sample
 };
@@ -36,25 +36,25 @@ const sample_mode* SAMPLE_MODES[] = {
 
 #pragma region SAMPLE_ACTION
 //pad sample mode config
-const sample_mode* pads_config[GPIO_NUM_MAX] = { &MODE_HOLD };
+const sample_mode* pads_config[GPIO_NUM_MAX];
 
-void action_start_sample(int pad_id)
-{
+void action_start_or_stop_sample(int pad_id){
+	printf("Pad %d: Start/Stop playback", pad_id);
+}
+
+void action_start_sample(int pad_id){
 	printf("Pad %d: Start Playback\n", pad_id);
 }
 
-void action_stop_sample(int pad_id)
-{
+void action_stop_sample(int pad_id){
 	printf("Pad %d: Stop Playback\n", pad_id);
 }
 
-void action_restart_sample(int pad_id)
-{
+void action_restart_sample(int pad_id){
 	printf("Pad %d: Rewind & Restart\n", pad_id);
 }
 
-void action_ignore(int pad_id)
-{
+void action_ignore(int pad_id){
 	// nothing
 }
 
@@ -154,6 +154,11 @@ void init(){
 	io_conf.pull_down_en = 0;
 	gpio_config(&io_conf);
 
+	// det default pad mode (HOLD)
+	for(int i = 0; i < GPIO_NUM_MAX; i++){
+		pads_config[i] = &MODE_HOLD;
+	}
+
 	// init queue
 	pads_evt_queue = xQueueCreate(10, sizeof(pad_queue_msg));
 
@@ -162,7 +167,7 @@ void init(){
 	gpio_isr_handler_add(GPIO_BUTTON_1, gpio_isr_handler, (void *)GPIO_BUTTON_1);
 	gpio_isr_handler_add(GPIO_BUTTON_2, gpio_isr_handler, (void *)GPIO_BUTTON_2);
 
-	printf("Sistema pronto. Premi i pulsanti.\n");
+	printf("[Pad Section] Ready\n");
 
-	xTaskCreate(sample_task, "btn_task", 2048, NULL, 5, NULL);
+	xTaskCreate(sample_task, "sample_task", 2048, NULL, 5, NULL);
 }
