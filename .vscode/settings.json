@@ -1,20 +1,3 @@
 {
-  "C_Cpp.intelliSenseEngine": "default",
-  "idf.espIdfPath": "/home/giovanni/esp/esp-idf-v5.5.1",
-  "idf.pythonInstallPath": "/usr/bin/python3",
-  "idf.openOcdConfigs": [
-    "board/esp32-wrover-kit-3.3v.cfg"
-  ],
-  "idf.port": "/dev/ttyUSB0",
-  "idf.toolsPath": "/home/giovanni/.espressif/tools",
-  "idf.customExtraVars": {
-    "IDF_TARGET": "esp32"
-  },
-  "files.associations": {
-    "*.embeddedhtml": "html",
-    "freertos.h": "c",
-    "gpio.h": "c",
-    "pad_section.h": "c"
-  },
-  "idf.flashType": "UART"
+  "C_Cpp.intelliSenseEngine": "default"
 }

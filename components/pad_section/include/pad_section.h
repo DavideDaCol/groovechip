@@ -13,19 +13,46 @@
 #define GPIO_BUTTON_2     23
 #define GPIO_INPUT_PIN_SEL  ((1ULL<<GPIO_BUTTON_1) | (1ULL<<GPIO_BUTTON_2))
 
-// pads queue
-static QueueHandle_t btn_evt_queue = NULL;
-
-// debounce + detecting press/release
-static volatile uint64_t last_isr_time[GPIO_NUM_MAX] = {0};
-static volatile int last_level[GPIO_NUM_MAX] = {1};
+//enum for sample event type
+enum evt_type {
+	EVT_PRESS,
+	EVT_RELEASE,
+	EVT_FINISH
+};
 
 typedef struct {
+	uint32_t pad_id;
+	enum evt_type event_type;
+} pad_queue_msg;
 
-  uint32_t gpio_num;
-  char payload[32];
+// pads queue
+extern QueueHandle_t pads_evt_queue;
 
-}btn_queue_msg;
+// pad mode section
+// action function type
+typedef void (*event_handler)(int pad_id);
+
+typedef struct {
+    event_handler on_press;
+    event_handler on_release;  
+    event_handler on_finish;   // not sure about this
+} sample_mode;
+
+
+// ACTIONS: this might be moved to the sample lib
+// these are just placeholders functions.
+void action_start_sample(int);
+void action_stop_sample(int);
+void action_restart_sample(int);
+void action_ignore(int);
+
+extern const sample_mode MODE_HOLD;
+extern const sample_mode MODE_LOOP;
+extern const sample_mode MODE_ONESHOT;
+extern const sample_mode MODE_ONESHOT_LOOP;
+
+// this is to pick the mode
+extern const sample_mode* SAMPLE_MODES[];
 
 void init();
 
