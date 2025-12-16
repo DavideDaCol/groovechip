@@ -1,43 +1,51 @@
 #include "pad_section.h"
 
 #pragma region SAMPLE_MODES
-const sample_mode MODE_HOLD = {
+const sample_mode_t MODE_HOLD = {
     .on_press   = action_start_sample,
     .on_release = action_stop_sample,
     .on_finish  = action_stop_sample
 };
 
-const sample_mode MODE_LOOP = {
+const sample_mode_t MODE_LOOP = {
     .on_press   = action_start_sample,
     .on_release = action_stop_sample,
     .on_finish  = action_restart_sample
 };
 
-const sample_mode MODE_ONESHOT = {
+const sample_mode_t MODE_ONESHOT = {
     .on_press   = action_start_sample,
     .on_release = action_ignore,  
     .on_finish  = action_stop_sample
 };
 
-const sample_mode MODE_ONESHOT_LOOP = {
+const sample_mode_t MODE_ONESHOT_LOOP = {
     .on_press   = action_start_or_stop_sample,
     .on_release = action_ignore,
     .on_finish  = action_restart_sample
 };
 
-const sample_mode* SAMPLE_MODES[] = {
+const sample_mode_t* SAMPLE_MODES[] = {
     &MODE_HOLD,
+	&MODE_ONESHOT,
     &MODE_LOOP,
-    &MODE_ONESHOT,
     &MODE_ONESHOT_LOOP
 };
+
+// pad sample mode config
+const sample_mode_t* pads_config[GPIO_NUM_MAX];
+
+
+// exposed function to set the mode
+void set_pad_mode(int pad_id, const sample_mode_t* mode){
+	pads_config[pad_id] = mode;
+}
 
 #pragma endregion
 
 #pragma region SAMPLE_ACTION
-//pad sample mode config
-const sample_mode* pads_config[GPIO_NUM_MAX];
 
+// these are just placeholders functions.
 void action_start_or_stop_sample(int pad_id){
 	printf("Pad %d: Start/Stop playback", pad_id);
 }
@@ -65,7 +73,7 @@ QueueHandle_t pads_evt_queue = NULL;
 
 // debounce + detecting press/release
 static volatile uint64_t last_isr_time[GPIO_NUM_MAX] = {0};
-static volatile int last_level[GPIO_NUM_MAX] = {1};
+static volatile int last_level[GPIO_NUM_MAX];
 
 //  pads interrupt handler
 static void IRAM_ATTR gpio_isr_handler(void *arg){
@@ -96,7 +104,7 @@ static void IRAM_ATTR gpio_isr_handler(void *arg){
 
 	// check on level
 
-	pad_queue_msg queue_msg;
+	pad_queue_msg_t queue_msg;
 
 	if (level == 0)
 	{
@@ -116,7 +124,7 @@ static void IRAM_ATTR gpio_isr_handler(void *arg){
 #pragma endregion
 
 void sample_task(void *pvParameter){
-	pad_queue_msg queue_msg;
+	pad_queue_msg_t queue_msg;
 
 	for (;;)
 	{
@@ -144,7 +152,7 @@ void sample_task(void *pvParameter){
 	}
 }
 
-void init(){
+void pad_section_init(){
 	// GPIO config
 	gpio_config_t io_conf = {};
 	io_conf.intr_type = GPIO_INTR_ANYEDGE; // on press and release
@@ -156,16 +164,28 @@ void init(){
 
 	// det default pad mode (HOLD)
 	for(int i = 0; i < GPIO_NUM_MAX; i++){
-		pads_config[i] = &MODE_HOLD;
+		set_pad_mode(i, SAMPLE_MODES[HOLD]);
+	}
+
+	// init last level to 1, so it doesn't ignore the first press
+	for(int i = 0; i < GPIO_NUM_MAX; i++){
+		last_level[i] = 1;
 	}
 
 	// init queue
-	pads_evt_queue = xQueueCreate(10, sizeof(pad_queue_msg));
+	pads_evt_queue = xQueueCreate(10, sizeof(pad_queue_msg_t));
 
 	// ISR installation
 	ESP_ERROR_CHECK(gpio_install_isr_service(0));
 	gpio_isr_handler_add(GPIO_BUTTON_1, gpio_isr_handler, (void *)GPIO_BUTTON_1);
 	gpio_isr_handler_add(GPIO_BUTTON_2, gpio_isr_handler, (void *)GPIO_BUTTON_2);
+	gpio_isr_handler_add(GPIO_BUTTON_3, gpio_isr_handler, (void *)GPIO_BUTTON_3);
+	gpio_isr_handler_add(GPIO_BUTTON_4, gpio_isr_handler, (void *)GPIO_BUTTON_4);
+	gpio_isr_handler_add(GPIO_BUTTON_5, gpio_isr_handler, (void *)GPIO_BUTTON_5);
+	gpio_isr_handler_add(GPIO_BUTTON_6, gpio_isr_handler, (void *)GPIO_BUTTON_6);
+	gpio_isr_handler_add(GPIO_BUTTON_7, gpio_isr_handler, (void *)GPIO_BUTTON_7);
+	gpio_isr_handler_add(GPIO_BUTTON_8, gpio_isr_handler, (void *)GPIO_BUTTON_8);
+	
 
 	printf("[Pad Section] Ready\n");
 

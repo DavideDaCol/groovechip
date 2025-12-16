@@ -20,5 +20,5 @@ void app_main(void)
 {
     // xTaskCreate(&simpleTask, "simple task", 2048, NULL, 5, NULL);
     // printf("Aspetto...");
-    init();
+    pad_section_init();
 }
