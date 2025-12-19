@@ -1,3 +1,4 @@
 idf_component_register(SRCS "main.c"
-                    INCLUDE_DIRS "."
-                    REQUIRES i2s)
+                    REQUIRES driver freertos esp_timer
+                    PRIV_REQUIRES spi_flash pad_section i2s
+                    INCLUDE_DIRS ".")

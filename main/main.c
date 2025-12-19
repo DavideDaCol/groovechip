@@ -6,6 +6,7 @@
 #include "driver/gpio.h"
 #include "i2s_driver.h"
 
+#include "pad_section.h"
 #define BLINK_GPIO 2
 
 void simpleTask(void *parameters){
@@ -19,6 +20,7 @@ void simpleTask(void *parameters){
 
 void app_main(void)
 {
-    xTaskCreate(&simpleTask, "simple task", 2048, NULL, 1, NULL);
-    i2s_driver_init();
+    // xTaskCreate(&simpleTask, "simple task", 2048, NULL, 5, NULL);
+    // printf("Aspetto...");
+    pad_section_init();
 }
