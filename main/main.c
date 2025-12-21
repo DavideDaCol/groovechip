@@ -11,7 +11,7 @@
 void app_main(void)
 {
     joystick_init();
-    JoystickDir dir;
+    joystick_dir_t dir;
     while(1){
         if (xQueueReceive(joystick_queue, &dir, portMAX_DELAY)){ // portMAX_DELAY tells to block forever until something happens
             switch (dir) {

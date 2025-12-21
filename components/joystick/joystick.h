@@ -12,15 +12,15 @@ typedef enum {
     LEFT,
     RIGHT,
     PRESS
-} JoystickDir;
+} joystick_dir_t;
 
 typedef struct {
     int x;
     int y;
     int sw;   // 0 = pressed, 1 = released
-} Joystick;
+} joystick_t;
 
-extern Joystick my_joystick;
+extern joystick_t my_joystick;
 
 extern QueueHandle_t joystick_queue;
 

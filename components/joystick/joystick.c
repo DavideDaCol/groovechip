@@ -15,7 +15,7 @@
 
 #define DEBOUNCE_MS  30
 
-Joystick my_joystick = { 0, 0, 1};
+joystick_t my_joystick = { 0, 0, 1};
 QueueHandle_t joystick_queue;
 adc_oneshot_unit_handle_t adc1_handle;
 
@@ -43,7 +43,7 @@ void joystick_init() {
     gpio_config(&io_conf);
 
     // creating the queue
-    joystick_queue = xQueueCreate(10, sizeof(JoystickDir)); // don't know how many messages the queue should be able to contain at a time, i put 10 as a starting point (can be changed)
+    joystick_queue = xQueueCreate(10, sizeof(joystick_dir_t)); // don't know how many messages the queue should be able to contain at a time, i put 10 as a starting point (can be changed)
 
     // creating the task
     xTaskCreate(joystick_task, "joystick_task", 2048, NULL, 5, NULL); // not sure about these parameters (expecially the stack depth), but for now should work
@@ -58,15 +58,15 @@ void joystick_get_raw(){
 }
 
 // converts the voltage to a direction
-JoystickDir joystick_get_direction(){
+joystick_dir_t joystick_get_direction(){
     if (my_joystick.sw == 0){
         return PRESS;
     }
     if (my_joystick.x > THRESH_UP){
-        return RIGHT;
+        return LEFT;
     }
     if (my_joystick.x < THRESH_LOW){
-        return LEFT;
+        return RIGHT;
     }
     if (my_joystick.y > THRESH_UP){
         return UP;
@@ -80,12 +80,12 @@ JoystickDir joystick_get_direction(){
 // main task
 void joystick_task(void *args){
     // set the "default" value for the last joystick direction
-    JoystickDir last_dir = CENTER;
+    joystick_dir_t last_dir = CENTER;
 
     // polling
     while(1){
         joystick_get_raw();
-        JoystickDir new_dir = joystick_get_direction();
+        joystick_dir_t new_dir = joystick_get_direction();
 
         // ignore the repetitive events
         if (new_dir != last_dir){
