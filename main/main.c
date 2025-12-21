@@ -4,19 +4,25 @@
 #include "esp_system.h"
 #include "esp_mac.h"
 #include "driver/gpio.h"
+#include "joystick.h"
 
 #define BLINK_GPIO 2
 
-void simpleTask(void *parameters){
-    int counter = 0;
-    while(true){
-        printf("esp32 is working, second %i\n", counter);
-        counter += 1;
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-    }
-}
-
 void app_main(void)
 {
-    xTaskCreate(&simpleTask, "simple task", 2048, NULL, 5, NULL);
+    joystick_init();
+    JoystickDir dir;
+    while(1){
+        if (xQueueReceive(joystick_queue, &dir, portMAX_DELAY)){ // portMAX_DELAY tells to block forever until something happens
+            switch (dir) {
+                case UP:    printf("UP\n"); break;
+                case DOWN:  printf("DOWN\n"); break;
+                case LEFT:  printf("LEFT\n"); break;
+                case RIGHT: printf("RIGHT\n"); break;
+                case PRESS: printf("PRESS\n"); break;
+                case CENTER: printf("CENTER\n"); break;
+                default: break;
+            }
+        }
+    }
 }
