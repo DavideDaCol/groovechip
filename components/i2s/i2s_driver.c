@@ -8,18 +8,21 @@
 #include "esp_check.h"
 #include "sdkconfig.h"
 #include "dummy_wav.h"
+#include "dummy_wav_2.h"
 
 #define BUFF_SIZE 256
 
 static i2s_chan_handle_t out_chan; // master channel for the output
 unsigned const char* wav_data_ptr; // points to the pure wav file
 uint32_t wav_data_idx = 0; //keeps track of how far ahead the playback is
+unsigned const char* yeah_data_ptr; // points to the pure wav file
+uint32_t yeah_data_idx = 0; //keeps track of how far ahead the playback is
 
 // a WAV file is made of a header with info + pure audio samples
 // this struct holds that information to ensure everything is set up
 // correctly and garbage isn't being loaded into the esp32
 
-struct wav_header_t
+typedef struct wav_header_t
     {
       //   RIFF Section    
       char riff_section_id[4];      // literally the letters "RIFF"
@@ -47,11 +50,15 @@ static void i2s_example_write_task(void *args)
     //size of the WAV header, it's always the same size in every WAV file
     const uint32_t header_size = 44;
 
+    WavHeader wh1, wh2;
+
     //copy the WAV header into the struct so we can analyze it
-    memcpy(&WavHeader, WavData, header_size);
+    memcpy(&wh1, WavData, header_size);
+    memcpy(&wh2, yeahData, header_size);
 
     //set the WAV pointer to start at the beginning of the audio samples
     wav_data_ptr = WavData + header_size;
+    yeah_data_ptr = yeahData + header_size;
 
     size_t w_bytes = BUFF_SIZE;
 
@@ -69,22 +76,39 @@ static void i2s_example_write_task(void *args)
      while (1) {
         for (int i = 0; i < BUFF_SIZE; i++) {
 
-            // in WAV files, left and right samples are sequential
-            int16_t left  = *(int16_t*)(wav_data_ptr + wav_data_idx);
-            int16_t right = *(int16_t*)(wav_data_ptr + wav_data_idx + 2);
+            int16_t left2;
+            int16_t right2;
 
-            left  *= volume;
-            right *= volume;
+            // in WAV files, left and right samples are sequential
+            int16_t left1  = *(int16_t*)(wav_data_ptr + wav_data_idx);
+            int16_t right1 = *(int16_t*)(wav_data_ptr + wav_data_idx + 2);
+            
+            if (yeah_data_idx < wh1.data_size){
+                left2  = *(int16_t*)(yeah_data_ptr + yeah_data_idx);
+                right2 = *(int16_t*)(yeah_data_ptr + yeah_data_idx + 2);
+            
+            } else {
+                left2 = 0x00;
+                right2 = 0x00;
+            }
+
+            left1  *= volume;
+            right1 *= volume;
+            left2  *= volume;
+            right2 *= volume;
 
             // writes the WAV data to the buffer post volume adjustment
-            i2s_buf[i * 2] = left;
-            i2s_buf[i * 2 + 1] = right;
+            i2s_buf[i * 2] = left1 + left2;
+            i2s_buf[i * 2 + 1] = right1 + right2;
 
             wav_data_idx += 4;
+            yeah_data_idx += 4;
 
             // loop the audio file
-            if (wav_data_idx >= WavHeader.data_size)
+            if (wav_data_idx >= wh1.data_size) {
                 wav_data_idx = 0;
+                yeah_data_idx = 0;
+            }
         }
 
         // Write full buffer (1024 bytes)
