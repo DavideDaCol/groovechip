@@ -5,6 +5,7 @@
 #include "esp_mac.h"
 #include "driver/gpio.h"
 #include "i2s_driver.h"
+#include "mixer.h"
 
 #include "pad_section.h"
 #define BLINK_GPIO 2
@@ -23,5 +24,6 @@ void app_main(void)
     // xTaskCreate(&simpleTask, "simple task", 2048, NULL, 5, NULL);
     // printf("Aspetto...");
     //pad_section_init();
-    i2s_driver_init();
+    i2s_chan_handle_t master = i2s_driver_init();
+    create_mixer(master);
 }
