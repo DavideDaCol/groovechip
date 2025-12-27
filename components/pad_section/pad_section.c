@@ -1,4 +1,5 @@
 #include "pad_section.h"
+#include "mixer.h"
 
 #pragma region SAMPLE_MODES
 const sample_mode_t MODE_HOLD = {
@@ -39,31 +40,6 @@ const sample_mode_t* pads_config[GPIO_NUM_MAX];
 // exposed function to set the mode
 void set_pad_mode(int pad_id, const sample_mode_t* mode){
 	pads_config[pad_id] = mode;
-}
-
-#pragma endregion
-
-#pragma region SAMPLE_ACTION
-
-// these are just placeholders functions.
-void action_start_or_stop_sample(int pad_id){
-	printf("Pad %d: Start/Stop playback", pad_id);
-}
-
-void action_start_sample(int pad_id){
-	printf("Pad %d: Start Playback\n", pad_id);
-}
-
-void action_stop_sample(int pad_id){
-	printf("Pad %d: Stop Playback\n", pad_id);
-}
-
-void action_restart_sample(int pad_id){
-	printf("Pad %d: Rewind & Restart\n", pad_id);
-}
-
-void action_ignore(int pad_id){
-	// nothing
 }
 
 #pragma endregion
@@ -130,18 +106,30 @@ void sample_task(void *pvParameter){
 	{
 		if (xQueueReceive(pads_evt_queue, &queue_msg, portMAX_DELAY) == pdPASS)
 		{
+            //FIXME hacky solution, needs to change
 			uint32_t pad_id = queue_msg.pad_id;
 			// checks on actions
+
+            int sample_id = SAMPLE_NUM + 1;
+
+            for (int i = 0; i < SAMPLE_NUM; i++){
+                if (sample_bank[i].pad_id == pad_id)
+                {
+                    sample_id = sample_bank[i].sample_id;
+                }
+                
+            }
+
 			switch (queue_msg.event_type)
 			{
 			case EVT_PRESS:
-				pads_config[pad_id]->on_press(pad_id);
+				pads_config[pad_id]->on_press(sample_id);
 				break;
 			case EVT_RELEASE:
-				pads_config[pad_id]->on_release(pad_id);
+				pads_config[pad_id]->on_release(sample_id);
 				break;
 			case EVT_FINISH:
-				pads_config[pad_id]->on_finish(pad_id);
+				pads_config[pad_id]->on_finish(sample_id);
 				break;
 			default:
 				break;
@@ -164,7 +152,7 @@ void pad_section_init(){
 
 	// det default pad mode (HOLD)
 	for(int i = 0; i < GPIO_NUM_MAX; i++){
-		set_pad_mode(i, SAMPLE_MODES[HOLD]);
+		set_pad_mode(i, SAMPLE_MODES[ONESHOT]);
 	}
 
 	// init last level to 1, so it doesn't ignore the first press

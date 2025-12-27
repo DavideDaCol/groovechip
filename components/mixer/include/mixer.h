@@ -6,6 +6,16 @@
 #include "esp_log.h"
 #include "pad_section.h"
 
+
+// Size of the wav header, must be stripped before playing
+#define WAV_HDR_SIZE 44
+
+// Size of the buffer to dump in the i2s driver every cycle
+#define BUFF_SIZE 256
+
+// Maximum number of available samples
+#define SAMPLE_NUM 1
+
 #pragma region TYPES
 
 // Type used to store the metadata of a WAV file
@@ -41,6 +51,8 @@ typedef struct sample_t
     wav_header_t header; /** contains sample metadata like size and bit rate */
     uint32_t playback_ptr; /** progress indicator for the sample */
     sample_mode_t playback_mode; /** sample play type: ONESHOT, LOOP, etc... */
+    int pad_id; /** the GPIO pin that the sample is assigned to */
+    int sample_id;
 } sample_t;
 
 /**
@@ -51,16 +63,17 @@ typedef struct sample_t
  */
 typedef uint8_t sample_bitmask; 
 
+// all samples that can be played
+extern sample_t sample_bank[SAMPLE_NUM];
+
 #pragma endregion
 
-// Size of the wav header, must be stripped before playing
-#define WAV_HDR_SIZE 44
-
-// Size of the buffer to dump in the i2s driver every cycle
-#define BUFF_SIZE 256
-
-// Maximum number of available samples
-#define SAMPLE_NUM 8
+//Sample actions
+void action_start_sample(int);
+void action_start_or_stop_sample(int);
+void action_stop_sample(int);
+void action_restart_sample(int);
+void action_ignore(int);
 
 void create_mixer(i2s_chan_handle_t channel);
 

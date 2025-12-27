@@ -64,14 +64,6 @@ typedef struct {
     event_handler on_finish;   // not sure about this
 } sample_mode_t;
 
-
-// ACTIONS: this might be moved to the sample lib
-void action_start_sample(int);
-void action_start_or_stop_sample(int);
-void action_stop_sample(int);
-void action_restart_sample(int);
-void action_ignore(int);
-
 // this is to pick the mode
 
 #define HOLD 0
