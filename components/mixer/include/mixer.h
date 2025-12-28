@@ -61,7 +61,6 @@ typedef struct sample_t
     wav_header_t header; /** contains sample metadata like size and bit rate */
     uint32_t playback_ptr; /** progress indicator for the sample */
     sample_mode_t playback_mode; /** sample play type: ONESHOT, LOOP, etc... */
-    int pad_id; /** the GPIO pin that the sample is assigned to */
     int sample_id;
 } sample_t;
 

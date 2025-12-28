@@ -59,14 +59,14 @@ static void mixer_task_wip(void *args)
     //initialize the sample bank
     for (int j = 0; j < SAMPLE_NUM; j++){
         sample_bank[j].sample_id = j;
-        sample_bank[j].pad_id = 19;
+        // sample_bank[j].pad_id = 19;
         sample_bank[j].playback_ptr = 0;
     }
 
     //initialize the first sample for testing purposes
     memcpy(&sample_bank[0].header, WavData, WAV_HDR_SIZE);
     sample_bank[0].raw_data = WavData + WAV_HDR_SIZE;
-    sample_bank[0].pad_id = 23;
+    // sample_bank[0].pad_id = 23;
     sample_bank[0].playback_mode.on_finish = action_stop_sample;
     sample_bank[0].playback_mode.on_release = action_ignore;
     sample_bank[0].playback_mode.on_press = action_restart_sample;
