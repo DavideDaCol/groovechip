@@ -8,6 +8,7 @@
 #include "esp_check.h"
 #include "sdkconfig.h"
 #include "dummy_wav.h"
+#include "sample.h"
 
 //currently active samples
 sample_bitmask now_playing;

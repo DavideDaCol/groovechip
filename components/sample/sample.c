@@ -58,6 +58,11 @@ void sample_task(void *pvParameter){
 			pad_settings_t settings = pads_config[queue_msg.pad_id];
 			uint32_t sample_id = settings.sample_id;
 
+            if(sample_id == NOT_DEFINED){
+                // there is no associated sample to this pad
+                continue;
+            }
+
 			switch (queue_msg.event_type)
 			{
 			case EVT_PRESS:
