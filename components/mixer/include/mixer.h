@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include "esp_log.h"
 #include "pad_section.h"
+#include "sample.h"
 
 
 // Size of the wav header, must be stripped before playing
@@ -40,6 +41,15 @@ typedef struct wav_header_t
     } wav_header_t;
 
 /**
+ * @brief Keeps track of currently playing samples
+ *
+ * Binary bit mask used to track the now playing status of 
+ * each sample. must be set via bit shift operations
+ */
+typedef uint8_t sample_bitmask; 
+
+
+/**
  * @brief Sample metadata struct
  *
  * Used to keep together the raw pointer to the sample bytes
@@ -54,14 +64,6 @@ typedef struct sample_t
     int pad_id; /** the GPIO pin that the sample is assigned to */
     int sample_id;
 } sample_t;
-
-/**
- * @brief Keeps track of currently playing samples
- *
- * Binary bit mask used to track the now playing status of 
- * each sample. must be set via bit shift operations
- */
-typedef uint8_t sample_bitmask; 
 
 // all samples that can be played
 extern sample_t sample_bank[SAMPLE_NUM];

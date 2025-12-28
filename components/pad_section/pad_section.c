@@ -2,47 +2,12 @@
 #include "mixer.h"
 
 #pragma region SAMPLE_MODES
-const sample_mode_t MODE_HOLD = {
-    .on_press   = action_start_sample,
-    .on_release = action_stop_sample,
-    .on_finish  = action_stop_sample
-};
-
-const sample_mode_t MODE_LOOP = {
-    .on_press   = action_start_sample,
-    .on_release = action_stop_sample,
-    .on_finish  = action_restart_sample
-};
-
-const sample_mode_t MODE_ONESHOT = {
-    .on_press   = action_start_sample,
-    .on_release = action_ignore,  
-    .on_finish  = action_stop_sample
-};
-
-const sample_mode_t MODE_ONESHOT_LOOP = {
-    .on_press   = action_start_or_stop_sample,
-    .on_release = action_ignore,
-    .on_finish  = action_restart_sample
-};
-
-const sample_mode_t* SAMPLE_MODES[] = {
-    &MODE_HOLD,
-	&MODE_ONESHOT,
-    &MODE_LOOP,
-    &MODE_ONESHOT_LOOP
-};
-
-// pad sample mode config
-const sample_mode_t* pads_config[GPIO_NUM_MAX];
-
-
-// exposed function to set the mode
-void set_pad_mode(int pad_id, const sample_mode_t* mode){
-	pads_config[pad_id] = mode;
-}
 
 #pragma endregion
+
+
+// pad config
+pad_settings_t pads_config[GPIO_NUM_MAX];
 
 // init queue
 QueueHandle_t pads_evt_queue = NULL;
@@ -99,47 +64,6 @@ static void IRAM_ATTR gpio_isr_handler(void *arg){
 
 #pragma endregion
 
-void sample_task(void *pvParameter){
-	pad_queue_msg_t queue_msg;
-
-	for (;;)
-	{
-		if (xQueueReceive(pads_evt_queue, &queue_msg, portMAX_DELAY) == pdPASS)
-		{
-            //FIXME hacky solution, needs to change
-			uint32_t pad_id = queue_msg.pad_id;
-			// checks on actions
-
-            int sample_id = SAMPLE_NUM + 1;
-
-            for (int i = 0; i < SAMPLE_NUM; i++){
-                if (sample_bank[i].pad_id == pad_id)
-                {
-                    sample_id = sample_bank[i].sample_id;
-                }
-                
-            }
-
-			switch (queue_msg.event_type)
-			{
-			case EVT_PRESS:
-				pads_config[pad_id]->on_press(sample_id);
-				break;
-			case EVT_RELEASE:
-				pads_config[pad_id]->on_release(sample_id);
-				break;
-			case EVT_FINISH:
-				pads_config[pad_id]->on_finish(sample_id);
-				break;
-			default:
-				break;
-			}
-		}
-	// give to the processor the possibility of switching task
-    vTaskDelay(10 / portTICK_PERIOD_MS);
-	}
-}
-
 void pad_section_init(){
 	// GPIO config
 	gpio_config_t io_conf = {};
@@ -150,9 +74,12 @@ void pad_section_init(){
 	io_conf.pull_down_en = 0;
 	gpio_config(&io_conf);
 
-	// det default pad mode (HOLD)
+
 	for(int i = 0; i < GPIO_NUM_MAX; i++){
-		set_pad_mode(i, SAMPLE_MODES[ONESHOT]);
+		pad_settings_t init_settings;
+		init_settings.sample_id = NOT_DEFINED;
+
+		pads_config[i] = init_settings;
 	}
 
 	// init last level to 1, so it doesn't ignore the first press
@@ -176,6 +103,4 @@ void pad_section_init(){
 	
 
 	printf("[Pad Section] Ready\n");
-
-	xTaskCreate(sample_task, "sample_task", 2048, NULL, 5, NULL);
 }

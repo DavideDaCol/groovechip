@@ -46,6 +46,15 @@ enum evt_type_t {
 	EVT_FINISH
 };
 
+#define NOT_DEFINED SAMPLE_NUM + 1 // to specify when a pad isn't associated with any sample
+
+typedef struct{
+    uint32_t sample_id; // id of the associated sample
+} pad_settings_t;
+
+extern pad_settings_t pads_config[GPIO_NUM_MAX];
+
+
 typedef struct {
 	uint32_t pad_id;
 	enum evt_type_t event_type;
@@ -53,27 +62,6 @@ typedef struct {
 
 // pads queue
 extern QueueHandle_t pads_evt_queue;
-
-// pad mode section
-// action function type
-typedef void (*event_handler)(int pad_id);
-
-typedef struct {
-    event_handler on_press;
-    event_handler on_release;  
-    event_handler on_finish;   // not sure about this
-} sample_mode_t;
-
-// this is to pick the mode
-
-#define HOLD 0
-#define ONESHOT 1
-#define LOOP 2
-#define ONESHOT_LOOP 3
-extern const sample_mode_t* SAMPLE_MODES[];
-
-// exposed function to select the pad mode
-void set_pad_mode(int, const sample_mode_t*);
 
 
 void pad_section_init();
