@@ -58,17 +58,14 @@ void sample_task(void *pvParameter){
 			pad_settings_t settings = pads_config[queue_msg.pad_id];
 			uint32_t sample_id = settings.sample_id;
 
-            printf("pad event received\n");
-            fflush(stdout);
-
             if(sample_id == NOT_DEFINED){
                 // there is no associated sample to this pad
-                printf("sample id was NOT defined");
+                printf("sample id was NOT defined\n");
                 fflush(stdout);
                 continue;
             }
 
-            printf("sample id is set to %d\n", sample_id);
+            printf("sample id is set to %ld\n", sample_id);
             fflush(stdout);
 
 			switch (queue_msg.event_type)

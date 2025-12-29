@@ -77,7 +77,7 @@ void pad_section_init(){
 
 	for(int i = 0; i < GPIO_NUM_MAX; i++){
 		pad_settings_t init_settings;
-		init_settings.sample_id = NOT_DEFINED;
+		init_settings.sample_id = 0;
 
 		pads_config[i] = init_settings;
 	}
