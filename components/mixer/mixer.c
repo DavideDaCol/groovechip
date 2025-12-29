@@ -20,6 +20,7 @@ sample_t sample_bank[SAMPLE_NUM];
 
 // these are just placeholders functions.
 void action_start_or_stop_sample(int sample_id){
+    printf("play/pause event was triggered");
 	//either stop or play the sample
     now_playing ^= (1 << sample_id);
     //reset the playback pointer if the sample was stopped
@@ -29,11 +30,13 @@ void action_start_or_stop_sample(int sample_id){
 }
 
 void action_start_sample(int sample_id){
+    printf("play event was triggered");
 	//add the sample from the nowplaying bitmask
     now_playing |= (1 << sample_id);
 }
 
 void action_stop_sample(int sample_id){
+    printf("pause event was triggered");
 	//remove the sample from the nowplaying bitmask
     now_playing &= ~(1 << sample_id);
     //reset the playback pointer
@@ -41,6 +44,9 @@ void action_stop_sample(int sample_id){
 }
 
 void action_restart_sample(int sample_id){
+    printf("restart event was triggered");
+    //add the sample to the nowplaying bitmask
+    now_playing |= (1 << sample_id);
 	//reset the playback pointer
     sample_bank[sample_id].playback_ptr = 0;
 }
@@ -59,6 +65,8 @@ static void mixer_task_wip(void *args)
     //initialize the sample bank
     for (int j = 0; j < SAMPLE_NUM; j++){
         sample_bank[j].sample_id = j;
+        //TODO not sure about this at all!
+        pads_config[j].sample_id = 0;
         // sample_bank[j].pad_id = 19;
         sample_bank[j].playback_ptr = 0;
     }
