@@ -1,5 +1,5 @@
-#ifndef SAMPLE_H_
-#define SAMPLE_H_
+#ifndef SAMPLE_MODE_H_
+#define SAMPLE_MODE_H_
 // pad mode section
 // action function type
 typedef void (*event_handler)(int pad_id);
@@ -20,5 +20,5 @@ extern const sample_mode_t* SAMPLE_MODES[];
 
 // exposed function to select the pad mode
 void set_sample_mode(int, const sample_mode_t*);
-void sample_init();
+void sample_mode_init();
 #endif

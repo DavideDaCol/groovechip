@@ -1,4 +1,4 @@
-#include "sample.h"
+#include "sample_mode.h"
 #include "mixer.h"
 #include <stdio.h>
 #include "esp_log.h"
@@ -88,7 +88,7 @@ void sample_task(void *pvParameter){
 	}
 }
 
-void sample_init(){
+void sample_mode_init(){
     // set default sample mode (HOLD)
 	for(int i = 0; i < GPIO_NUM_MAX; i++){
 		set_sample_mode(i, SAMPLE_MODES[HOLD]);

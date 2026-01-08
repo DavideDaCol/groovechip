@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include "esp_log.h"
 #include "pad_section.h"
-#include "sample.h"
+#include "sample_mode.h"
 
 
 // Size of the wav header, must be stripped before playing
