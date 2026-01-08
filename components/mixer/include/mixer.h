@@ -15,7 +15,7 @@
 #define BUFF_SIZE 256
 
 // Maximum number of available samples
-#define SAMPLE_NUM 1
+#define SAMPLE_NUM 8
 
 #pragma region TYPES
 

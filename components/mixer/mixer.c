@@ -7,7 +7,9 @@
 #include "driver/gpio.h"
 #include "esp_check.h"
 #include "sdkconfig.h"
-#include "dummy_wav.h"
+#include "kick.h"
+#include "snare.h"
+#include "sample_mode.h"
 
 //currently active samples
 sample_bitmask now_playing;
@@ -56,6 +58,36 @@ void action_ignore(int pad_id){
 
 #pragma endregion
 
+void print_wav_header(const wav_header_t *h)
+{
+    if (!h) {
+        printf("WAV header is NULL\n");
+        return;
+    }
+
+    printf("=== WAV HEADER ===\n");
+
+    printf("RIFF Section ID   : %.4s\n", h->riff_section_id);
+    printf("File Size         : %lu bytes\n", h->size);
+    printf("RIFF Format       : %.4s\n", h->riff_format);
+
+    printf("Format ID         : %.4s\n", h->format_id);
+    printf("Format Size       : %lu\n", h->format_size);
+    printf("Audio Format      : %u (%s)\n",
+           h->fmt_id,
+           (h->fmt_id == 1) ? "PCM" : "Non-PCM");
+    printf("Channels          : %u\n", h->num_channels);
+    printf("Sample Rate       : %lu Hz\n", h->sample_rate);
+    printf("Byte Rate         : %lu\n", h->byte_rate);
+    printf("Block Align       : %u\n", h->block_align);
+    printf("Bits Per Sample   : %u\n", h->bits_per_sample);
+
+    printf("Data ID           : %.4s\n", h->data_id);
+    printf("Data Size         : %lu bytes\n", h->data_size);
+
+    printf("===================\n");
+}
+
 static void mixer_task_wip(void *args)
 {
     i2s_chan_handle_t out_channel = (i2s_chan_handle_t)args;
@@ -64,19 +96,28 @@ static void mixer_task_wip(void *args)
     //initialize the sample bank
     for (int j = 0; j < SAMPLE_NUM; j++){
         sample_bank[j].sample_id = j;
-        //TODO not sure about this at all!
-        pads_config[j].sample_id = 0;
-        // sample_bank[j].pad_id = 19;
         sample_bank[j].playback_ptr = 0;
     }
 
     //initialize the first sample for testing purposes
-    memcpy(&sample_bank[0].header, WavData, WAV_HDR_SIZE);
-    sample_bank[0].raw_data = WavData + WAV_HDR_SIZE;
-    // sample_bank[0].pad_id = 23;
+    memcpy(&sample_bank[0].header, snare_clean_wav, WAV_HDR_SIZE);
+    sample_bank[0].raw_data = snare_clean_wav + WAV_HDR_SIZE;
+    // sample 0 will be triggered by GPIO 23
+    pads_config[23].sample_id = 0;
+    //need to set the handler to something to avoid crashes!
+    //it will actually be set correctly by the sample component
     sample_bank[0].playback_mode.on_finish = action_stop_sample;
-    sample_bank[0].playback_mode.on_release = action_ignore;
-    sample_bank[0].playback_mode.on_press = action_restart_sample;
+
+    print_wav_header(&sample_bank[0].header);
+
+    //initialize the second sample for testing purposes
+    memcpy(&sample_bank[1].header, kick_clean_wav, WAV_HDR_SIZE);
+    sample_bank[1].raw_data = kick_clean_wav + WAV_HDR_SIZE;
+    // sample 1 will be triggered by GPIO 19
+    pads_config[19].sample_id = 1;
+    sample_bank[1].playback_mode.on_finish = action_stop_sample;
+
+    print_wav_header(&sample_bank[1].header);
 
     size_t w_bytes = BUFF_SIZE;
 
