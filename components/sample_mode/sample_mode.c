@@ -25,7 +25,7 @@ const sample_mode_t MODE_LOOP = {
 };
 
 const sample_mode_t MODE_ONESHOT = {
-    .on_press   = action_start_sample,
+    .on_press   = action_restart_sample,
     .on_release = action_ignore,  
     .on_finish  = action_stop_sample
 };
