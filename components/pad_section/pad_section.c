@@ -1,5 +1,6 @@
 #include "pad_section.h"
 #include "mixer.h"
+#include "sample_mode.h"
 
 #pragma region SAMPLE_MODES
 
@@ -8,9 +9,6 @@
 
 // pad config
 pad_settings_t pads_config[GPIO_NUM_MAX];
-
-// init queue
-QueueHandle_t pads_evt_queue = NULL;
 
 // debounce + detecting press/release
 static volatile uint64_t last_isr_time[GPIO_NUM_MAX] = {0};
@@ -45,21 +43,22 @@ static void IRAM_ATTR gpio_isr_handler(void *arg){
 
 	// check on level
 
-	pad_queue_msg_t queue_msg;
+	enum evt_type_t event_type;
 
 	if (level == 0)
 	{
 		// pressed
-		queue_msg.event_type = EVT_PRESS;
+		event_type = EVT_PRESS;
 	}
 	else
 	{
 		// released
-		queue_msg.event_type = EVT_RELEASE;
+		event_type = EVT_RELEASE;
 	}
-	queue_msg.pad_id = gpio_num;
 
-	xQueueSendFromISR(pads_evt_queue, &queue_msg, NULL);
+	// send the event on the sample task
+	uint8_t sample_id = pads_config[gpio_num].sample_id;
+	send_event(sample_id, event_type);
 }
 
 #pragma endregion
@@ -87,9 +86,7 @@ void pad_section_init(){
 		last_level[i] = 1;
 	}
 
-	// init queue
-	pads_evt_queue = xQueueCreate(10, sizeof(pad_queue_msg_t));
-
+	
 	// ISR installation
 	ESP_ERROR_CHECK(gpio_install_isr_service(0));
 	gpio_isr_handler_add(GPIO_BUTTON_1, gpio_isr_handler, (void *)GPIO_BUTTON_1);

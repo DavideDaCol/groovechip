@@ -9,6 +9,9 @@
 
 #pragma region sample_modes_config
 
+// init queue
+QueueHandle_t sample_evt_queue = NULL;
+
 const sample_mode_t MODE_HOLD = {
     .on_press   = action_start_sample,
     .on_release = action_stop_sample,
@@ -47,16 +50,23 @@ void set_sample_mode(int sample_id, const sample_mode_t* mode){
 	samples_config[sample_id] = mode;
 }
 
+void send_event(uint8_t sample_id, enum evt_type_t event_type){
+	sample_queue_msg_t queue_msg;
+
+	queue_msg.event_type = event_type;
+	queue_msg.sample_id = sample_id;
+
+	xQueueSendFromISR(sample_evt_queue, &queue_msg, NULL);
+}
 void sample_task(void *pvParameter){
-	pad_queue_msg_t queue_msg;
+	sample_queue_msg_t queue_msg;
 
 	for (;;)
 	{
-		if (xQueueReceive(pads_evt_queue, &queue_msg, portMAX_DELAY) == pdPASS)
+		if (xQueueReceive(sample_evt_queue, &queue_msg, portMAX_DELAY) == pdPASS)
 		{
             // retrieve sample_id from pad settings
-			pad_settings_t settings = pads_config[queue_msg.pad_id];
-			uint32_t sample_id = settings.sample_id;
+			uint8_t sample_id = queue_msg.sample_id;
 
             if(sample_id == NOT_DEFINED){
                 // there is no associated sample to this pad
@@ -65,7 +75,7 @@ void sample_task(void *pvParameter){
                 continue;
             }
 
-            printf("sample id is set to %ld\n", sample_id);
+            printf("sample id is set to %d\n", sample_id);
             fflush(stdout);
 
 			switch (queue_msg.event_type)
@@ -94,8 +104,12 @@ void sample_mode_init(){
 		set_sample_mode(i, SAMPLE_MODES[HOLD]);
 	}
 
+	// init queue
+	sample_evt_queue = xQueueCreate(10, sizeof(sample_queue_msg_t));
+
     xTaskCreate(sample_task, "sample_task", 2048, NULL, 5, NULL);
     printf("[Sample] Ready\n");
 }
+
 
 #pragma endregion

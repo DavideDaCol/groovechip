@@ -39,12 +39,7 @@
                              (1ULL<<GPIO_BUTTON_6) | \
                              (1ULL<<GPIO_BUTTON_7) | \
                              (1ULL<<GPIO_BUTTON_8))
-//enum for sample event type
-enum evt_type_t {
-	EVT_PRESS,
-	EVT_RELEASE,
-	EVT_FINISH
-};
+
 
 #define NOT_DEFINED SAMPLE_NUM + 1 // to specify when a pad isn't associated with any sample
 
@@ -53,16 +48,6 @@ typedef struct{
 } pad_settings_t;
 
 extern pad_settings_t pads_config[GPIO_NUM_MAX];
-
-
-typedef struct {
-	uint32_t pad_id;
-	enum evt_type_t event_type;
-} pad_queue_msg_t;
-
-// pads queue
-extern QueueHandle_t pads_evt_queue;
-
 
 void pad_section_init();
 

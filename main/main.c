@@ -24,8 +24,8 @@ void app_main(void)
 {
     // xTaskCreate(&simpleTask, "simple task", 2048, NULL, 5, NULL);
     // printf("Aspetto...");
-    pad_section_init();
     sample_mode_init();
+    pad_section_init();
     i2s_chan_handle_t master = i2s_driver_init();
     create_mixer(master);
 }

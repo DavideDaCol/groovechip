@@ -8,6 +8,7 @@
 #include "esp_check.h"
 #include "sdkconfig.h"
 #include "dummy_wav.h"
+#include "pad_section.h"
 
 //currently active samples
 sample_bitmask now_playing;
@@ -74,9 +75,9 @@ static void mixer_task_wip(void *args)
     memcpy(&sample_bank[0].header, WavData, WAV_HDR_SIZE);
     sample_bank[0].raw_data = WavData + WAV_HDR_SIZE;
     // sample_bank[0].pad_id = 23;
-    sample_bank[0].playback_mode.on_finish = action_stop_sample;
-    sample_bank[0].playback_mode.on_release = action_ignore;
-    sample_bank[0].playback_mode.on_press = action_restart_sample;
+    // sample_bank[0].playback_mode.on_finish = action_stop_sample;
+    // sample_bank[0].playback_mode.on_release = action_ignore;
+    // sample_bank[0].playback_mode.on_press = action_restart_sample;
 
     size_t w_bytes = BUFF_SIZE;
 
@@ -117,10 +118,12 @@ static void mixer_task_wip(void *args)
 
                     sample_bank[j].playback_ptr += 4;
 
-                    // case: playback pointer has reached EOF
+                    // case: playback pointer has reached EOF 
                     if (sample_bank[j].playback_ptr >= sample_bank[j].header.data_size) {
-                        sample_bank[j].playback_mode.on_finish(sample_bank[j].sample_id);
+                        // sample_bank[j].playback_mode.on_finish(sample_bank[j].sample_id);
+                        send_event(j, EVT_FINISH);
                     }
+                    
                 }
             }
         }
