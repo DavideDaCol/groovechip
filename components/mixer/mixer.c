@@ -106,8 +106,8 @@ static void mixer_task_wip(void *args)
     pads_config[23].sample_id = 0;
     //need to set the handler to something to avoid crashes!
     //it will actually be set correctly by the sample component
-    sample_bank[0].playback_mode.on_finish = action_stop_sample;
-
+    // sample_bank[0].playback_mode.on_finish = action_stop_sample;
+    set_sample_mode(0, SAMPLE_MODES[HOLD]);
     print_wav_header(&sample_bank[0].header);
 
     //initialize the second sample for testing purposes
@@ -115,7 +115,8 @@ static void mixer_task_wip(void *args)
     sample_bank[1].raw_data = kick_clean_wav + WAV_HDR_SIZE;
     // sample 1 will be triggered by GPIO 19
     pads_config[19].sample_id = 1;
-    sample_bank[1].playback_mode.on_finish = action_stop_sample;
+    // sample_bank[1].playback_mode.on_finish = action_stop_sample;
+    set_sample_mode(0, SAMPLE_MODES[HOLD]);
 
     print_wav_header(&sample_bank[1].header);
 
