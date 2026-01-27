@@ -24,8 +24,8 @@
 // pins
 #define GPIO_BUTTON_1     19
 #define GPIO_BUTTON_2     21
-#define GPIO_BUTTON_3     22
-#define GPIO_BUTTON_4     23
+#define GPIO_BUTTON_3     32
+#define GPIO_BUTTON_4     33
 #define GPIO_BUTTON_5     14
 #define GPIO_BUTTON_6     27
 #define GPIO_BUTTON_7     26
