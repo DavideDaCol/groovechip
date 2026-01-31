@@ -1,16 +1,17 @@
-/*
-********************************* PAD SECTION ***********************************
-*   This module implements the pad section of the project.                      *
-*   To test this section, assemble the pad module by connecting each switch pin *
-*   to the corresponding GPIO pin as specified later in this file.              *
-*   Call the `pad_section_init` function to configure the GPIO pins and start   *
-*   the interrupt handling and the associated task.                             *
-*   To change the pad mode of a single pad, use the                             *
-*   `set_pad_mode(int pad_id, const sample_mode_t *mode)` function,             *
-*   passing one of the predefined modes from the `SAMPLE_MODES[]` constant      *
-*   using the `HOLD`, `LOOP`, `ONESHOT`, or `ONESHOT_LOOP` macros.              *
-*********************************************************************************
-*/
+
+/*******************************************************************************
+ *                                 PAD SECTION                                 *
+ *           This module implements the pad section of the project.            *
+ * To test this section, assemble the pad module by connecting each switch pin *
+ *       to the corresponding GPIO pin as specified later in this file.        *
+ *  Call the `pad_section_init` function to configure the GPIO pins and start  *
+ *               the interrupt handling and the associated task.               *
+ *               To change the pad mode of a single pad, use the               *
+ *       `set_pad_mode(int pad_id, const sample_mode_t *mode)` function,       *
+ *   passing one of the predefined modes from the `SAMPLE_MODES[]` constant    *
+ *       using the `HOLD`, `LOOP`, `ONESHOT`, or `ONESHOT_LOOP` macros.        *
+ *******************************************************************************/
+
 #ifndef PAD_SECTION_
 #define PAD_SECTION_
 

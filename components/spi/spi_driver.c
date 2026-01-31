@@ -15,8 +15,10 @@ esp_err_t sdspi_driver_init(sdmmc_card_t* out_card) {
     
     //Initializing the bus according to the defined configuration
     res = spi_bus_initialize(SPI2_HOST, &bus_cfg, SPI_DMA_CH_AUTO);
-    if (res != ESP_OK)
+    if (res != ESP_OK){
+        ESP_ERROR_CHECK_WITHOUT_ABORT(res);
         return res;
+    }
     
     //SD SPI device configuration
     sdspi_device_config_t sdspi_conf = SDSPI_DEVICE_CONFIG_DEFAULT();
@@ -28,15 +30,19 @@ esp_err_t sdspi_driver_init(sdmmc_card_t* out_card) {
     
     //Attaching the device to the bus
     res = sdspi_host_init_device(&sdspi_conf, &sdspi_id);
-    if (res != ESP_OK)
+    if (res != ESP_OK){
+        ESP_ERROR_CHECK_WITHOUT_ABORT(res);
         return res;
-    
+    }
+
     //sdspi_host = settings, function pointers, rules the driver needs to follow
     sdmmc_host_t sdspi_host = SDSPI_HOST_DEFAULT();
 
     //Linking the host to the SD SPI bus 
     sdspi_host.slot = sdspi_id;
+    res = sdmmc_card_init(&sdspi_host, out_card);
+    if (res != ESP_OK)
+        ESP_ERROR_CHECK_WITHOUT_ABORT(res);
     
-    return sdmmc_card_init(&sdspi_host, out_card);
-
+    return res;
 }
