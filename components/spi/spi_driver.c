@@ -1,20 +1,20 @@
 #include "include/spi_driver.h"
 
 //out_card = card-specific information
-esp_err sdspi_driver_init(sdmmc_card_t* out_card) {
+esp_err_t sdspi_driver_init(sdmmc_card_t* out_card) {
     
-    //SPI bus configuration 
+    //Defining the SPI bus configuration 
     spi_bus_config_t bus_cfg = {
-        .mosi_io_num = GRVCHP_MOSI
-        .miso_io_num = GRVCHP_MISO
-        .sclk_io_num = GRVCHP_SCLK
+        .mosi_io_num = GRVCHP_MOSI,
+        .miso_io_num = GRVCHP_MISO,
+        .sclk_io_num = GRVCHP_SCLK,
     };
 
     //res = return error of esp_err functions
-    esp_err res;
+    esp_err_t res;
     
-    //Bus initialization according to the defined configuration
-    esp_err res = spi_bus_initialize(SPI2_HOST, &bus_cfg, SPI_DMA_CH_AUTO);
+    //Initializing the bus according to the defined configuration
+    res = spi_bus_initialize(SPI2_HOST, &bus_cfg, SPI_DMA_CH_AUTO);
     if (res != ESP_OK)
         return res;
     
@@ -26,7 +26,7 @@ esp_err sdspi_driver_init(sdmmc_card_t* out_card) {
 
     sdspi_dev_handle_t sdspi_id = 0;
     
-    //Attachement of the device to the bus
+    //Attaching the device to the bus
     res = sdspi_host_init_device(&sdspi_conf, &sdspi_id);
     if (res != ESP_OK)
         return res;
