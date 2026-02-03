@@ -23,7 +23,7 @@ i2s_chan_handle_t i2s_driver_init(){
             .bclk = GRVCHP_OUT_BCLK,
             .ws   = GRVCHP_OUT_WS,
             .dout = GRVCHP_OUT_DOUT,
-            .din  = GRVCHP_OUT_DIN,
+            .din  = I2S_GPIO_UNUSED,
             .invert_flags = {
                 .mclk_inv = false,
                 .bclk_inv = false,
