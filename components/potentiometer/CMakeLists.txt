@@ -1,6 +1,6 @@
 idf_component_register(
     SRCS "potentiometer.c"
-    INCLUDE_DIRS "."
+    INCLUDE_DIRS "include"
     # questo serve per linkare moduli da compilare prima di questo
     REQUIRES 
         freertos

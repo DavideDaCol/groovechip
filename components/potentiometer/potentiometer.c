@@ -4,9 +4,9 @@
 #include "driver/gpio.h"
 #include "esp_mac.h"
 #include "freertos/queue.h"
-#include "potentiometer.h"
+#include "include/potentiometer.h"
 
-#define POT_CHANNEL ADC_CHANNEL_0  // GPIO 36 
+#define POT_CHANNEL ADC_CHANNEL_5  // GPIO 37
 #define POT_READ_INTERVAL_MS 100   // reading interval in ms
 
 QueueHandle_t pot_queue;
