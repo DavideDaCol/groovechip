@@ -3,12 +3,12 @@
 #include "driver/gpio.h"
 #include "esp_adc/adc_oneshot.h"
 #include "esp_mac.h"
-#include "joystick.h"
+#include "include/joystick.h"
 
 
 #define ADC_CHANNEL_X ADC_CHANNEL_6
 #define ADC_CHANNEL_Y ADC_CHANNEL_7
-#define GPIO_SW GPIO_NUM_32
+#define GPIO_SW GPIO_NUM_36
 
 #define THRESH_LOW 1200
 #define THRESH_UP 2800
