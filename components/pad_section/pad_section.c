@@ -1,7 +1,6 @@
 #include "pad_section.h"
 #include "mixer.h"
 #include "playback_mode.h"
-#include "iot_button.h"
 
 // pad config
 // pad_settings_t pads_config[GPIO_NUM_MAX];

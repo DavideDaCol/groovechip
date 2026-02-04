@@ -30,6 +30,7 @@
 #define GPIO_BUTTON_6     27
 #define GPIO_BUTTON_7     26
 #define GPIO_BUTTON_8     25
+#define PAD_NUM 8
 
 #define GPIO_INPUT_PIN_SEL  ((1ULL<<GPIO_BUTTON_1) | \
                              (1ULL<<GPIO_BUTTON_2) | \
