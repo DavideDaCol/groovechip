@@ -62,6 +62,7 @@ typedef struct sample_t
     uint32_t playback_ptr; /** progress indicator for the sample */
     // playback_mode_t playback_mode; /** sample play type: ONESHOT, LOOP, etc... */
     int sample_id;
+    bool playback_finished;
 } sample_t;
 
 // all samples that can be played

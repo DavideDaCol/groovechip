@@ -42,6 +42,8 @@ void action_stop_sample(int sample_id){
     now_playing &= ~(1 << sample_id);
     //reset the playback pointer
     sample_bank[sample_id].playback_ptr = 0;
+    //set the playing state to "not done" (for future iterations)
+    sample_bank[sample_id].playback_finished = false;
 }
 
 void action_restart_sample(int sample_id){
@@ -102,17 +104,20 @@ static void mixer_task_wip(void *args)
     //initialize the first sample for testing purposes
     memcpy(&sample_bank[0].header, snare_clean_wav, WAV_HDR_SIZE);
     sample_bank[0].raw_data = snare_clean_wav + WAV_HDR_SIZE;
+    sample_bank[0].playback_finished = false;
     // sample 0 will be triggered by GPIO 23
     map_pad_to_sample(23, 0);
     //need to set the handler to something to avoid crashes!
     //it will actually be set correctly by the sample component
     // sample_bank[0].playback_mode.on_finish = action_stop_sample;
     set_playback_mode(0, PLAYBACK_MODES[HOLD]);
+    //debug function
     print_wav_header(&sample_bank[0].header);
 
     //initialize the second sample for testing purposes
     memcpy(&sample_bank[1].header, kick_clean_wav, WAV_HDR_SIZE);
     sample_bank[1].raw_data = kick_clean_wav + WAV_HDR_SIZE;
+    sample_bank[1].playback_finished = false;
     // sample 1 will be triggered by GPIO 19
     map_pad_to_sample(19, 1);
     // sample_bank[1].playback_mode.on_finish = action_stop_sample;
@@ -161,8 +166,12 @@ static void mixer_task_wip(void *args)
 
                     // case: playback pointer has reached EOF 
                     if (sample_bank[j].playback_ptr >= sample_bank[j].header.data_size) {
-                        // sample_bank[j].playback_mode.on_finish(sample_bank[j].sample_id);
-                        send_mixer_event(j, EVT_FINISH);
+                        if (!sample_bank[j].playback_finished) {
+                            //flag the sample as "done playing"
+                            sample_bank[j].playback_finished = true;
+                            //stop the sample
+                            send_mixer_event(j, EVT_FINISH);
+                        }
                     }
                     
                 }
