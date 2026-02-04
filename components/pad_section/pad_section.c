@@ -1,6 +1,8 @@
 #include "pad_section.h"
 #include "mixer.h"
 #include "playback_mode.h"
+#include "esp_log.h"
+static const char* TAG = "PadSection";
 
 // pad config
 // pad_settings_t pads_config[GPIO_NUM_MAX];
@@ -30,6 +32,9 @@ static void IRAM_ATTR gpio_isr_handler(void *arg){
 		// ignore
 		return;
 	}
+
+    ESP_EARLY_LOGI(TAG, "ISR pad %lu level %d\n", pad_id, level);
+
 
 	// update time and level
 
