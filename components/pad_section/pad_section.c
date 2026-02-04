@@ -11,7 +11,7 @@ static volatile int last_level[GPIO_NUM_MAX];
 
 //  pads interrupt handler
 static void IRAM_ATTR gpio_isr_handler(void *arg){
-	uint32_t pad_id = (uint8_t)arg;
+	uint32_t pad_id = (uint32_t)arg;
 
 	// debounce
 	uint64_t current_time = esp_timer_get_time();
