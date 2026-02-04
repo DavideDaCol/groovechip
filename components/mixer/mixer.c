@@ -9,7 +9,7 @@
 #include "sdkconfig.h"
 #include "kick.h"
 #include "snare.h"
-#include "sample_mode.h"
+#include "playback_mode.h"
 
 //currently active samples
 sample_bitmask now_playing;
@@ -103,20 +103,20 @@ static void mixer_task_wip(void *args)
     memcpy(&sample_bank[0].header, snare_clean_wav, WAV_HDR_SIZE);
     sample_bank[0].raw_data = snare_clean_wav + WAV_HDR_SIZE;
     // sample 0 will be triggered by GPIO 23
-    pads_config[23].sample_id = 0;
+    map_pad_to_sample(23, 0);
     //need to set the handler to something to avoid crashes!
     //it will actually be set correctly by the sample component
     // sample_bank[0].playback_mode.on_finish = action_stop_sample;
-    set_sample_mode(0, SAMPLE_MODES[HOLD]);
+    set_playback_mode(0, PLAYBACK_MODES[HOLD]);
     print_wav_header(&sample_bank[0].header);
 
     //initialize the second sample for testing purposes
     memcpy(&sample_bank[1].header, kick_clean_wav, WAV_HDR_SIZE);
     sample_bank[1].raw_data = kick_clean_wav + WAV_HDR_SIZE;
     // sample 1 will be triggered by GPIO 19
-    pads_config[19].sample_id = 1;
+    map_pad_to_sample(19, 1);
     // sample_bank[1].playback_mode.on_finish = action_stop_sample;
-    set_sample_mode(0, SAMPLE_MODES[HOLD]);
+    set_playback_mode(0, PLAYBACK_MODES[HOLD]);
 
     print_wav_header(&sample_bank[1].header);
 
@@ -162,7 +162,7 @@ static void mixer_task_wip(void *args)
                     // case: playback pointer has reached EOF 
                     if (sample_bank[j].playback_ptr >= sample_bank[j].header.data_size) {
                         // sample_bank[j].playback_mode.on_finish(sample_bank[j].sample_id);
-                        send_event(j, EVT_FINISH);
+                        send_mixer_event(j, EVT_FINISH);
                     }
                     
                 }

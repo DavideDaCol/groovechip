@@ -6,8 +6,8 @@
 *   Call the `pad_section_init` function to configure the GPIO pins and start   *
 *   the interrupt handling and the associated task.                             *
 *   To change the pad mode of a single pad, use the                             *
-*   `set_pad_mode(int pad_id, const sample_mode_t *mode)` function,             *
-*   passing one of the predefined modes from the `SAMPLE_MODES[]` constant      *
+*   `set_pad_mode(int pad_id, const playback_mode_t *mode)` function,             *
+*   passing one of the predefined modes from the `PLAYBACK_MODES[]` constant      *
 *   using the `HOLD`, `LOOP`, `ONESHOT`, or `ONESHOT_LOOP` macros.              *
 *********************************************************************************
 */
@@ -41,13 +41,13 @@
                              (1ULL<<GPIO_BUTTON_8))
 
 
-#define NOT_DEFINED SAMPLE_NUM + 1 // to specify when a pad isn't associated with any sample
+// #define NOT_DEFINED SAMPLE_NUM + 1 // to specify when a pad isn't associated with any sample
 
-typedef struct{
-    uint32_t sample_id; // id of the associated sample
-} pad_settings_t;
+// typedef struct{
+//     uint32_t sample_id; // id of the associated sample
+// } pad_settings_t;
 
-extern pad_settings_t pads_config[GPIO_NUM_MAX];
+// extern pad_settings_t pads_config[GPIO_NUM_MAX];
 
 void pad_section_init();
 

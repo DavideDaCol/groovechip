@@ -1,14 +1,10 @@
 #include "pad_section.h"
 #include "mixer.h"
-#include "sample_mode.h"
-
-#pragma region SAMPLE_MODES
-
-#pragma endregion
-
+#include "playback_mode.h"
+#include "iot_button.h"
 
 // pad config
-pad_settings_t pads_config[GPIO_NUM_MAX];
+// pad_settings_t pads_config[GPIO_NUM_MAX];
 
 // debounce + detecting press/release
 static volatile uint64_t last_isr_time[GPIO_NUM_MAX] = {0};
@@ -16,21 +12,21 @@ static volatile int last_level[GPIO_NUM_MAX];
 
 //  pads interrupt handler
 static void IRAM_ATTR gpio_isr_handler(void *arg){
-	uint32_t gpio_num = (uint32_t)arg;
+	uint32_t pad_id = (uint8_t)arg;
 
 	// debounce
 	uint64_t current_time = esp_timer_get_time();
 
-	if (current_time - last_isr_time[gpio_num] < 50000)
+	if (current_time - last_isr_time[pad_id] < 50000)
 	{
 		// ignore
 		return;
 	}
 
 	// check on level
-	int level = gpio_get_level(gpio_num);
+	int level = gpio_get_level(pad_id);
 
-	if (level == last_level[gpio_num])
+	if (level == last_level[pad_id])
 	{
 		// ignore
 		return;
@@ -38,27 +34,16 @@ static void IRAM_ATTR gpio_isr_handler(void *arg){
 
 	// update time and level
 
-	last_isr_time[gpio_num] = current_time;
-	last_level[gpio_num] = level;
+	last_isr_time[pad_id] = current_time;
+	last_level[pad_id] = level;
 
-	// check on level
+	// check on level to determinate the event type
 
-	enum evt_type_t event_type;
+	enum evt_type_t event_type = level == 0 ? EVT_PRESS : EVT_RELEASE;
 
-	if (level == 0)
-	{
-		// pressed
-		event_type = EVT_PRESS;
-	}
-	else
-	{
-		// released
-		event_type = EVT_RELEASE;
-	}
 
 	// send the event on the sample task
-	uint8_t sample_id = pads_config[gpio_num].sample_id;
-	send_event(sample_id, event_type);
+	send_pad_event(pad_id, event_type);
 }
 
 #pragma endregion
@@ -72,14 +57,6 @@ void pad_section_init(){
 	io_conf.pull_up_en = 1;
 	io_conf.pull_down_en = 0;
 	gpio_config(&io_conf);
-
-
-	for(int i = 0; i < GPIO_NUM_MAX; i++){
-		pad_settings_t init_settings;
-		init_settings.sample_id = 0;
-
-		pads_config[i] = init_settings;
-	}
 
 	// init last level to 1, so it doesn't ignore the first press
 	for(int i = 0; i < GPIO_NUM_MAX; i++){

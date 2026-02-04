@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include "esp_log.h"
 #include "pad_section.h"
-#include "sample_mode.h"
+#include "playback_mode.h"
 
 
 // Size of the wav header, must be stripped before playing
@@ -60,7 +60,7 @@ typedef struct sample_t
     const unsigned char *raw_data; /** raw sample bytes */
     wav_header_t header; /** contains sample metadata like size and bit rate */
     uint32_t playback_ptr; /** progress indicator for the sample */
-    // sample_mode_t playback_mode; /** sample play type: ONESHOT, LOOP, etc... */
+    // playback_mode_t playback_mode; /** sample play type: ONESHOT, LOOP, etc... */
     int sample_id;
 } sample_t;
 
