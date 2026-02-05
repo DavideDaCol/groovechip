@@ -1,0 +1,70 @@
+#ifndef PLAYBACK_MODE_H_
+#define PLAYBACK_MODE_H_
+#define NOT_DEFINED GPIO_NUM_MAX
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
+#pragma region PLAYBACK EVENT QUEUE 
+// pad mode section
+// action function type
+typedef void (*event_handler)(int pad_id);
+
+// sample event queue
+extern QueueHandle_t playback_evt_queue;
+
+// the playback event can be sent from pad_section or from the mixer (ON_FINISH event).
+// This enum distinguish this two cases
+typedef enum{
+	SRC_PAD_SECTION,
+	SRC_MIXER
+} event_source_t;
+
+// enum for sample event type
+enum evt_type_t {
+	EVT_PRESS,
+	EVT_RELEASE,
+	EVT_FINISH
+};
+
+// associate the pad_id to the event_type 
+typedef struct {
+	event_source_t source;
+	enum evt_type_t event_type;
+
+	union{
+		uint8_t pad_id;
+		uint8_t sample_id;
+	} payload;
+
+} playback_msg_t;
+
+void send_pad_event(uint8_t pad_id, enum evt_type_t event_type);
+void send_mixer_event(uint8_t sample_id, enum evt_type_t event_type);
+
+void map_pad_to_sample(uint8_t pad_id, uint8_t sample_id);
+
+#pragma endregion
+
+#pragma region PLAYBACK MODE
+typedef struct {
+    event_handler on_press;
+    event_handler on_release;  
+    event_handler on_finish;
+} playback_mode_t;
+
+// this is to pick the mode
+
+#define HOLD 0
+#define ONESHOT 1
+#define LOOP 2
+#define ONESHOT_LOOP 3
+extern const playback_mode_t* PLAYBACK_MODES[];
+
+// exposed function to select the pad mode
+void set_playback_mode(uint8_t, const playback_mode_t*);
+
+#pragma endregion
+
+void playback_mode_init();
+#endif

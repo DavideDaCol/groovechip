@@ -6,8 +6,8 @@
 *   Call the `pad_section_init` function to configure the GPIO pins and start   *
 *   the interrupt handling and the associated task.                             *
 *   To change the pad mode of a single pad, use the                             *
-*   `set_pad_mode(int pad_id, const sample_mode_t *mode)` function,             *
-*   passing one of the predefined modes from the `SAMPLE_MODES[]` constant      *
+*   `set_pad_mode(int pad_id, const playback_mode_t *mode)` function,             *
+*   passing one of the predefined modes from the `PLAYBACK_MODES[]` constant      *
 *   using the `HOLD`, `LOOP`, `ONESHOT`, or `ONESHOT_LOOP` macros.              *
 *********************************************************************************
 */
@@ -24,12 +24,13 @@
 // pins
 #define GPIO_BUTTON_1     19
 #define GPIO_BUTTON_2     21
-#define GPIO_BUTTON_3     22
-#define GPIO_BUTTON_4     23
+#define GPIO_BUTTON_3     32
+#define GPIO_BUTTON_4     33
 #define GPIO_BUTTON_5     14
 #define GPIO_BUTTON_6     27
 #define GPIO_BUTTON_7     26
 #define GPIO_BUTTON_8     25
+#define PAD_NUM 8
 
 #define GPIO_INPUT_PIN_SEL  ((1ULL<<GPIO_BUTTON_1) | \
                              (1ULL<<GPIO_BUTTON_2) | \
@@ -39,50 +40,15 @@
                              (1ULL<<GPIO_BUTTON_6) | \
                              (1ULL<<GPIO_BUTTON_7) | \
                              (1ULL<<GPIO_BUTTON_8))
-//enum for sample event type
-enum evt_type_t {
-	EVT_PRESS,
-	EVT_RELEASE,
-	EVT_FINISH
-};
-
-typedef struct {
-	uint32_t pad_id;
-	enum evt_type_t event_type;
-} pad_queue_msg_t;
-
-// pads queue
-extern QueueHandle_t pads_evt_queue;
-
-// pad mode section
-// action function type
-typedef void (*event_handler)(int pad_id);
-
-typedef struct {
-    event_handler on_press;
-    event_handler on_release;  
-    event_handler on_finish;   // not sure about this
-} sample_mode_t;
 
 
-// ACTIONS: this might be moved to the sample lib
-void action_start_sample(int);
-void action_start_or_stop_sample(int);
-void action_stop_sample(int);
-void action_restart_sample(int);
-void action_ignore(int);
+// #define NOT_DEFINED SAMPLE_NUM + 1 // to specify when a pad isn't associated with any sample
 
-// this is to pick the mode
+// typedef struct{
+//     uint32_t sample_id; // id of the associated sample
+// } pad_settings_t;
 
-#define HOLD 0
-#define ONESHOT 1
-#define LOOP 2
-#define ONESHOT_LOOP 3
-extern const sample_mode_t* SAMPLE_MODES[];
-
-// exposed function to select the pad mode
-void set_pad_mode(int, const sample_mode_t*);
-
+// extern pad_settings_t pads_config[GPIO_NUM_MAX];
 
 void pad_section_init();
 
