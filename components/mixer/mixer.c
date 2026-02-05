@@ -100,6 +100,39 @@ static inline void get_sample_interpolated(sample_t *smp, int16_t *out_L, int16_
     *out_R = ra * (1.0f - frac) + rb * frac;
 }
 
+static inline void apply_bitcrusher(uint8_t sample_id, int16_t *out_L, int16_t *out_R) {
+    bitcrusher_params_t* bc = &get_sample_effect(sample_id)->bitcrusher;
+
+    if(!bc->enabled) return; //exit if the effect is not enabled
+
+    // DOWNSAMPLING (reduce sample_rate)
+    bc->counter++;
+
+    // if the counter is less than the downsample value, repeat the same value as before
+    if (bc->counter < bc->downsample) {
+        *out_L = bc->last_L;
+        *out_R = bc->last_R;
+        return;
+    }
+
+    // update the sample
+    bc->counter = 0;
+
+    // BIT CRUSHING (reduce "resolution")
+    if (bc->bit_depth < 16) {
+        // how much bit do we need to "cut"
+        int shift_amount = 16 - bc->bit_depth;
+
+        // left shift in order to set to zero least significant bits, and right shift to bring the other bits back
+        *out_L = (*out_L >> shift_amount) << shift_amount;
+        *out_R = (*out_R >> shift_amount) << shift_amount;
+    }
+
+    // update last sample
+    bc->last_L = *out_L;
+    bc->last_R = *out_R;
+}
+
 void print_wav_header(const wav_header_t *h)
 {
     if (!h) {
