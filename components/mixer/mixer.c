@@ -195,6 +195,10 @@ static void mixer_task_wip(void *args)
     map_pad_to_sample(19, 1);
     // sample_bank[1].playback_mode.on_finish = action_stop_sample;
     set_playback_mode(1, ONESHOT);
+    //test bitcrush effect
+    toggle_bit_crusher(1, true);
+    set_bit_crusher_bit_depth(1, 8);
+    set_bit_crusher_downsample(1, 7);
 
     print_wav_header(&sample_bank[1].header);
 
