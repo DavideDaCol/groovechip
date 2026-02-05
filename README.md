@@ -69,7 +69,7 @@ The project can either be built manually using ESP's tools directly or with the 
 
 ### Using ESP-IDF directly
 
-For the processo of setting up ESP-IDF manually, please refer to the official documentation as provided by Espressif:
+For the process of setting up ESP-IDF manually, please refer to the official documentation as provided by Espressif:
 - [MacOS / Linux](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/get-started/linux-macos-setup.html)
 - [Windows](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/get-started/windows-setup.html)
 

@@ -110,7 +110,6 @@ void sample_task(void *pvParameter){
                 continue;
             }
 
-            printf("sample id is set to %d\n", sample_id);
             fflush(stdout);
 
 			switch (queue_msg.event_type)

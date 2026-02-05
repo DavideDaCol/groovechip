@@ -19,39 +19,41 @@ sample_t sample_bank[SAMPLE_NUM];
 
 #pragma region SAMPLE_ACTION
 
-// these are just placeholders functions.
 void action_start_or_stop_sample(int sample_id){
-    printf("play/pause event was triggered");
+    printf("play/pause event was triggered from %i\n", sample_id);
 	//either stop or play the sample
     now_playing ^= (1 << sample_id);
     //reset the playback pointer if the sample was stopped
-    if ((now_playing & (1 << sample_id)) != 0 ){
+    if (sample_bank[sample_id].playback_finished){
         sample_bank[sample_id].playback_ptr = 0;
+        sample_bank[sample_id].playback_finished = false;
     }
 }
 
 void action_start_sample(int sample_id){
-    printf("play event was triggered");
+    printf("play event was triggered from %i\n", sample_id);
 	//add the sample from the nowplaying bitmask
     now_playing |= (1 << sample_id);
 }
 
 void action_stop_sample(int sample_id){
-    printf("pause event was triggered");
+    printf("pause event was triggered from %i\n", sample_id);
 	//remove the sample from the nowplaying bitmask
     now_playing &= ~(1 << sample_id);
     //reset the playback pointer
     sample_bank[sample_id].playback_ptr = 0;
-    //set the playing state to "not done" (for future iterations)
+    //set the playing state to "not finished" (for future iterations)
     sample_bank[sample_id].playback_finished = false;
 }
 
 void action_restart_sample(int sample_id){
-    printf("restart event was triggered");
+    printf("restart event was triggered from %i\n", sample_id);
     //add the sample to the nowplaying bitmask
     now_playing |= (1 << sample_id);
 	//reset the playback pointer
     sample_bank[sample_id].playback_ptr = 0;
+    //set the playing state to "not finished" (for future iterations)
+    sample_bank[sample_id].playback_finished = false;
 }
 
 void action_ignore(int pad_id){
@@ -105,12 +107,12 @@ static void mixer_task_wip(void *args)
     memcpy(&sample_bank[0].header, snare_clean_wav, WAV_HDR_SIZE);
     sample_bank[0].raw_data = snare_clean_wav + WAV_HDR_SIZE;
     sample_bank[0].playback_finished = false;
-    // sample 0 will be triggered by GPIO 23
-    map_pad_to_sample(23, 0);
+    // sample 0 will be triggered by GPIO 21
+    map_pad_to_sample(21, 0);
     //need to set the handler to something to avoid crashes!
     //it will actually be set correctly by the sample component
     // sample_bank[0].playback_mode.on_finish = action_stop_sample;
-    set_playback_mode(0, PLAYBACK_MODES[HOLD]);
+    set_playback_mode(0, PLAYBACK_MODES[ONESHOT_LOOP]);
     //debug function
     print_wav_header(&sample_bank[0].header);
 
@@ -121,7 +123,7 @@ static void mixer_task_wip(void *args)
     // sample 1 will be triggered by GPIO 19
     map_pad_to_sample(19, 1);
     // sample_bank[1].playback_mode.on_finish = action_stop_sample;
-    set_playback_mode(0, PLAYBACK_MODES[HOLD]);
+    set_playback_mode(1, PLAYBACK_MODES[ONESHOT]);
 
     print_wav_header(&sample_bank[1].header);
 
@@ -149,7 +151,7 @@ static void mixer_task_wip(void *args)
             for (int j = 0; j < SAMPLE_NUM; j++){
 
                 //check play status via bit masking
-                if ((now_playing & (1 << j)) != 0 ){
+                if ((now_playing & (1 << j)) != 0  && !sample_bank[j].playback_finished){
 
                     // in WAV files, left and right samples are sequential
                     int16_t left  = *(int16_t*)(sample_bank[j].raw_data + sample_bank[j].playback_ptr);
