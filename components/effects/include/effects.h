@@ -17,8 +17,10 @@ typedef struct {
     bool enabled;
     uint8_t bit_depth;       // 1-16
     uint8_t downsample; // 1-10
-    float last_bc_sample;
-    int bc_counter;
+    int counter;
+
+    int16_t last_L;      // Ultimo valore L mantenuto
+    int16_t last_R;      // Ultimo valore R mantenuto
 } bitcrusher_params_t;
 
 //effects container
@@ -46,6 +48,9 @@ void init_bit_crusher(uint8_t sample_id);
 void set_bit_crusher_bit_depth(uint8_t sample_id, uint8_t bit_depth);
 
 void set_bit_crusher_downsample(uint8_t sample_id, uint8_t downsample_value);
+
+inline void apply_bitcrusher(uint8_t sample_id, int16_t *out_L, int16_t *out_R);
+
 //================================================================
 void effects_init();
 

@@ -205,6 +205,9 @@ static void mixer_task_wip(void *args)
                     left *= volume;
                     right *= volume;
 
+                    //apply bit crushing
+                    apply_bitcrusher(j, &left, &right);
+
                     // writes the WAV data to the buffer post volume adjustment
                     master_buf[i * 2] += left;
                     master_buf[i * 2 + 1] += right;
