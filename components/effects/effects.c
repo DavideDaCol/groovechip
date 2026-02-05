@@ -42,6 +42,10 @@ void init_bit_crusher(uint8_t sample_id){
     }
 }
 
+void toggle_bit_crusher(uint8_t sample_id, bool state){
+    sample_effects[sample_id].bitcrusher.enabled = state;
+}
+
 void set_bit_crusher_bit_depth(uint8_t sample_id, uint8_t bit_depth){
     if(sample_id < SAMPLE_NUM && bit_depth >= 1 && bit_depth <= BIT_DEPTH_DEFAULT){
         sample_effects[sample_id].bitcrusher.bit_depth = bit_depth;

@@ -45,6 +45,8 @@ float get_pitch_factor(uint8_t sample_id);
 
 void init_bit_crusher(uint8_t sample_id);
 
+void toggle_bit_crusher(uint8_t sample_id, bool state);
+
 void set_bit_crusher_bit_depth(uint8_t sample_id, uint8_t bit_depth);
 
 void set_bit_crusher_downsample(uint8_t sample_id, uint8_t downsample_value);
