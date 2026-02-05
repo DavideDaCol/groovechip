@@ -13,24 +13,28 @@
 QueueHandle_t playback_evt_queue = NULL;
 
 const playback_mode_t MODE_HOLD = {
+	.mode 		= HOLD,
     .on_press   = action_start_sample,
     .on_release = action_stop_sample,
     .on_finish  = action_stop_sample
 };
 
 const playback_mode_t MODE_LOOP = {
+	.mode 		= LOOP,
     .on_press   = action_start_sample,
     .on_release = action_stop_sample,
     .on_finish  = action_restart_sample
 };
 
 const playback_mode_t MODE_ONESHOT = {
+	.mode 		= ONESHOT,
     .on_press   = action_restart_sample,
     .on_release = action_ignore,  
     .on_finish  = action_stop_sample
 };
 
 const playback_mode_t MODE_ONESHOT_LOOP = {
+	.mode		= ONESHOT_LOOP,
     .on_press   = action_start_or_stop_sample,
     .on_release = action_ignore,
     .on_finish  = action_restart_sample
@@ -46,10 +50,34 @@ const playback_mode_t* PLAYBACK_MODES[] = {
 static const playback_mode_t* samples_config[SAMPLE_NUM];
 static int pad_to_sample_map[GPIO_NUM_MAX];
 
+mode_t get_playback_mode(uint8_t sample_id){
+	if(sample_id < SAMPLE_NUM){
+		return samples_config[sample_id]->mode;
+	}
+	else return UNSET;
+}
+
 // exposed function to set the mode
-void set_playback_mode(uint8_t sample_id, const playback_mode_t* mode){
-	if (sample_id < SAMPLE_NUM)
-		samples_config[sample_id] = mode;
+void set_playback_mode(uint8_t sample_id, mode_t playback_mode){
+	if (sample_id < SAMPLE_NUM){
+		switch (playback_mode)
+		{
+		case HOLD:
+			samples_config[sample_id] = &MODE_HOLD;
+			break;
+		case ONESHOT:
+			samples_config[sample_id] = &MODE_ONESHOT;
+			break;
+		case LOOP:
+			samples_config[sample_id] = &MODE_LOOP;
+			break;
+		case ONESHOT_LOOP:
+			samples_config[sample_id] = &MODE_ONESHOT_LOOP;
+			break;
+		default:
+			break;
+		}
+	}
 }
 
 // exposed function map pad_id to sample_id
@@ -133,7 +161,7 @@ void sample_task(void *pvParameter){
 void playback_mode_init(){
     // set default sample mode (HOLD)
 	for(int i = 0; i < SAMPLE_NUM; i++){
-		set_playback_mode(i, PLAYBACK_MODES[HOLD]);
+		set_playback_mode(i, HOLD);
 	}
 
 	// init pad to sample to NOT_DEFINED

@@ -1,5 +1,7 @@
 {
     "files.associations": {
         "adc_channel.h": "c"
-    }
+    },
+    "idf.flashType": "UART",
+    "idf.port": "/dev/ttyUSB0"
 }
