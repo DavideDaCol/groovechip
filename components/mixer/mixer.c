@@ -213,7 +213,7 @@ static void mixer_task_wip(void *args)
                     sample_bank[j].playback_ptr += get_pitch_factor(j);
 
                     // case: playback pointer has reached EOF 
-                    if (sample_bank[j].playback_ptr >= sample_bank[j].header.data_size) {
+                    if (sample_bank[j].playback_ptr >= total_frames) {
                         if (!sample_bank[j].playback_finished) {
                             //flag the sample as "done playing"
                             sample_bank[j].playback_finished = true;

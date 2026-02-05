@@ -27,43 +27,6 @@ float get_pitch_factor(uint8_t sample_id){
     }
     else return 1.0; //default value
 }
-
-inline void get_sample_interpolated(sample_t *smp, int16_t *out_L, int16_t *out_R, uint32_t total_frames) {
-    float pos = smp->playback_ptr;
-
-    //first frame
-    int frame_a = (int)pos;    
-    float frac = pos - frame_a; 
-
-    //second frame 
-    int frame_b = frame_a + 1;
-    
-    //loop handling
-    if (frame_b >= total_frames) {
-        mode_t playback_mode = get_playback_mode(smp->sample_id);
-        if (playback_mode == LOOP || playback_mode == ONESHOT_LOOP) {
-            frame_b = 0; //return to first sample
-        } else {
-            frame_b = frame_a; //stay in the same sample
-        }
-    }
-
-    // raw data
-    int16_t *raw_data = (int16_t*)smp->raw_data;
-
-    //handle stereo audio
-
-    //left channel
-    float la = raw_data[frame_a * 2];
-    float lb = raw_data[frame_b * 2];
-    *out_L = la * (1.0f - frac) + lb * frac;
-
-
-    //right channel
-    float ra = raw_data[frame_a * 2 + 1];
-    float rb = raw_data[frame_b * 2 + 1];
-    *out_R = ra * (1.0f - frac) + rb * frac;
-}
 //==========================================================
 
 //=========================BIT CRUSHER============================
