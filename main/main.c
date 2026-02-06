@@ -8,7 +8,6 @@
 #include "mixer.h"
 #include "effects.h"
 #include "playback_mode.h"
-
 #include "pad_section.h"
 
 void app_main(void)
