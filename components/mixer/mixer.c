@@ -179,7 +179,7 @@ static void mixer_task_wip(void *args)
     sample_bank[0].raw_data = snare_clean_wav + WAV_HDR_SIZE;
     sample_bank[0].playback_finished = false;
     // sample 0 will be triggered by GPIO 21
-    map_pad_to_sample(21, 0);
+    map_pad_to_sample(GPIO_BUTTON_1, 0);
     //need to set the handler to something to avoid crashes!
     //it will actually be set correctly by the sample component
     // sample_bank[0].playback_mode.on_finish = action_stop_sample;
@@ -192,7 +192,7 @@ static void mixer_task_wip(void *args)
     sample_bank[1].raw_data = kick_clean_wav + WAV_HDR_SIZE;
     sample_bank[1].playback_finished = false;
     // sample 1 will be triggered by GPIO 19
-    map_pad_to_sample(19, 1);
+    map_pad_to_sample(GPIO_BUTTON_2, 1);
     // sample_bank[1].playback_mode.on_finish = action_stop_sample;
     set_playback_mode(1, ONESHOT);
     //test bitcrush effect

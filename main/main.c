@@ -10,7 +10,6 @@
 #include "playback_mode.h"
 
 #include "pad_section.h"
-#define BLINK_GPIO 2
 
 void app_main(void)
 {

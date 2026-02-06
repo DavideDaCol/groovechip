@@ -22,14 +22,14 @@
 #include "esp_timer.h"
 
 // pins
-#define GPIO_BUTTON_1     19
-#define GPIO_BUTTON_2     21
-#define GPIO_BUTTON_3     32
-#define GPIO_BUTTON_4     33
-#define GPIO_BUTTON_5     14
-#define GPIO_BUTTON_6     27
-#define GPIO_BUTTON_7     26
-#define GPIO_BUTTON_8     25
+#define GPIO_BUTTON_1     4
+#define GPIO_BUTTON_2     12
+#define GPIO_BUTTON_3     13
+#define GPIO_BUTTON_4     14
+#define GPIO_BUTTON_5     15
+#define GPIO_BUTTON_6     16
+#define GPIO_BUTTON_7     17
+#define GPIO_BUTTON_8     32
 #define PAD_NUM 8
 
 #define GPIO_INPUT_PIN_SEL  ((1ULL<<GPIO_BUTTON_1) | \
