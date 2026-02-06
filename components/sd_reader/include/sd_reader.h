@@ -6,11 +6,15 @@
  *       that can be access using the file path "/sdcard" as a mountpoint.       *
  * Every sample is named based on the id, with extension "smp" (<sample_id>.smp) *
  *********************************************************************************/
+#ifndef SD_READER_H
+#define SD_READER_H
+
 
 #include "../../spi/include/spi_driver.h" 
 #include "sdmmc_cmd.h"
 #include "esp_vfs_fat.h"
 #include "diskio_sdmmc.h"
+#include "mixer.h"
 
 //Default mountpoint
 #define GRVCHP_MNTPOINT "/sdcard"
@@ -40,3 +44,5 @@ esp_err_t ld_sample(int sample_id, sample_t* out_sample);
 /* Function to transfer a sample from the internal memory to the SD card:
    - sample (IN): actual sample of which the transfer is requested */
 esp_err_t st_sample(sample_t *sample);
+
+#endif

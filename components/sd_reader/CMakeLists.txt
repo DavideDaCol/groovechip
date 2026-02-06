@@ -5,4 +5,5 @@ idf_component_register(
         sdmmc
         spi
         fatfs
+        mixer
 )
