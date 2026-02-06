@@ -101,27 +101,28 @@ static inline void get_sample_interpolated(sample_t *smp, int16_t *out_L, int16_
 }
 
 static inline void apply_bitcrusher(uint8_t sample_id, int16_t *out_L, int16_t *out_R) {
-    bitcrusher_params_t* bc = &get_sample_effect(sample_id)->bitcrusher;
-
-    if(!bc->enabled) return; //exit if the effect is not enabled
+    bitcrusher_params_t* bc_params = &get_sample_effect(sample_id)->bitcrusher;
+    
+    if(bc_params == NULL) return;
+    if(!bc_params->enabled) return; //exit if the effect is not enabled
 
     // DOWNSAMPLING (reduce sample_rate)
-    bc->counter++;
+    bc_params->counter++;
 
     // if the counter is less than the downsample value, repeat the same value as before
-    if (bc->counter < bc->downsample) {
-        *out_L = bc->last_L;
-        *out_R = bc->last_R;
+    if (bc_params->counter < bc_params->downsample) {
+        *out_L = bc_params->last_L;
+        *out_R = bc_params->last_R;
         return;
     }
 
     // update the sample
-    bc->counter = 0;
+    bc_params->counter = 0;
 
     // BIT CRUSHING (reduce "resolution")
-    if (bc->bit_depth < 16) {
+    if (bc_params->bit_depth < 16) {
         // how much bit do we need to "cut"
-        int shift_amount = 16 - bc->bit_depth;
+        int shift_amount = 16 - bc_params->bit_depth;
 
         // left shift in order to set to zero least significant bits, and right shift to bring the other bits back
         *out_L = (*out_L >> shift_amount) << shift_amount;
@@ -129,9 +130,46 @@ static inline void apply_bitcrusher(uint8_t sample_id, int16_t *out_L, int16_t *
     }
 
     // update last sample
-    bc->last_L = *out_L;
-    bc->last_R = *out_R;
+    bc_params->last_L = *out_L;
+    bc_params->last_R = *out_R;
 }
+
+static inline void apply_distortion(uint8_t sample_id, int16_t *out_L, int16_t *out_R){
+    distortion_params_t* dst_params = &get_sample_effect(sample_id)->distortion;
+
+    if(dst_params == NULL) return;
+    if(!dst_params->enabled) return;
+
+    //calculate gain
+    int32_t temp_L = *out_L * dst_params->gain;
+    int32_t temp_R = *out_R * dst_params->gain;
+
+    temp_L = (int16_t)temp_L;
+    temp_R = (int16_t)temp_R;
+
+    //calculate threshold
+    int16_t threshold = dst_params->threshold;
+
+    //left channel
+    if(temp_L > threshold){
+        temp_L = threshold;
+    }
+    else if(temp_L < -threshold){
+        temp_L = -threshold; // anche verso il basso? Da capire
+    }
+
+    //right channel
+    if(temp_R > threshold){
+        temp_R = threshold;
+    }
+    else if(temp_R < -threshold){
+        temp_R = -threshold;
+    }   
+
+    *out_L = temp_L;
+    *out_R = temp_R;
+
+} 
 
 void print_wav_header(const wav_header_t *h)
 {
@@ -241,6 +279,9 @@ static void mixer_task_wip(void *args)
                     //volume adjustment
                     left *= volume;
                     right *= volume;
+
+                    //apply distortion
+                    apply_distortion(j, &left, &right);
 
                     //apply bit crushing
                     apply_bitcrusher(j, &left, &right);
