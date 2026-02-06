@@ -1,6 +1,8 @@
 idf_component_register(
-    SRCS "i2s_driver.c"
+    SRCS "microphone.c"
     INCLUDE_DIRS "include"
     # questo serve per linkare moduli da compilare prima di questo
-    REQUIRES driver esp_driver_i2s
+    REQUIRES 
+        i2s
+        mixer
 )
