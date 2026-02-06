@@ -10,6 +10,7 @@
 #include "kick.h"
 #include "snare.h"
 #include "playback_mode.h"
+#include "effects.h"
 
 //currently active samples
 sample_bitmask now_playing;
@@ -62,6 +63,76 @@ void action_ignore(int pad_id){
 
 #pragma endregion
 
+static inline void get_sample_interpolated(sample_t *smp, int16_t *out_L, int16_t *out_R, uint32_t total_frames) {
+    float pos = smp->playback_ptr;
+
+    //first frame
+    int frame_a = (int)pos;    
+    float frac = pos - frame_a; 
+
+    //second frame 
+    int frame_b = frame_a + 1;
+    
+    //loop handling
+    if (frame_b >= total_frames) {
+        mode_t playback_mode = get_playback_mode(smp->sample_id);
+        if (playback_mode == LOOP || playback_mode == ONESHOT_LOOP) {
+            frame_b = 0; //return to first sample
+        } else {
+            frame_b = frame_a; //stay in the same sample
+        }
+    }
+
+    // raw data
+    int16_t *raw_data = (int16_t*)smp->raw_data;
+
+    //handle stereo audio
+
+    //left channel
+    float la = raw_data[frame_a * 2];
+    float lb = raw_data[frame_b * 2];
+    *out_L = la * (1.0f - frac) + lb * frac;
+
+
+    //right channel
+    float ra = raw_data[frame_a * 2 + 1];
+    float rb = raw_data[frame_b * 2 + 1];
+    *out_R = ra * (1.0f - frac) + rb * frac;
+}
+
+static inline void apply_bitcrusher(uint8_t sample_id, int16_t *out_L, int16_t *out_R) {
+    bitcrusher_params_t* bc = &get_sample_effect(sample_id)->bitcrusher;
+
+    if(!bc->enabled) return; //exit if the effect is not enabled
+
+    // DOWNSAMPLING (reduce sample_rate)
+    bc->counter++;
+
+    // if the counter is less than the downsample value, repeat the same value as before
+    if (bc->counter < bc->downsample) {
+        *out_L = bc->last_L;
+        *out_R = bc->last_R;
+        return;
+    }
+
+    // update the sample
+    bc->counter = 0;
+
+    // BIT CRUSHING (reduce "resolution")
+    if (bc->bit_depth < 16) {
+        // how much bit do we need to "cut"
+        int shift_amount = 16 - bc->bit_depth;
+
+        // left shift in order to set to zero least significant bits, and right shift to bring the other bits back
+        *out_L = (*out_L >> shift_amount) << shift_amount;
+        *out_R = (*out_R >> shift_amount) << shift_amount;
+    }
+
+    // update last sample
+    bc->last_L = *out_L;
+    bc->last_R = *out_R;
+}
+
 void print_wav_header(const wav_header_t *h)
 {
     if (!h) {
@@ -108,11 +179,11 @@ static void mixer_task_wip(void *args)
     sample_bank[0].raw_data = snare_clean_wav + WAV_HDR_SIZE;
     sample_bank[0].playback_finished = false;
     // sample 0 will be triggered by GPIO 21
-    map_pad_to_sample(21, 0);
+    map_pad_to_sample(GPIO_BUTTON_1, 0);
     //need to set the handler to something to avoid crashes!
     //it will actually be set correctly by the sample component
     // sample_bank[0].playback_mode.on_finish = action_stop_sample;
-    set_playback_mode(0, PLAYBACK_MODES[ONESHOT_LOOP]);
+    set_playback_mode(0, ONESHOT_LOOP);
     //debug function
     print_wav_header(&sample_bank[0].header);
 
@@ -121,9 +192,13 @@ static void mixer_task_wip(void *args)
     sample_bank[1].raw_data = kick_clean_wav + WAV_HDR_SIZE;
     sample_bank[1].playback_finished = false;
     // sample 1 will be triggered by GPIO 19
-    map_pad_to_sample(19, 1);
+    map_pad_to_sample(GPIO_BUTTON_2, 1);
     // sample_bank[1].playback_mode.on_finish = action_stop_sample;
-    set_playback_mode(1, PLAYBACK_MODES[ONESHOT]);
+    set_playback_mode(1, ONESHOT);
+    //test bitcrush effect
+    toggle_bit_crusher(1, true);
+    set_bit_crusher_bit_depth(1, 8);
+    set_bit_crusher_downsample(1, 7);
 
     print_wav_header(&sample_bank[1].header);
 
@@ -153,21 +228,32 @@ static void mixer_task_wip(void *args)
                 //check play status via bit masking
                 if ((now_playing & (1 << j)) != 0  && !sample_bank[j].playback_finished){
 
+                    // calculate total frames
+                    uint32_t total_frames = sample_bank[j].header.data_size / 4;
+                    
+                    
                     // in WAV files, left and right samples are sequential
-                    int16_t left  = *(int16_t*)(sample_bank[j].raw_data + sample_bank[j].playback_ptr);
-                    int16_t right = *(int16_t*)(sample_bank[j].raw_data + sample_bank[j].playback_ptr + 2);
-
-                    left  *= volume;
+                    int16_t left, right;
+                    
+                    // stereo interpolated samples
+                    get_sample_interpolated(&sample_bank[j], &left, &right, total_frames);
+                    
+                    //volume adjustment
+                    left *= volume;
                     right *= volume;
+
+                    //apply bit crushing
+                    apply_bitcrusher(j, &left, &right);
 
                     // writes the WAV data to the buffer post volume adjustment
                     master_buf[i * 2] += left;
                     master_buf[i * 2 + 1] += right;
 
-                    sample_bank[j].playback_ptr += 4;
+                    // add the pitch factor to the pointer
+                    sample_bank[j].playback_ptr += get_pitch_factor(j);
 
                     // case: playback pointer has reached EOF 
-                    if (sample_bank[j].playback_ptr >= sample_bank[j].header.data_size) {
+                    if (sample_bank[j].playback_ptr >= total_frames) {
                         if (!sample_bank[j].playback_finished) {
                             //flag the sample as "done playing"
                             sample_bank[j].playback_finished = true;

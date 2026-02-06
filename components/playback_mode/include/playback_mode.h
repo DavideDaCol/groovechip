@@ -47,22 +47,25 @@ void map_pad_to_sample(uint8_t pad_id, uint8_t sample_id);
 #pragma endregion
 
 #pragma region PLAYBACK MODE
+typedef enum{
+	HOLD,
+	ONESHOT,
+	LOOP,
+	ONESHOT_LOOP,
+	UNSET
+} mode_t;
+
 typedef struct {
+	mode_t mode;
     event_handler on_press;
     event_handler on_release;  
     event_handler on_finish;
 } playback_mode_t;
 
-// this is to pick the mode
-
-#define HOLD 0
-#define ONESHOT 1
-#define LOOP 2
-#define ONESHOT_LOOP 3
-extern const playback_mode_t* PLAYBACK_MODES[];
+mode_t get_playback_mode(uint8_t);
 
 // exposed function to select the pad mode
-void set_playback_mode(uint8_t, const playback_mode_t*);
+void set_playback_mode(uint8_t, const mode_t);
 
 #pragma endregion
 
