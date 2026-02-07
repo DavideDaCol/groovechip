@@ -59,7 +59,10 @@ typedef struct sample_t
 {
     const unsigned char *raw_data; /** raw sample bytes */
     wav_header_t header; /** contains sample metadata like size and bit rate */
+    uint32_t total_frames; /* frame number (data size / 4)*/
     float playback_ptr; /** progress indicator for the sample */
+    float start_ptr; /* the playback_ptr get initialized to this value every time the sample play */
+    uint32_t end_ptr; /* limit the sample duration */
     // playback_mode_t playback_mode; /** sample play type: ONESHOT, LOOP, etc... */
     int sample_id;
     bool playback_finished;
@@ -84,6 +87,9 @@ void action_start_or_stop_sample(int);
 void action_stop_sample(int);
 void action_restart_sample(int);
 void action_ignore(int);
+//chopping
+void set_sample_end_ptr(uint8_t, uint32_t);
+void set_sample_start_ptr(uint8_t, float);
 
 //metronome actions
 void init_metronome();
