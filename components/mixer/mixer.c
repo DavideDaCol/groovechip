@@ -12,6 +12,7 @@
 #include "playback_mode.h"
 #include "effects.h"
 #include "esp_log.h"
+#include "recorder.h"
 
 static const char* TAG = "Mixer";
 
@@ -254,6 +255,9 @@ static void mixer_task_wip(void *args)
     //initialize the metronome
     init_metronome();
 
+    //initialize the recording struct
+    recorder_init();
+
     //initialize the first sample for testing purposes
     memcpy(&sample_bank[0].header, snare_clean_wav, WAV_HDR_SIZE);
     sample_bank[0].raw_data = snare_clean_wav + WAV_HDR_SIZE;
@@ -351,6 +355,11 @@ static void mixer_task_wip(void *args)
                     }
                     
                 }
+            }
+
+            // capture the master frame for the recorded sample
+            if (recorder_is_recording()){
+                recorder_capture_frame(master_buf[i * 2], master_buf[i * 2 + 1]);
             }
 
             // this is where the metronome audio is supposed to be added to the master channel

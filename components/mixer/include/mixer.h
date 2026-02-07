@@ -7,7 +7,6 @@
 #include "pad_section.h"
 #include "playback_mode.h"
 
-
 // Size of the wav header, must be stripped before playing
 #define WAV_HDR_SIZE 44
 
