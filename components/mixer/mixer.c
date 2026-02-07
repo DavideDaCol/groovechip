@@ -11,12 +11,18 @@
 #include "snare.h"
 #include "playback_mode.h"
 #include "effects.h"
+#include "esp_log.h"
+
+static const char* TAG = "Mixer";
 
 //currently active samples
 sample_bitmask now_playing;
 
 // all samples that can be played
 sample_t sample_bank[SAMPLE_NUM];
+
+//metronome object
+static metronome mtrn;
 
 #pragma region SAMPLE_ACTION
 
@@ -133,6 +139,39 @@ static inline void apply_bitcrusher(uint8_t sample_id, int16_t *out_L, int16_t *
     bc->last_R = *out_R;
 }
 
+#pragma region METRONOME
+
+void init_metronome(){
+    mtrn.state = false;
+    mtrn.bpm = 120.;
+    mtrn.subdivisions = 1;
+    mtrn.playback_enabled = false;
+    set_metronome_tick();
+}
+
+void toggle_metronome_state(bool new_state){
+    mtrn.state = new_state;
+}
+void set_metronome_bpm(float new_bpm){
+    mtrn.bpm = new_bpm;
+    set_metronome_tick();
+}
+void set_metronome_subdiv(int new_subdiv){
+    mtrn.subdivisions = new_subdiv;
+    set_metronome_tick();
+}
+void set_metronome_tick(){
+    float new_sample_per_subdiv = GRVCHP_SAMPLE_FREQ * ((60.0 / mtrn.bpm) / mtrn.subdivisions ); 
+    ESP_LOGI(TAG, "samples per subdivision: %f", new_sample_per_subdiv);
+    mtrn.samples_per_subdivision = new_sample_per_subdiv;
+}
+
+void toggle_metronome_playback(bool new_state){
+    mtrn.playback_enabled = new_state;
+}
+
+#pragma endregion
+
 void print_wav_header(const wav_header_t *h)
 {
     if (!h) {
@@ -173,6 +212,9 @@ static void mixer_task_wip(void *args)
         sample_bank[j].sample_id = j;
         sample_bank[j].playback_ptr = 0;
     }
+
+    //initialize the metronome
+    init_metronome();
 
     //initialize the first sample for testing purposes
     memcpy(&sample_bank[0].header, snare_clean_wav, WAV_HDR_SIZE);
@@ -215,8 +257,13 @@ static void mixer_task_wip(void *args)
     // WARNING: the stereo out is usually very loud, this value shoud stay below 0.1
     float volume = 0.1f; 
 
+    // for the metronome: counts how many samples have been played since the last tick
+    int16_t sample_lookahead = 0;
+
      while (1) {
         for (int i = 0; i < BUFF_SIZE; i++) {
+
+            sample_lookahead += 1;
 
             //fill the buffer with 0 in case no samples are playing
             master_buf[i * 2] = 0x00;
@@ -264,7 +311,18 @@ static void mixer_task_wip(void *args)
                     
                 }
             }
+
+            // this is where the metronome audio is supposed to be added to the master channel
+            // then once it's done call toggle_metronome_playback(false);
+
+            if (sample_lookahead >= mtrn.samples_per_subdivision) {
+                // unlock_metronome
+                toggle_metronome_playback(true);
+                ESP_LOGI(TAG, "metronome was triggered! count: %ld", sample_lookahead);
+                sample_lookahead = 0;
+            }
         }
+        
 
         // Write full buffer (1024 bytes)
         ESP_ERROR_CHECK(i2s_channel_write(out_channel, master_buf,
