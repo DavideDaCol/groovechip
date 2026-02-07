@@ -9,6 +9,7 @@
 #include "sdkconfig.h"
 #include "kick.h"
 #include "snare.h"
+#include "metronome.h"
 #include "playback_mode.h"
 #include "effects.h"
 #include "esp_log.h"
@@ -186,6 +187,10 @@ void init_metronome(){
     mtrn.subdivisions = 1;
     mtrn.playback_enabled = false;
     set_metronome_tick();
+
+    mtrn.playback_ptr = 0;
+    memcpy(&mtrn.header, metronome_clean_wav, WAV_HDR_SIZE);
+    mtrn.raw_data = metronome_clean_wav + WAV_HDR_SIZE;
 }
 
 void toggle_metronome_state(bool new_state){
@@ -267,7 +272,7 @@ static void mixer_task_wip(void *args)
     //need to set the handler to something to avoid crashes!
     //it will actually be set correctly by the sample component
     // sample_bank[0].playback_mode.on_finish = action_stop_sample;
-    set_playback_mode(0, ONESHOT_LOOP);
+    set_playback_mode(0, ONESHOT);
     //debug function
     print_wav_header(&sample_bank[0].header);
 
@@ -285,6 +290,10 @@ static void mixer_task_wip(void *args)
     set_bit_crusher_downsample(1, 7);
 
     print_wav_header(&sample_bank[1].header);
+
+    //test metronome functions (equivalent to 120bpm)
+    set_metronome_bpm(60.0);
+    set_metronome_subdiv(2);
 
     size_t w_bytes = BUFF_SIZE;
 
@@ -306,6 +315,15 @@ static void mixer_task_wip(void *args)
         for (int i = 0; i < BUFF_SIZE; i++) {
 
             sample_lookahead += 1;
+
+            if (sample_lookahead >= mtrn.samples_per_subdivision) {
+                // unlock_metronome
+                toggle_metronome_playback(true);
+                ESP_LOGI(TAG, "metronome click! count: %ld", sample_lookahead);
+                //reset the metronome audio, in case the sample is too long for each tick
+                mtrn.playback_ptr = 0;
+                sample_lookahead = 0;
+            }
 
             //fill the buffer with 0 in case no samples are playing
             master_buf[i * 2] = 0x00;
@@ -362,15 +380,25 @@ static void mixer_task_wip(void *args)
                 recorder_capture_frame(master_buf[i * 2], master_buf[i * 2 + 1]);
             }
 
-            // this is where the metronome audio is supposed to be added to the master channel
-            // then once it's done call toggle_metronome_playback(false);
+            if (mtrn.playback_enabled) {
+                // if the metronome is playing, but the sound has finished
+                if (mtrn.playback_ptr >= mtrn.header.data_size) {
+                    //lock the metronome again
+                    toggle_metronome_playback(false);
+                    mtrn.playback_ptr = 0;
+                } else {
+                    // otherwise, keep on playing!
+                    int16_t left_mtrn  = *(int16_t*)(mtrn.raw_data + mtrn.playback_ptr);
+                    int16_t right_mtrn = *(int16_t*)(mtrn.raw_data + mtrn.playback_ptr + 2);
 
-            if (sample_lookahead >= mtrn.samples_per_subdivision) {
-                // unlock_metronome
-                toggle_metronome_playback(true);
-                ESP_LOGI(TAG, "metronome was triggered! count: %ld", sample_lookahead);
-                sample_lookahead = 0;
+                    master_buf[i * 2] += left_mtrn * 0.1;
+                    master_buf[i * 2 + 1] += right_mtrn * 0.1;
+
+                    mtrn.playback_ptr += 4;
+                }
+                
             }
+            
         }
         
 
