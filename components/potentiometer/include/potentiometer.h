@@ -1,0 +1,25 @@
+#ifndef POTENTIOMETER_H
+#define POTENTIOMETER_H
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "esp_adc/adc_oneshot.h"
+#include "driver/gpio.h"
+#include "esp_mac.h"
+#include "freertos/queue.h"
+
+extern QueueHandle_t pot_queue;
+extern adc_oneshot_unit_handle_t adc1_handle;
+extern int pot_value;
+
+void potentiometer_init();
+
+int potentiometer_read_raw();
+
+int potentiometer_read_percent();
+
+float potentiometer_read_voltage();
+
+void potentiometer_task(void *args);
+
+#endif

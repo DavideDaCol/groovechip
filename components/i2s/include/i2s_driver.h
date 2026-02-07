@@ -8,6 +8,8 @@
 #define GRVCHP_OUT_WS 25
 #define GRVCHP_OUT_DOUT 33
 
+#define GRVCHP_SAMPLE_FREQ 16000
+
 i2s_chan_handle_t i2s_driver_init();
 
 #endif

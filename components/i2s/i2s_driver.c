@@ -16,7 +16,7 @@ i2s_chan_handle_t i2s_driver_init(){
     ESP_ERROR_CHECK(i2s_new_channel(&out_chan_cfg, &out_channel, NULL));
 
     i2s_std_config_t out_port_cfg = {
-        .clk_cfg  = I2S_STD_CLK_DEFAULT_CONFIG(16000), //ideally should match the WAV files
+        .clk_cfg  = I2S_STD_CLK_DEFAULT_CONFIG(GRVCHP_SAMPLE_FREQ), //ideally should match the WAV files
         .slot_cfg = I2S_STD_MSB_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_STEREO), // data resolution is 16 bits per sample, stereo
         .gpio_cfg = {
             .mclk = I2S_GPIO_UNUSED,    // some codecs may require a master clock signal

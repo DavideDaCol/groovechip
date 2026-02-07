@@ -65,6 +65,14 @@ typedef struct sample_t
     bool playback_finished;
 } sample_t;
 
+typedef struct metronome {
+    bool state; /* metronome on or off */
+    float bpm; /* Beats Per Minute */
+    int8_t subdivisions; /* How many mentronome clicks in a beat */
+    float samples_per_subdivision; /* How many samples are supposed to be played before the next metronome click*/
+    bool playback_enabled; /* whether the metronome "click" should play or not */
+} metronome;
+
 // all samples that can be played
 extern sample_t sample_bank[SAMPLE_NUM];
 
@@ -76,6 +84,14 @@ void action_start_or_stop_sample(int);
 void action_stop_sample(int);
 void action_restart_sample(int);
 void action_ignore(int);
+
+//metronome actions
+void init_metronome();
+void toggle_metronome_state(bool);
+void set_metronome_bpm(float);
+void set_metronome_subdiv(int);
+void set_metronome_tick();
+void toggle_metronome_playback(bool);
 
 void create_mixer(i2s_chan_handle_t channel);
 
