@@ -34,7 +34,7 @@ void action_start_or_stop_sample(int sample_id){
     now_playing ^= (1 << sample_id);
     //reset the playback pointer if the sample was stopped
     if (sample_bank[sample_id].playback_finished){
-        sample_bank[sample_id].playback_ptr = 0;
+        sample_bank[sample_id].playback_ptr = sample_bank[sample_id].start_ptr;
         sample_bank[sample_id].playback_finished = false;
     }
 }
@@ -49,8 +49,8 @@ void action_stop_sample(int sample_id){
     printf("pause event was triggered from %i\n", sample_id);
 	//remove the sample from the nowplaying bitmask
     now_playing &= ~(1 << sample_id);
-    //reset the playback pointer
-    sample_bank[sample_id].playback_ptr = 0;
+    //reset the playback pointer to the start value
+    sample_bank[sample_id].playback_ptr = sample_bank[sample_id].start_ptr;
     //set the playing state to "not finished" (for future iterations)
     sample_bank[sample_id].playback_finished = false;
 }
@@ -59,8 +59,8 @@ void action_restart_sample(int sample_id){
     printf("restart event was triggered from %i\n", sample_id);
     //add the sample to the nowplaying bitmask
     now_playing |= (1 << sample_id);
-	//reset the playback pointer
-    sample_bank[sample_id].playback_ptr = 0;
+	//reset the playback pointer to the start value
+    sample_bank[sample_id].playback_ptr = sample_bank[sample_id].start_ptr;
     //set the playing state to "not finished" (for future iterations)
     sample_bank[sample_id].playback_finished = false;
 }
@@ -109,28 +109,27 @@ static inline void get_sample_interpolated(sample_t *smp, int16_t *out_L, int16_
 }
 
 static inline void apply_bitcrusher(uint8_t sample_id, int16_t *out_L, int16_t *out_R) {
-    bitcrusher_params_t* bc_params = &get_sample_effect(sample_id)->bitcrusher;
-    
-    if(bc_params == NULL) return;
-    if(!bc_params->enabled) return; //exit if the effect is not enabled
+    bitcrusher_params_t* bc = &get_sample_effect(sample_id)->bitcrusher;
+
+    if(!bc->enabled) return; //exit if the effect is not enabled
 
     // DOWNSAMPLING (reduce sample_rate)
-    bc_params->counter++;
+    bc->counter++;
 
     // if the counter is less than the downsample value, repeat the same value as before
-    if (bc_params->counter < bc_params->downsample) {
-        *out_L = bc_params->last_L;
-        *out_R = bc_params->last_R;
+    if (bc->counter < bc->downsample) {
+        *out_L = bc->last_L;
+        *out_R = bc->last_R;
         return;
     }
 
     // update the sample
-    bc_params->counter = 0;
+    bc->counter = 0;
 
     // BIT CRUSHING (reduce "resolution")
-    if (bc_params->bit_depth < 16) {
+    if (bc->bit_depth < 16) {
         // how much bit do we need to "cut"
-        int shift_amount = 16 - bc_params->bit_depth;
+        int shift_amount = 16 - bc->bit_depth;
 
         // left shift in order to set to zero least significant bits, and right shift to bring the other bits back
         *out_L = (*out_L >> shift_amount) << shift_amount;
@@ -138,46 +137,9 @@ static inline void apply_bitcrusher(uint8_t sample_id, int16_t *out_L, int16_t *
     }
 
     // update last sample
-    bc_params->last_L = *out_L;
-    bc_params->last_R = *out_R;
+    bc->last_L = *out_L;
+    bc->last_R = *out_R;
 }
-
-static inline void apply_distortion(uint8_t sample_id, int16_t *out_L, int16_t *out_R){
-    distortion_params_t* dst_params = &get_sample_effect(sample_id)->distortion;
-
-    if(dst_params == NULL) return;
-    if(!dst_params->enabled) return;
-
-    //calculate gain
-    int32_t temp_L = *out_L * dst_params->gain;
-    int32_t temp_R = *out_R * dst_params->gain;
-
-    temp_L = (int16_t)temp_L;
-    temp_R = (int16_t)temp_R;
-
-    //calculate threshold
-    int16_t threshold = dst_params->threshold;
-
-    //left channel
-    if(temp_L > threshold){
-        temp_L = threshold;
-    }
-    else if(temp_L < -threshold){
-        temp_L = -threshold; // anche verso il basso? Da capire
-    }
-
-    //right channel
-    if(temp_R > threshold){
-        temp_R = threshold;
-    }
-    else if(temp_R < -threshold){
-        temp_R = -threshold;
-    }   
-
-    *out_L = temp_L;
-    *out_R = temp_R;
-
-} 
 
 #pragma region METRONOME
 
@@ -214,6 +176,22 @@ void toggle_metronome_playback(bool new_state){
     mtrn.playback_enabled = new_state;
 }
 
+#pragma endregion
+
+#pragma region SAMPLE CHOPPING
+void set_sample_end_ptr(uint8_t sample_id, uint32_t new_end_ptr){
+    sample_t *smp = &sample_bank[sample_id];
+    if(new_end_ptr > smp->start_ptr && new_end_ptr < smp->total_frames){
+        smp->end_ptr = new_end_ptr; // TODO move this out of here. We before changing this parameter, the sample must be stopped.
+    }
+}
+void set_sample_start_ptr(uint8_t sample_id, float new_start_ptr){
+    sample_t *smp = &sample_bank[sample_id];
+    if(new_start_ptr >= 0.0 && new_start_ptr < smp->end_ptr){
+        smp->start_ptr = new_start_ptr;
+        smp->playback_ptr = new_start_ptr; // TODO move this out of here. We before changing this parameter, the sample must be stopped.
+    }
+}
 #pragma endregion
 
 void print_wav_header(const wav_header_t *h)
@@ -254,6 +232,7 @@ static void mixer_task_wip(void *args)
     //initialize the sample bank
     for (int j = 0; j < SAMPLE_NUM; j++){
         sample_bank[j].sample_id = j;
+        sample_bank[j].start_ptr = 0;
         sample_bank[j].playback_ptr = 0;
     }
 
@@ -266,6 +245,8 @@ static void mixer_task_wip(void *args)
     //initialize the first sample for testing purposes
     memcpy(&sample_bank[0].header, snare_clean_wav, WAV_HDR_SIZE);
     sample_bank[0].raw_data = snare_clean_wav + WAV_HDR_SIZE;
+    sample_bank[0].total_frames = sample_bank[0].header.data_size / 4;
+    sample_bank[0].end_ptr = sample_bank[0].total_frames - 1;
     sample_bank[0].playback_finished = false;
     // sample 0 will be triggered by GPIO 21
     map_pad_to_sample(GPIO_BUTTON_1, 0);
@@ -279,6 +260,8 @@ static void mixer_task_wip(void *args)
     //initialize the second sample for testing purposes
     memcpy(&sample_bank[1].header, kick_clean_wav, WAV_HDR_SIZE);
     sample_bank[1].raw_data = kick_clean_wav + WAV_HDR_SIZE;
+    sample_bank[1].total_frames = sample_bank[0].header.data_size / 4;
+    sample_bank[1].end_ptr = sample_bank[0].total_frames - 1;
     sample_bank[1].playback_finished = false;
     // sample 1 will be triggered by GPIO 19
     map_pad_to_sample(GPIO_BUTTON_2, 1);
@@ -335,22 +318,15 @@ static void mixer_task_wip(void *args)
                 //check play status via bit masking
                 if ((now_playing & (1 << j)) != 0  && !sample_bank[j].playback_finished){
 
-                    // calculate total frames
-                    uint32_t total_frames = sample_bank[j].header.data_size / 4;
-                    
-                    
                     // in WAV files, left and right samples are sequential
                     int16_t left, right;
                     
                     // stereo interpolated samples
-                    get_sample_interpolated(&sample_bank[j], &left, &right, total_frames);
+                    get_sample_interpolated(&sample_bank[j], &left, &right, sample_bank[j].total_frames);
                     
                     //volume adjustment
                     left *= volume;
                     right *= volume;
-
-                    //apply distortion
-                    apply_distortion(j, &left, &right);
 
                     //apply bit crushing
                     apply_bitcrusher(j, &left, &right);
@@ -362,8 +338,8 @@ static void mixer_task_wip(void *args)
                     // add the pitch factor to the pointer
                     sample_bank[j].playback_ptr += get_pitch_factor(j);
 
-                    // case: playback pointer has reached EOF 
-                    if (sample_bank[j].playback_ptr >= total_frames) {
+                    // case: playback pointer has reached EOF or the end_ptr
+                    if (sample_bank[j].playback_ptr > sample_bank[j].end_ptr || sample_bank[j].playback_ptr >= sample_bank[j].total_frames) {
                         if (!sample_bank[j].playback_finished) {
                             //flag the sample as "done playing"
                             sample_bank[j].playback_finished = true;
