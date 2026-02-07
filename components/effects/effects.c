@@ -8,6 +8,7 @@ effects_t* get_sample_effect(uint8_t sample_id){
         return &sample_effects[sample_id];
     else return NULL;
 }
+#pragma region PITCH
 //=========================PITCH============================
 void init_pitch(uint8_t sample_id){
     if(sample_id < SAMPLE_NUM){
@@ -28,14 +29,15 @@ float get_pitch_factor(uint8_t sample_id){
     else return 1.0; //default value
 }
 //==========================================================
-
+#pragma endregion
+#pragma region BIT CRUSHER
 //=========================BIT CRUSHER============================
 
 void init_bit_crusher(uint8_t sample_id){
     if(sample_id < SAMPLE_NUM){
         sample_effects[sample_id].bitcrusher.enabled = false;
-        sample_effects[sample_id].bitcrusher.bit_depth = BIT_DEPTH_DEFAULT;
-        sample_effects[sample_id].bitcrusher.downsample = DOWNSAMPLE_DEFAULT;
+        sample_effects[sample_id].bitcrusher.bit_depth = BIT_DEPTH_MAX;
+        sample_effects[sample_id].bitcrusher.downsample = DOWNSAMPLE_MAX;
         sample_effects[sample_id].bitcrusher.counter = 0;
         sample_effects[sample_id].bitcrusher.last_L = 0.0;
         sample_effects[sample_id].bitcrusher.last_R = 0.0;
@@ -47,7 +49,7 @@ void toggle_bit_crusher(uint8_t sample_id, bool state){
 }
 
 void set_bit_crusher_bit_depth(uint8_t sample_id, uint8_t bit_depth){
-    if(sample_id < SAMPLE_NUM && bit_depth >= 1 && bit_depth <= BIT_DEPTH_DEFAULT){
+    if(sample_id < SAMPLE_NUM && bit_depth >= 1 && bit_depth <= BIT_DEPTH_MAX){
         sample_effects[sample_id].bitcrusher.bit_depth = bit_depth;
         
         //reset counter values
@@ -58,7 +60,7 @@ void set_bit_crusher_bit_depth(uint8_t sample_id, uint8_t bit_depth){
 }
 
 void set_bit_crusher_downsample(uint8_t sample_id, uint8_t downsample_value){
-    if(sample_id < SAMPLE_NUM && downsample_value >= 1 && downsample_value <= DOWNSAMPLE_DEFAULT){
+    if(sample_id < SAMPLE_NUM && downsample_value >= 1 && downsample_value <= DOWNSAMPLE_MAX){
         sample_effects[sample_id].bitcrusher.downsample = downsample_value;
 
         //reset counter values
@@ -67,12 +69,45 @@ void set_bit_crusher_downsample(uint8_t sample_id, uint8_t downsample_value){
         sample_effects[sample_id].bitcrusher.last_R = 0.0;
     }
 }
-
 //================================================================
+#pragma endregion
+
+#pragma region DISTORTION
+//=========================DISTORTION=============================
+void init_distortion(uint8_t sample_id){
+    if(sample_id < SAMPLE_NUM){
+        sample_effects[sample_id].distortion.enabled = false;
+        sample_effects[sample_id].distortion.gain = DISTORTION_GAIN_MIX;
+        sample_effects[sample_id].distortion.threshold = DISTORTION_THRESHOLD_MAX;
+    }
+}
+
+void toggle_distortion(uint8_t sample_id, bool state){
+    if(sample_id < SAMPLE_NUM){
+        sample_effects[sample_id].distortion.enabled = state;
+    }
+}
+
+void set_distortion_gain(uint8_t sample_id, float gain){
+    if(sample_id < SAMPLE_NUM){
+        sample_effects[sample_id].distortion.gain = gain;
+    }
+}
+
+void set_distortion_threshold(uint8_t sample_id, int16_t threshold_value){
+    if(sample_id < SAMPLE_NUM){
+        sample_effects[sample_id].distortion.threshold = threshold_value;
+    }
+}
+//================================================================
+#pragma endregion
+
 void effects_init(){
     //init effects to default values
     for(uint8_t i = 0; i < SAMPLE_NUM; i++){
         init_pitch(i);
         init_bit_crusher(i);
+        init_distortion(i);
     }
 }
+
