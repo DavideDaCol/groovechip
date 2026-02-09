@@ -10,7 +10,7 @@
 #define POT_READ_INTERVAL_MS 100   // reading interval in ms
 
 QueueHandle_t pot_queue;
-adc_oneshot_unit_handle_t adc1_handle;
+static adc_oneshot_unit_handle_t adc1_handle;
 int pot_value = 0;  // Valore grezzo (0-4095 con 12 bit)
 
 void potentiometer_init() {

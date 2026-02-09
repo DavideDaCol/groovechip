@@ -9,6 +9,112 @@
 #include "effects.h"
 #include "playback_mode.h"
 #include "pad_section.h"
+#include "joystick.h"
+#include "potentiometer.h"
+
+#define SET_LENGTH 3
+#define GEN_MENU_NUM_OPT 2
+#define BTN_MENU_NUM_OPT 3
+#define GEN_SETTINGS_NUM_OPT 4
+#define GEN_EFFECTS_NUM_OPT 3
+
+void connection_init(QueueSetHandle_t out_set);
+void main_fsm(QueueSetHandle_t in_set);
+void joystick_handler(JoystickDir in_dir);
+void goto_settings();
+void goto_effects();
+void goto_selection();
+void menu_move(int* index, int max_opt, int direction);
+
+
+// typedef enum {
+//     IDLE,
+//     GNR_MENU,
+//     REC_MODE,
+//     BTN_MENU,
+// } state_index;
+
+typedef enum {
+    GEN_MENU,
+    BTN_MENU,
+    SETTINGS,
+    EFFECTS,
+} menu_types;
+
+menu_types curr_menu;
+menu_types prev_menu;
+int8_t pressed_button = -1;
+
+typedef void (*action) (void); 
+
+action eff_opt[] = {}; //TODO
+action set_opt[] = {}; //TODO
+
+typedef struct {
+    int curr_index;
+    int max_size;
+    action *opt_actions; 
+    char** prints;
+} menu_t;
+
+/***********************************/
+action gen_opt[] = {
+    goto_settings,
+    goto_effects
+};
+
+char gen_prints[][16] = {
+    {'S', 'e', 't', 't', 'i', 'n', 'g', 's', '\0'},
+    {'E', 'f', 'f', 'e', 'c', 't', 's', ' ', '\0'}
+};
+
+menu_t gen_menu = {
+    .curr_index = -1,
+    .max_size = GEN_MENU_NUM_OPT,
+    .opt_actions = gen_opt
+};
+/***********************************/
+
+/***********************************/
+action btn_opt[] = {
+    goto_settings,
+    goto_effects,
+    goto_selection
+};
+char btn_prints[][16] = {
+    {'S', 'e', 't', 't', 'i', 'n', 'g', 's', '\0'},
+    {'E', 'f', 'f', 'e', 'c', 't', 's', '\0'},
+    {'S', 'e', 'l', 'e', 'c', 't', ' ', 's', 'a', 'm', 'p', 'l', 'e', '\0'}
+};
+
+menu_t btn_menu = {
+    .curr_index = -1,
+    .max_size = BTN_MENU_NUM_OPT,
+    .opt_actions = btn_opt
+};
+/***********************************/
+
+
+menu_t settings = {
+    .curr_index = -1,
+    .max_size = GEN_SETTINGS_NUM_OPT,
+    .opt_actions = set_opt
+};
+
+menu_t effects = {
+    .curr_index = -1,
+    .max_size = GEN_EFFECTS_NUM_OPT,
+    .opt_actions = eff_opt
+};
+
+menu_t* menu_navigation[] = {
+    &gen_menu,
+    &btn_menu,
+    &settings,
+    &effects,
+};
+
+
 
 void app_main(void)
 {
@@ -20,4 +126,96 @@ void app_main(void)
 
     i2s_chan_handle_t master = i2s_driver_init();
     create_mixer(master);
+
+    QueueSetHandle_t io_queue_set = NULL;
+    connection_init(io_queue_set);
+
+}
+
+void connection_init(QueueSetHandle_t out_set) {
+    //Creating a queue set
+    out_set = xQueueCreateSet(SET_LENGTH);
+
+    //Adding the different queues that handle different I/O peripherals
+    xQueueAddToSet((QueueSetMemberHandle_t) joystick_queue, out_set);
+    xQueueAddToSet((QueueSetMemberHandle_t) playback_evt_queue, out_set);
+    xQueueAddToSet((QueueSetMemberHandle_t) pot_queue, out_set);
+}
+
+
+void main_fsm(QueueSetHandle_t in_set) {
+    while(1) {
+        //
+        QueueSetMemberHandle_t curr_io_queue = xQueueSelectFromSet(in_set, pdMS_TO_TICKS(10)); //TODO: determine the period
+        
+        if (curr_io_queue == joystick_queue) {
+
+            JoystickDir curr_js;
+            xQueueReceive(curr_io_queue, &curr_js, 0);
+            joystick_handler(curr_js);  
+
+        } else if (curr_io_queue == playback_evt_queue) {
+
+        } else {
+        } 
+
+    }
+}
+
+void joystick_handler(JoystickDir in_dir) {
+    
+}
+
+void menu_move(int* index, int max_opt, int direction) {
+    // direction: 1 for down, -1 for up
+    *index = (*index + direction + max_opt) % max_opt;
+}
+
+void goto_settings() {
+    prev_menu = curr_menu;
+    settings.curr_index = 0;
+    curr_menu = SETTINGS;
+}
+
+void goto_effects() {
+    prev_menu = curr_menu;
+    effects.curr_index = 0;
+    curr_menu = EFFECTS;
+}
+
+void js_right_handler() {
+    int index = menu_navigation[curr_menu] -> curr_index;
+    menu_navigation[curr_menu] -> opt_actions[index]();
+}
+
+void js_left_handler() {
+    if (pressed_button != -1) {
+        if (curr_menu == BTN_MENU) {
+            curr_menu = GEN_MENU;
+            pressed_button = -1;
+        } else 
+            curr_menu = BTN_MENU;
+    } else 
+        curr_menu = GEN_MENU;
+}
+
+void js_up_handler() {
+    menu_move(
+        &(menu_navigation[curr_menu] -> curr_index), 
+        menu_navigation[curr_menu] -> max_size, 
+        -1
+    );
+}
+
+void js_down_handler() {
+    menu_move(
+        &(menu_navigation[curr_menu] -> curr_index), 
+        menu_navigation[curr_menu] -> max_size, 
+        1
+    );
+}
+
+void set_button_pressed(int pad_id) {
+    pressed_button = pad_id;
+    curr_menu = BTN_MENU;
 }

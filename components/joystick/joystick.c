@@ -17,7 +17,7 @@
 
 Joystick my_joystick = { 0, 0, 1};
 QueueHandle_t joystick_queue;
-adc_oneshot_unit_handle_t adc1_handle;
+static adc_oneshot_unit_handle_t adc1_handle;
 
 void joystick_init() {
     // initialize ADC unit 1

@@ -9,7 +9,6 @@
 #include "freertos/queue.h"
 
 extern QueueHandle_t pot_queue;
-extern adc_oneshot_unit_handle_t adc1_handle;
 extern int pot_value;
 
 void potentiometer_init();
