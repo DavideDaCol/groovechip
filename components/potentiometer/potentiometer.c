@@ -4,7 +4,7 @@
 #include "driver/gpio.h"
 #include "esp_mac.h"
 #include "freertos/queue.h"
-#include "include/potentiometer.h"
+#include "include/potentiometer.h" 
 
 #define POT_CHANNEL ADC_CHANNEL_5  // GPIO 37
 #define POT_READ_INTERVAL_MS 100   // reading interval in ms
@@ -63,11 +63,13 @@ void potentiometer_task(void *args) {
         pot_value = potentiometer_read_raw();
         int percent = (pot_value * 100) / 4095;
         float voltage = (pot_value * 3.3f) / 4095.0f;
+        int diff = pot_value - last_pot_value;
+        int diff_percent = (diff * 100) /4095;
         
         // ignore the repetitive events
         if (pot_value != last_pot_value){
             printf("Pot: %d (raw) | %d%% | %.2fV\n", pot_value, percent, voltage);
-            xQueueSend(pot_queue, &pot_value, 0); // parameters -> queue name, message, tick to wait to send the message
+            xQueueSend(pot_queue, &diff_percent, 0); // parameters -> queue name, message, tick to wait to send the message
             last_pot_value = pot_value;
         }
         

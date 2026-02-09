@@ -48,7 +48,7 @@ static void IRAM_ATTR gpio_isr_handler(void *arg){
 
 	// send the event on the sample task
 	send_pad_event(pad_id, event_type);
-}
+} 
 
 #pragma endregion
 
