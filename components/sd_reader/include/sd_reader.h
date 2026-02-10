@@ -10,11 +10,13 @@
 #define SD_READER_H
 
 
-#include "../../spi/include/spi_driver.h" 
+#include <cJSON.h>
+#include "spi_driver.h" 
 #include "sdmmc_cmd.h"
 #include "esp_vfs_fat.h"
 #include "diskio_sdmmc.h"
 #include "mixer.h"
+#include "effects.h"
 
 //Default mountpoint
 #define GRVCHP_MNTPOINT "/sdcard"

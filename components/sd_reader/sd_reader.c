@@ -89,3 +89,7 @@ esp_err_t st_sample(sample_t* in_sample) {
     }
     return ESP_OK;
 }
+
+static void create_wav_file (int sample_id) {
+
+}

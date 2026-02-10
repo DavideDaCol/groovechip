@@ -14,7 +14,7 @@
 
 #define SET_LENGTH 3
 #define GEN_MENU_NUM_OPT 2
-#define BTN_MENU_NUM_OPT 3
+#define BTN_MENU_NUM_OPT 4
 #define SETTINGS_NUM_OPT 2
 #define EFFECTS_NUM_OPT 3
 
@@ -25,8 +25,16 @@ void goto_settings();
 void goto_effects();
 void goto_selection();
 void menu_move(int* index, int max_opt, int direction);
+void js_right_handler();
+void js_left_handler();
+void js_up_handler();
+void js_down_handler();
 void sink();
+void set_button_pressed(int pad_id);
+void set_new_pot_value (int* old_val);
+void save();
 
+//Enum that describes every type of menu we have in our project
 typedef enum {
     GEN_MENU,
     BTN_MENU,
@@ -34,99 +42,137 @@ typedef enum {
     EFFECTS,
 } menu_types;
 
+//Menu that we are currently navigating
 menu_types curr_menu;
-int8_t pressed_button = -1;
-int pot_diff = 0;
 
+//Records the last pressed button, which is useful to know the button to apply the changes to 
+int8_t pressed_button = -1;
+
+//Actual function to perform when an input is received
 typedef void (*action) (void); 
 
+//Interaction with a single voice of the menu
 typedef struct {
-    int curr_index;
-    int max_size;
-    action *js_right_actions;
-    action *pt_actions; 
-    char** prints;
+    char print[16];         //String to print on screen for each voice of the menu
+    action js_right_action; //Function to execute for each voice when a right shift of the joystick is detected
+    action pt_action;       //Function to execute for each voice when a potentiometer action is detected 
+} opt_interactions_t;
+
+//Datatype that represent a single menu (between the one enlisted above)
+typedef struct {
+    int curr_index;                     //Current position in the menu
+    int max_size;                       //Actual size of the menu
+    opt_interactions_t* opt_handlers;   //Array of handlers for each voice
 } menu_t;
 
-action empty_opt2[] = {sink, sink};
-action empty_opt3[] = {sink, sink, sink};
-
-/***********************************/
-action gen_opt[] = {
-    goto_settings,
-    goto_effects
-};
-
-char gen_prints[][16] = {
-    "Settings",
-    "Effects"
+/***********************************
+GENERAL MENU 
+***********************************/
+opt_interactions_t gen_handlers[] = {
+    {
+        .print = "Settings",
+        .js_right_action = goto_settings,
+        .pt_action = sink
+    }, 
+    {
+        .print = "Effects",
+        .js_right_action = goto_effects,
+        .pt_action = sink
+    }
 };
 
 menu_t gen_menu = {
     .curr_index = -1,
     .max_size = GEN_MENU_NUM_OPT,
-    .js_right_actions = gen_opt,
-    .prints = gen_prints
+    .opt_handlers = gen_handlers
 };
 /***********************************/
 
-/***********************************/
-action btn_opt[] = {
-    goto_settings,
-    goto_effects,
-    goto_selection
-};
-
-char btn_prints[][16] = {
-    "Settings",
-    "Effects",
-    "Select sample"
+/***********************************
+BUTTON SPECIFIC MENU 
+***********************************/
+opt_interactions_t btn_handlers[] = {
+    {
+        .print = "Settings",
+        .js_right_action = goto_settings,
+        .pt_action = sink
+    },
+    {
+        .print = "Effects",
+        .js_right_action = goto_effects,
+        .pt_action = sink
+    }, 
+    {
+        .print = "Select sample",
+        .js_right_action = sink, //TODO
+        .pt_action = sink
+    }, 
+    {
+        .print = "Save changes",
+        .js_right_action = sink, //TODO
+        .pt_action = sink
+    }
 };
 
 menu_t btn_menu = {
     .curr_index = -1,
     .max_size = BTN_MENU_NUM_OPT,
-    .js_right_actions = btn_opt,
-    .pot_actions = 
-    .prints = btn_prints
+    .opt_handlers = btn_handlers
 };
 /***********************************/
 
-/***********************************/
-action set_opt[] = {
-
-};
-
-char set_prints[][16] = {
-    "Mode: ",
-    "Volume: "
+/***********************************
+SETTINGS MENU (structure is the same whether it's related to a specific button or is general) 
+***********************************/
+opt_interactions_t set_handlers[] = {
+    {
+        .print = "Mode",
+        .js_right_action = sink,
+        .pt_action = sink, //TODO
+    },
+    {
+        .print = "Volume",
+        .js_right_action = sink, 
+        .pt_action = sink, //TODO
+    }
 };
 
 menu_t settings = {
     .curr_index = -1,
     .max_size = SETTINGS_NUM_OPT,
-    .js_right_actions = empty_opt2
+    .opt_handlers = set_handlers
 };
 /***********************************/
 
-/***********************************/
-action eff_opt[] = {
-
-};
-
-char eff_prints[][16] = {
-    "Bitcrusher: ",
-    "Pitch: ",
-    "Distortion"
+/***********************************
+EFFECTS MENU (structure is the same whether it's related to a specific button or is general) 
+***********************************/
+opt_interactions_t eff_handlers[] = {
+    {
+        .print = "Bitcrusher: ",
+        .js_right_action = sink,
+        .pt_action = sink, //TODO
+    },
+    {
+        .print = "Pitch: ",
+        .js_right_action = sink, 
+        .pt_action = sink, //TODO
+    },
+    {
+        .print = "Distortion: ",
+        .js_right_action = sink,
+        .pt_action = sink, //TODO
+    }
 };
 
 menu_t effects = {
     .curr_index = -1,
     .max_size = EFFECTS_NUM_OPT,
-    .js_right_actions = empty_opt3
+    .opt_handlers = eff_handlers
 };
 /***********************************/
 
+//Menu collection, essential for the navigation
 menu_t* menu_navigation[] = {
     &gen_menu,
     &btn_menu,
@@ -152,8 +198,10 @@ void app_main(void)
 
 }
 
+//Setup function
+//It prevents polling and eventual prioritization of the different items 
 QueueSetHandle_t connection_init() {
-    //Creating a queue set
+    //Creating a queue set, useful for handling multiple queues simultaneously
     QueueSetHandle_t out_set = xQueueCreateSet(SET_LENGTH);
 
     //Adding the different queues that handle different I/O peripherals
@@ -164,6 +212,7 @@ QueueSetHandle_t connection_init() {
 }
 
 
+//FSM implementation function
 void main_fsm(QueueSetHandle_t in_set) {
     while(1) {
         //
@@ -184,6 +233,7 @@ void main_fsm(QueueSetHandle_t in_set) {
     }
 }
 
+//Joystick handler implementation 
 void joystick_handler(JoystickDir in_dir) {
     switch (in_dir){
         case LEFT: js_left_handler(); break;
@@ -194,6 +244,7 @@ void joystick_handler(JoystickDir in_dir) {
     }
 }
 
+//Atomic function to navigate the menu
 void menu_move(int* index, int max_opt, int direction) {
     // direction: 1 for down, -1 for up
     *index = (*index + direction + max_opt) % max_opt;
@@ -211,7 +262,7 @@ void goto_effects() {
 
 void js_right_handler() {
     int index = menu_navigation[curr_menu] -> curr_index;
-    menu_navigation[curr_menu] -> js_right_actions[index]();
+    menu_navigation[curr_menu] -> opt_handlers[index].js_right_action();
 }
 
 void js_left_handler() {
@@ -241,6 +292,7 @@ void js_down_handler() {
     );
 }
 
+//Function to call when a button bound to a sample is pressed
 void set_button_pressed(int pad_id) {
     pressed_button = pad_id;
     curr_menu = BTN_MENU;
@@ -248,10 +300,6 @@ void set_button_pressed(int pad_id) {
 
 void sink() {
     return;
-}
-
-void set_new_pot_value (int* old_val) {
-    *old_val += pot_diff;
 }
 
 void goto_selection() {
