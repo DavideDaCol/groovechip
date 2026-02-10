@@ -171,7 +171,7 @@ void playback_mode_init(){
 
 	// init queue
 	playback_evt_queue = xQueueCreate(10, sizeof(playback_msg_t));
-
+	
     xTaskCreate(sample_task, "sample_task", 2048, NULL, 5, NULL);
     printf("[Sample] Ready\n");
 }

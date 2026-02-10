@@ -213,6 +213,7 @@ QueueSetHandle_t connection_init() {
     xQueueAddToSet((QueueSetMemberHandle_t) joystick_queue, out_set);
     xQueueAddToSet((QueueSetMemberHandle_t) playback_evt_queue, out_set);
     xQueueAddToSet((QueueSetMemberHandle_t) pot_queue, out_set);
+    xQueueAddToSet((QueueSetMemberHandle_t) pad_queue, out_set);
     return out_set;
 }
 
