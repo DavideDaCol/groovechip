@@ -10,16 +10,9 @@
 #define POT_READ_INTERVAL_MS 100   // reading interval in ms
 
 QueueHandle_t pot_queue;
-static adc_oneshot_unit_handle_t adc1_handle;
 int pot_value = 0;  // Valore grezzo (0-4095 con 12 bit)
 
 void potentiometer_init() {
-    
-    // initialize ADC unit 1
-    adc_oneshot_unit_init_cfg_t init_config = {
-        .unit_id = ADC_UNIT_1
-    };
-    adc_oneshot_new_unit(&init_config, &adc1_handle);
     
     // configure the ADC channel
     adc_oneshot_chan_cfg_t config = {

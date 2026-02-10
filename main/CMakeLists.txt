@@ -9,4 +9,5 @@ idf_component_register(SRCS "main.c"
                         effects 
                         joystick 
                         potentiometer
+                        adc1
                     INCLUDE_DIRS ".")

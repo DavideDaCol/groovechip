@@ -11,6 +11,7 @@
 #include "pad_section.h"
 #include "joystick.h"
 #include "potentiometer.h"
+#include "adc1.h"
 
 #define SET_LENGTH 3
 #define GEN_MENU_NUM_OPT 2
@@ -188,6 +189,7 @@ void app_main(void)
 {
     // xTaskCreate(&simpleTask, "simple task", 2048, NULL, 5, NULL);
     // printf("Aspetto...");
+    adc1_init();
     pad_section_init();
     playback_mode_init();
     effects_init();

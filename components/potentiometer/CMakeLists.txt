@@ -6,4 +6,6 @@ idf_component_register(
         freertos
         driver
         esp_adc
+        joystick
+        adc1
 )

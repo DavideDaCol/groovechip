@@ -4,6 +4,8 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "driver/gpio.h"
+#include "esp_adc/adc_oneshot.h"
+#include "adc1.h"
 
 typedef enum {
     CENTER,
