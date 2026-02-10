@@ -32,16 +32,16 @@ void recorder_start_pad_selection(void) {
     printf("[DEBUG PRINT] Click the pad in which you wanna save the new sample...\n");
 }
 
-void recorder_select_pad(int pad_id, int sample_id) {
+void recorder_select_pad(int pad_id, int bank_index) {
     // TODO rimuovi se hai tolto lo step precedente (sostituisci con state != IDLE)
     if (g_recorder.state != REC_WAITING_PAD) {
         return;
     }
     
     g_recorder.target_pad = pad_id;
-    g_recorder.target_sample_id = sample_id;
+    g_recorder.target_sample_id = bank_index;
     
-    printf("[DEBUG PRINT] Sample slot: %d\n", sample_id);
+    printf("[DEBUG PRINT] Sample slot: %d\n", bank_index);
     
     // Start recording
     recorder_start_recording();
@@ -88,7 +88,7 @@ void recorder_stop_recording(void) {
     if (g_recorder.target_sample_id >= 0 && g_recorder.target_sample_id < SAMPLE_NUM) {
         sample_t *target = &sample_bank[g_recorder.target_sample_id];
 
-        // If there is already a sample bound to that sample_id 
+        // If there is already a sample bound to that bank_index 
         // and if it's not in flash memory then free it
         if (target->raw_data && !is_flash_ptr((void *)(target->raw_data))) {
             free((void *)(target->raw_data));
@@ -188,27 +188,27 @@ void on_rec_button_press() {
 }
 
 void on_pad_press(int gpio_num) {
-    int sample_id = -1;
+    int bank_index = -1;
     
-    // TODO non so come sono collegati sample_id e gpio_num
+    // TODO non so come sono collegati bank_index e gpio_num
     switch(gpio_num) {
-        case GPIO_BUTTON_1: sample_id = 0; break;
-        case GPIO_BUTTON_2: sample_id = 1; break;
-        case GPIO_BUTTON_3: sample_id = 2; break;
-        case GPIO_BUTTON_4: sample_id = 3; break;
-        case GPIO_BUTTON_5: sample_id = 4; break;
-        case GPIO_BUTTON_6: sample_id = 5; break;
-        case GPIO_BUTTON_7: sample_id = 6; break;
-        case GPIO_BUTTON_8: sample_id = 7; break;
+        case GPIO_BUTTON_1: bank_index = 0; break;
+        case GPIO_BUTTON_2: bank_index = 1; break;
+        case GPIO_BUTTON_3: bank_index = 2; break;
+        case GPIO_BUTTON_4: bank_index = 3; break;
+        case GPIO_BUTTON_5: bank_index = 4; break;
+        case GPIO_BUTTON_6: bank_index = 5; break;
+        case GPIO_BUTTON_7: bank_index = 6; break;
+        case GPIO_BUTTON_8: bank_index = 7; break;
         default: return;
     }
     
     // if rec mode is on but recorder is not recording then start recording
     if (rec_mode && !recorder_is_recording()) {
-        recorder_select_pad(gpio_num, sample_id);
+        recorder_select_pad(gpio_num, bank_index);
         return;
     }
     
     // otherwise 
-    action_start_or_stop_sample(sample_id);
+    action_start_or_stop_sample(bank_index);
 }

@@ -42,39 +42,39 @@ typedef struct{
 } effects_t;
 
 
-effects_t* get_sample_effect(uint8_t sample_id);
+effects_t* get_sample_effect(uint8_t bank_index);
 
 #pragma region PITCH
 //=========================PITCH============================
-void init_pitch(uint8_t sample_id);
+void init_pitch(uint8_t bank_index);
 
-void set_pitch_factor(uint8_t sample_id, float pitch_factor);
+void set_pitch_factor(uint8_t bank_index, float pitch_factor);
 
-float get_pitch_factor(uint8_t sample_id);
+float get_pitch_factor(uint8_t bank_index);
 //==========================================================
 #pragma endregion
 #pragma region BIT CRUSHER
 //=========================BIT CRUSHER============================
 
-void init_bit_crusher(uint8_t sample_id);
+void init_bit_crusher(uint8_t bank_index);
 
-void toggle_bit_crusher(uint8_t sample_id, bool state);
+void toggle_bit_crusher(uint8_t bank_index, bool state);
 
-void set_bit_crusher_bit_depth(uint8_t sample_id, uint8_t bit_depth);
+void set_bit_crusher_bit_depth(uint8_t bank_index, uint8_t bit_depth);
 
-void set_bit_crusher_downsample(uint8_t sample_id, uint8_t downsample_value);
+void set_bit_crusher_downsample(uint8_t bank_index, uint8_t downsample_value);
 
 //================================================================
 #pragma endregion
 #pragma region DISTORTION
 //=========================DISTORTION=============================
-void init_distortion(uint8_t sample_id);
+void init_distortion(uint8_t bank_index);
 
-void toggle_distortion(uint8_t sample_id, bool state);
+void toggle_distortion(uint8_t bank_index, bool state);
 
-void set_distortion_gain(uint8_t sample_id, float gain);
+void set_distortion_gain(uint8_t bank_index, float gain);
 
-void set_distortion_threshold(uint8_t sample_id, int16_t threshold_value);
+void set_distortion_threshold(uint8_t bank_index, int16_t threshold_value);
 
 //================================================================
 void effects_init();

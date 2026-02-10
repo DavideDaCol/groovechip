@@ -33,6 +33,8 @@ void sink();
 void set_button_pressed(int pad_id);
 void set_new_pot_value (int* old_val);
 void save();
+void change_vol();
+void change_btn_vol(int pad_id);
 
 //Enum that describes every type of menu we have in our project
 typedef enum {
@@ -133,7 +135,7 @@ opt_interactions_t set_handlers[] = {
     {
         .print = "Volume",
         .js_right_action = sink, 
-        .pt_action = sink, //TODO
+        .pt_action = change_vol,
     }
 };
 
@@ -189,6 +191,8 @@ void app_main(void)
     pad_section_init();
     playback_mode_init();
     effects_init();
+    potentiometer_init();
+    joystick_init();
 
     i2s_chan_handle_t master = i2s_driver_init();
     create_mixer(master);
@@ -196,6 +200,7 @@ void app_main(void)
     QueueSetHandle_t io_queue_set = NULL;
     connection_init(io_queue_set);
 
+    main_fsm(io_queue_set);
 }
 
 //Setup function
@@ -223,6 +228,7 @@ void main_fsm(QueueSetHandle_t in_set) {
             JoystickDir curr_js;
             xQueueReceive(curr_io_queue, &curr_js, 0);
             joystick_handler(curr_js);  
+            printf("%d\n", curr_menu);
 
         } else if (curr_io_queue == playback_evt_queue) {
 
@@ -305,4 +311,16 @@ void sink() {
 void goto_selection() {
     //TODO
     return;
+}
+
+void change_vol() {
+    if (pressed_button < 0) {
+        for (int i = 0; i < SAMPLE_NUM; i++)
+            change_btn_vol(i);
+    } else
+        change_btn_vol(pressed_button);
+}
+
+void change_btn_vol(int pad_id) {
+    //TODO
 }

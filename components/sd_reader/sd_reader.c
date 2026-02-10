@@ -67,7 +67,7 @@ esp_err_t ld_sample(int in_sample_id, sample_t* out_sample) {
 }
 
 esp_err_t st_sample(sample_t* in_sample) {
-    int in_sample_id = in_sample->sample_id;
+    int in_sample_id = in_sample->bank_index;
 
     //Defining the sample's file name, based on the id 
     char file_path[MAX_SIZE];
@@ -90,6 +90,6 @@ esp_err_t st_sample(sample_t* in_sample) {
     return ESP_OK;
 }
 
-static void create_wav_file (int sample_id) {
+static void create_wav_file (int bank_index) {
 
 }

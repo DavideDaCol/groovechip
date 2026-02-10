@@ -63,8 +63,10 @@ typedef struct sample_t
     float start_ptr; /* the playback_ptr get initialized to this value every time the sample play */
     uint32_t end_ptr; /* limit the sample duration */
     // playback_mode_t playback_mode; /** sample play type: ONESHOT, LOOP, etc... */
-    int sample_id;
+    int bank_index;
     bool playback_finished;
+    float volume;
+
 } sample_t;
 
 typedef struct metronome {

@@ -41,7 +41,7 @@ extern recorder_t g_recorder;
 
 void recorder_init(void);
 void recorder_start_pad_selection(void);
-void recorder_select_pad(int pad_id, int sample_id);
+void recorder_select_pad(int pad_id, int bank_index);
 void recorder_start_recording(void);
 void recorder_stop_recording(void);
 void recorder_cancel(void);

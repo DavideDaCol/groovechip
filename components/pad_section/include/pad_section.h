@@ -45,7 +45,7 @@
 // #define NOT_DEFINED SAMPLE_NUM + 1 // to specify when a pad isn't associated with any sample
 
 // typedef struct{
-//     uint32_t sample_id; // id of the associated sample
+//     uint32_t bank_index; // id of the associated sample
 // } pad_settings_t;
 
 // extern pad_settings_t pads_config[GPIO_NUM_MAX];

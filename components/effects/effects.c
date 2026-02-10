@@ -3,28 +3,28 @@
 
 static effects_t sample_effects[SAMPLE_NUM];
 
-effects_t* get_sample_effect(uint8_t sample_id){
-    if(sample_id < SAMPLE_NUM)
-        return &sample_effects[sample_id];
+effects_t* get_sample_effect(uint8_t bank_index){
+    if(bank_index < SAMPLE_NUM)
+        return &sample_effects[bank_index];
     else return NULL;
 }
 #pragma region PITCH
 //=========================PITCH============================
-void init_pitch(uint8_t sample_id){
-    if(sample_id < SAMPLE_NUM){
-        sample_effects[sample_id].pitch.pitch_factor = 1.0;
+void init_pitch(uint8_t bank_index){
+    if(bank_index < SAMPLE_NUM){
+        sample_effects[bank_index].pitch.pitch_factor = 1.0;
     }
 }
 
-void set_pitch_factor(uint8_t sample_id, float pitch_factor){
-    if(sample_id < SAMPLE_NUM){
-        sample_effects[sample_id].pitch.pitch_factor = pitch_factor;
+void set_pitch_factor(uint8_t bank_index, float pitch_factor){
+    if(bank_index < SAMPLE_NUM){
+        sample_effects[bank_index].pitch.pitch_factor = pitch_factor;
     }
 }
 
-float get_pitch_factor(uint8_t sample_id){
-    if(sample_id < SAMPLE_NUM){
-        return sample_effects[sample_id].pitch.pitch_factor;
+float get_pitch_factor(uint8_t bank_index){
+    if(bank_index < SAMPLE_NUM){
+        return sample_effects[bank_index].pitch.pitch_factor;
     }
     else return 1.0; //default value
 }
@@ -33,40 +33,40 @@ float get_pitch_factor(uint8_t sample_id){
 #pragma region BIT CRUSHER
 //=========================BIT CRUSHER============================
 
-void init_bit_crusher(uint8_t sample_id){
-    if(sample_id < SAMPLE_NUM){
-        sample_effects[sample_id].bitcrusher.enabled = false;
-        sample_effects[sample_id].bitcrusher.bit_depth = BIT_DEPTH_MAX;
-        sample_effects[sample_id].bitcrusher.downsample = DOWNSAMPLE_MAX;
-        sample_effects[sample_id].bitcrusher.counter = 0;
-        sample_effects[sample_id].bitcrusher.last_L = 0.0;
-        sample_effects[sample_id].bitcrusher.last_R = 0.0;
+void init_bit_crusher(uint8_t bank_index){
+    if(bank_index < SAMPLE_NUM){
+        sample_effects[bank_index].bitcrusher.enabled = false;
+        sample_effects[bank_index].bitcrusher.bit_depth = BIT_DEPTH_MAX;
+        sample_effects[bank_index].bitcrusher.downsample = DOWNSAMPLE_MAX;
+        sample_effects[bank_index].bitcrusher.counter = 0;
+        sample_effects[bank_index].bitcrusher.last_L = 0.0;
+        sample_effects[bank_index].bitcrusher.last_R = 0.0;
     }
 }
 
-void toggle_bit_crusher(uint8_t sample_id, bool state){
-    sample_effects[sample_id].bitcrusher.enabled = state;
+void toggle_bit_crusher(uint8_t bank_index, bool state){
+    sample_effects[bank_index].bitcrusher.enabled = state;
 }
 
-void set_bit_crusher_bit_depth(uint8_t sample_id, uint8_t bit_depth){
-    if(sample_id < SAMPLE_NUM && bit_depth >= 1 && bit_depth <= BIT_DEPTH_MAX){
-        sample_effects[sample_id].bitcrusher.bit_depth = bit_depth;
+void set_bit_crusher_bit_depth(uint8_t bank_index, uint8_t bit_depth){
+    if(bank_index < SAMPLE_NUM && bit_depth >= 1 && bit_depth <= BIT_DEPTH_MAX){
+        sample_effects[bank_index].bitcrusher.bit_depth = bit_depth;
         
         //reset counter values
-        sample_effects[sample_id].bitcrusher.counter = 0;
-        sample_effects[sample_id].bitcrusher.last_L = 0.0;
-        sample_effects[sample_id].bitcrusher.last_R = 0.0;
+        sample_effects[bank_index].bitcrusher.counter = 0;
+        sample_effects[bank_index].bitcrusher.last_L = 0.0;
+        sample_effects[bank_index].bitcrusher.last_R = 0.0;
     }
 }
 
-void set_bit_crusher_downsample(uint8_t sample_id, uint8_t downsample_value){
-    if(sample_id < SAMPLE_NUM && downsample_value >= 1 && downsample_value <= DOWNSAMPLE_MAX){
-        sample_effects[sample_id].bitcrusher.downsample = downsample_value;
+void set_bit_crusher_downsample(uint8_t bank_index, uint8_t downsample_value){
+    if(bank_index < SAMPLE_NUM && downsample_value >= 1 && downsample_value <= DOWNSAMPLE_MAX){
+        sample_effects[bank_index].bitcrusher.downsample = downsample_value;
 
         //reset counter values
-        sample_effects[sample_id].bitcrusher.counter = 0;
-        sample_effects[sample_id].bitcrusher.last_L = 0.0;
-        sample_effects[sample_id].bitcrusher.last_R = 0.0;
+        sample_effects[bank_index].bitcrusher.counter = 0;
+        sample_effects[bank_index].bitcrusher.last_L = 0.0;
+        sample_effects[bank_index].bitcrusher.last_R = 0.0;
     }
 }
 //================================================================
@@ -74,29 +74,29 @@ void set_bit_crusher_downsample(uint8_t sample_id, uint8_t downsample_value){
 
 #pragma region DISTORTION
 //=========================DISTORTION=============================
-void init_distortion(uint8_t sample_id){
-    if(sample_id < SAMPLE_NUM){
-        sample_effects[sample_id].distortion.enabled = false;
-        sample_effects[sample_id].distortion.gain = DISTORTION_GAIN_MIX;
-        sample_effects[sample_id].distortion.threshold = DISTORTION_THRESHOLD_MAX;
+void init_distortion(uint8_t bank_index){
+    if(bank_index < SAMPLE_NUM){
+        sample_effects[bank_index].distortion.enabled = false;
+        sample_effects[bank_index].distortion.gain = DISTORTION_GAIN_MIX;
+        sample_effects[bank_index].distortion.threshold = DISTORTION_THRESHOLD_MAX;
     }
 }
 
-void toggle_distortion(uint8_t sample_id, bool state){
-    if(sample_id < SAMPLE_NUM){
-        sample_effects[sample_id].distortion.enabled = state;
+void toggle_distortion(uint8_t bank_index, bool state){
+    if(bank_index < SAMPLE_NUM){
+        sample_effects[bank_index].distortion.enabled = state;
     }
 }
 
-void set_distortion_gain(uint8_t sample_id, float gain){
-    if(sample_id < SAMPLE_NUM){
-        sample_effects[sample_id].distortion.gain = gain;
+void set_distortion_gain(uint8_t bank_index, float gain){
+    if(bank_index < SAMPLE_NUM){
+        sample_effects[bank_index].distortion.gain = gain;
     }
 }
 
-void set_distortion_threshold(uint8_t sample_id, int16_t threshold_value){
-    if(sample_id < SAMPLE_NUM){
-        sample_effects[sample_id].distortion.threshold = threshold_value;
+void set_distortion_threshold(uint8_t bank_index, int16_t threshold_value){
+    if(bank_index < SAMPLE_NUM){
+        sample_effects[bank_index].distortion.threshold = threshold_value;
     }
 }
 //================================================================

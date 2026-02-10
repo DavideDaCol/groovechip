@@ -4,7 +4,7 @@
  *           It has been realized only to interact with SPI SD cards.            *
  *     The SD card is supposed to already be formatted using a FAT standard,     *
  *       that can be access using the file path "/sdcard" as a mountpoint.       *
- * Every sample is named based on the id, with extension "smp" (<sample_id>.smp) *
+ * Every sample is named based on the id, with extension "smp" (<bank_index>.smp) *
  *********************************************************************************/
 #ifndef SD_READER_H
 #define SD_READER_H
@@ -39,9 +39,9 @@
 esp_err_t sd_reader_init();
 
 /* Function to transfer a sample from the SD card to the internal memory:
-   - sample_id (IN): identifier of the sample we want to receive
+   - bank_index (IN): identifier of the sample we want to receive
    - out_sample (OUT): pointer to the sample that is contained in memory */
-esp_err_t ld_sample(int sample_id, sample_t* out_sample);
+esp_err_t ld_sample(int bank_index, sample_t* out_sample);
 
 /* Function to transfer a sample from the internal memory to the SD card:
    - sample (IN): actual sample of which the transfer is requested */

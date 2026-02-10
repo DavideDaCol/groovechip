@@ -34,15 +34,15 @@ typedef struct {
 
 	union{
 		uint8_t pad_id;
-		uint8_t sample_id;
+		uint8_t bank_index;
 	} payload;
 
 } playback_msg_t;
 
 void send_pad_event(uint8_t pad_id, enum evt_type_t event_type);
-void send_mixer_event(uint8_t sample_id, enum evt_type_t event_type);
+void send_mixer_event(uint8_t bank_index, enum evt_type_t event_type);
 
-void map_pad_to_sample(uint8_t pad_id, uint8_t sample_id);
+void map_pad_to_sample(uint8_t pad_id, uint8_t bank_index);
 
 #pragma endregion
 

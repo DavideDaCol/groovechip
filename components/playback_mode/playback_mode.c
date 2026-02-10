@@ -50,29 +50,29 @@ const playback_mode_t* PLAYBACK_MODES[] = {
 static const playback_mode_t* samples_config[SAMPLE_NUM];
 static int pad_to_sample_map[GPIO_NUM_MAX];
 
-mode_t get_playback_mode(uint8_t sample_id){
-	if(sample_id < SAMPLE_NUM){
-		return samples_config[sample_id]->mode;
+mode_t get_playback_mode(uint8_t bank_index){
+	if(bank_index < SAMPLE_NUM){
+		return samples_config[bank_index]->mode;
 	}
 	else return UNSET;
 }
 
 // exposed function to set the mode
-void set_playback_mode(uint8_t sample_id, mode_t playback_mode){
-	if (sample_id < SAMPLE_NUM){
+void set_playback_mode(uint8_t bank_index, mode_t playback_mode){
+	if (bank_index < SAMPLE_NUM){
 		switch (playback_mode)
 		{
 		case HOLD:
-			samples_config[sample_id] = &MODE_HOLD;
+			samples_config[bank_index] = &MODE_HOLD;
 			break;
 		case ONESHOT:
-			samples_config[sample_id] = &MODE_ONESHOT;
+			samples_config[bank_index] = &MODE_ONESHOT;
 			break;
 		case LOOP:
-			samples_config[sample_id] = &MODE_LOOP;
+			samples_config[bank_index] = &MODE_LOOP;
 			break;
 		case ONESHOT_LOOP:
-			samples_config[sample_id] = &MODE_ONESHOT_LOOP;
+			samples_config[bank_index] = &MODE_ONESHOT_LOOP;
 			break;
 		default:
 			break;
@@ -80,10 +80,10 @@ void set_playback_mode(uint8_t sample_id, mode_t playback_mode){
 	}
 }
 
-// exposed function map pad_id to sample_id
-void map_pad_to_sample(uint8_t pad_id, uint8_t sample_id){
-	if (sample_id != NOT_DEFINED)
-		pad_to_sample_map[pad_id] = sample_id;
+// exposed function map pad_id to bank_index
+void map_pad_to_sample(uint8_t pad_id, uint8_t bank_index){
+	if (bank_index != NOT_DEFINED)
+		pad_to_sample_map[pad_id] = bank_index;
 }
 
 // send messages into playback_evt_queue from the pad section
@@ -97,11 +97,11 @@ void IRAM_ATTR send_pad_event(uint8_t pad_id, enum evt_type_t type) {
 }
 
 // send messages into playback_evt_queue from the mixer section
-void IRAM_ATTR send_mixer_event(uint8_t sample_id, enum evt_type_t type) {
+void IRAM_ATTR send_mixer_event(uint8_t bank_index, enum evt_type_t type) {
     playback_msg_t msg;
     msg.source = SRC_MIXER;
     msg.event_type = type;
-    msg.payload.sample_id = sample_id;
+    msg.payload.bank_index = bank_index;
 
 	xQueueSendFromISR(playback_evt_queue, &msg, NULL);
 }
@@ -112,26 +112,26 @@ void sample_task(void *pvParameter){
 	{
 		if (xQueueReceive(playback_evt_queue, &queue_msg, portMAX_DELAY) == pdPASS)
 		{
-			uint8_t sample_id = NOT_DEFINED;
+			uint8_t bank_index = NOT_DEFINED;
 
-			// retrieve sample_id based on the source
+			// retrieve bank_index based on the source
 			switch (queue_msg.source)
 			{
 			case SRC_PAD_SECTION:
-				//the message came from PAD_SECTION, get the associated sample_id
+				//the message came from PAD_SECTION, get the associated bank_index
 				if (queue_msg.payload.pad_id < GPIO_NUM_MAX) {
-                    sample_id = pad_to_sample_map[queue_msg.payload.pad_id];
+                    bank_index = pad_to_sample_map[queue_msg.payload.pad_id];
                 }
 				break;
 			case SRC_MIXER:
-				// the message came from the mixer, so we already have the sample_id
-                sample_id = queue_msg.payload.sample_id;
+				// the message came from the mixer, so we already have the bank_index
+                bank_index = queue_msg.payload.bank_index;
 				break;
 			default:
 				break;
 			}
 
-            if(sample_id == NOT_DEFINED){
+            if(bank_index == NOT_DEFINED){
                 // there is no associated sample to this pad
                 printf("sample id was NOT defined\n");
                 fflush(stdout);
@@ -143,13 +143,13 @@ void sample_task(void *pvParameter){
 			switch (queue_msg.event_type)
 			{
 			case EVT_PRESS:
-				samples_config[sample_id]->on_press(sample_id);
+				samples_config[bank_index]->on_press(bank_index);
 				break;
 			case EVT_RELEASE:
-				samples_config[sample_id]->on_release(sample_id);
+				samples_config[bank_index]->on_release(bank_index);
 				break;
 			case EVT_FINISH:
-				samples_config[sample_id]->on_finish(sample_id);
+				samples_config[bank_index]->on_finish(bank_index);
 				break;
 			default:
 				break;

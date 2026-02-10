@@ -28,41 +28,41 @@ static metronome mtrn;
 
 #pragma region SAMPLE_ACTION
 
-void action_start_or_stop_sample(int sample_id){
-    printf("play/pause event was triggered from %i\n", sample_id);
+void action_start_or_stop_sample(int bank_index){
+    printf("play/pause event was triggered from %i\n", bank_index);
 	//either stop or play the sample
-    now_playing ^= (1 << sample_id);
+    now_playing ^= (1 << bank_index);
     //reset the playback pointer if the sample was stopped
-    if (sample_bank[sample_id].playback_finished){
-        sample_bank[sample_id].playback_ptr = sample_bank[sample_id].start_ptr;
-        sample_bank[sample_id].playback_finished = false;
+    if (sample_bank[bank_index].playback_finished){
+        sample_bank[bank_index].playback_ptr = sample_bank[bank_index].start_ptr;
+        sample_bank[bank_index].playback_finished = false;
     }
 }
 
-void action_start_sample(int sample_id){
-    printf("play event was triggered from %i\n", sample_id);
+void action_start_sample(int bank_index){
+    printf("play event was triggered from %i\n", bank_index);
 	//add the sample from the nowplaying bitmask
-    now_playing |= (1 << sample_id);
+    now_playing |= (1 << bank_index);
 }
 
-void action_stop_sample(int sample_id){
-    printf("pause event was triggered from %i\n", sample_id);
+void action_stop_sample(int bank_index){
+    printf("pause event was triggered from %i\n", bank_index);
 	//remove the sample from the nowplaying bitmask
-    now_playing &= ~(1 << sample_id);
+    now_playing &= ~(1 << bank_index);
     //reset the playback pointer to the start value
-    sample_bank[sample_id].playback_ptr = sample_bank[sample_id].start_ptr;
+    sample_bank[bank_index].playback_ptr = sample_bank[bank_index].start_ptr;
     //set the playing state to "not finished" (for future iterations)
-    sample_bank[sample_id].playback_finished = false;
+    sample_bank[bank_index].playback_finished = false;
 }
 
-void action_restart_sample(int sample_id){
-    printf("restart event was triggered from %i\n", sample_id);
+void action_restart_sample(int bank_index){
+    printf("restart event was triggered from %i\n", bank_index);
     //add the sample to the nowplaying bitmask
-    now_playing |= (1 << sample_id);
+    now_playing |= (1 << bank_index);
 	//reset the playback pointer to the start value
-    sample_bank[sample_id].playback_ptr = sample_bank[sample_id].start_ptr;
+    sample_bank[bank_index].playback_ptr = sample_bank[bank_index].start_ptr;
     //set the playing state to "not finished" (for future iterations)
-    sample_bank[sample_id].playback_finished = false;
+    sample_bank[bank_index].playback_finished = false;
 }
 
 void action_ignore(int pad_id){
@@ -83,7 +83,7 @@ static inline void get_sample_interpolated(sample_t *smp, int16_t *out_L, int16_
     
     //loop handling
     if (frame_b >= total_frames) {
-        mode_t playback_mode = get_playback_mode(smp->sample_id);
+        mode_t playback_mode = get_playback_mode(smp->bank_index);
         if (playback_mode == LOOP || playback_mode == ONESHOT_LOOP) {
             frame_b = 0; //return to first sample
         } else {
@@ -108,8 +108,8 @@ static inline void get_sample_interpolated(sample_t *smp, int16_t *out_L, int16_
     *out_R = ra * (1.0f - frac) + rb * frac;
 }
 
-static inline void apply_bitcrusher(uint8_t sample_id, int16_t *out_L, int16_t *out_R) {
-    bitcrusher_params_t* bc = &get_sample_effect(sample_id)->bitcrusher;
+static inline void apply_bitcrusher(uint8_t bank_index, int16_t *out_L, int16_t *out_R) {
+    bitcrusher_params_t* bc = &get_sample_effect(bank_index)->bitcrusher;
 
     if(!bc->enabled) return; //exit if the effect is not enabled
 
@@ -179,14 +179,14 @@ void toggle_metronome_playback(bool new_state){
 #pragma endregion
 
 #pragma region SAMPLE CHOPPING
-void set_sample_end_ptr(uint8_t sample_id, uint32_t new_end_ptr){
-    sample_t *smp = &sample_bank[sample_id];
+void set_sample_end_ptr(uint8_t bank_index, uint32_t new_end_ptr){
+    sample_t *smp = &sample_bank[bank_index];
     if(new_end_ptr > smp->start_ptr && new_end_ptr < smp->total_frames){
         smp->end_ptr = new_end_ptr; // TODO move this out of here. We before changing this parameter, the sample must be stopped.
     }
 }
-void set_sample_start_ptr(uint8_t sample_id, float new_start_ptr){
-    sample_t *smp = &sample_bank[sample_id];
+void set_sample_start_ptr(uint8_t bank_index, float new_start_ptr){
+    sample_t *smp = &sample_bank[bank_index];
     if(new_start_ptr >= 0.0 && new_start_ptr < smp->end_ptr){
         smp->start_ptr = new_start_ptr;
         smp->playback_ptr = new_start_ptr; // TODO move this out of here. We before changing this parameter, the sample must be stopped.
@@ -231,7 +231,7 @@ static void mixer_task_wip(void *args)
 
     //initialize the sample bank
     for (int j = 0; j < SAMPLE_NUM; j++){
-        sample_bank[j].sample_id = j;
+        sample_bank[j].bank_index = j;
         sample_bank[j].start_ptr = 0;
         sample_bank[j].playback_ptr = 0;
     }
@@ -392,3 +392,4 @@ static void mixer_task_wip(void *args)
 void create_mixer(i2s_chan_handle_t channel){
     xTaskCreate(&mixer_task_wip, "Mixer task", 2048, (void*)channel, 5, NULL);
 }
+
