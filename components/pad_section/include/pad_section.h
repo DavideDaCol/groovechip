@@ -50,6 +50,13 @@
 
 // extern pad_settings_t pads_config[GPIO_NUM_MAX];
 
+// used to comunicate events to the fsm
+extern QueueHandle_t pad_queue;
+
+typedef struct{
+    int pad_id;
+}pad_queue_msg_t;
+
 void pad_section_init();
 
 #endif

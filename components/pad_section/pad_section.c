@@ -11,6 +11,9 @@ static const char* TAG = "PadSection";
 static volatile uint64_t last_isr_time[GPIO_NUM_MAX] = {0};
 static volatile int last_level[GPIO_NUM_MAX];
 
+// fsm queue
+QueueHandle_t pad_queue = NULL;
+
 //  pads interrupt handler
 static void IRAM_ATTR gpio_isr_handler(void *arg){
 	uint32_t pad_id = (uint32_t)arg;
@@ -45,6 +48,12 @@ static void IRAM_ATTR gpio_isr_handler(void *arg){
 
 	enum evt_type_t event_type = level == 0 ? EVT_PRESS : EVT_RELEASE;
 
+	// send press event to the fsm
+	if(event_type == EVT_PRESS){
+		pad_queue_msg_t msg;
+		msg.pad_id = pad_id;
+		xQueueSendFromISR(pad_queue, &msg, NULL);
+	}
 
 	// send the event on the sample task
 	send_pad_event(pad_id, event_type);
@@ -53,6 +62,9 @@ static void IRAM_ATTR gpio_isr_handler(void *arg){
 #pragma endregion
 
 void pad_section_init(){
+	// init queue
+	pad_queue = xQueueCreate(10, sizeof(pad_queue_msg_t));
+
 	// GPIO config
 	gpio_config_t io_conf = {};
 	io_conf.intr_type = GPIO_INTR_ANYEDGE; // on press and release
