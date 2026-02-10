@@ -199,8 +199,7 @@ void app_main(void)
     i2s_chan_handle_t master = i2s_driver_init();
     create_mixer(master);
 
-    QueueSetHandle_t io_queue_set = NULL;
-    connection_init(io_queue_set);
+    QueueSetHandle_t io_queue_set = connection_init();
 
     main_fsm(io_queue_set);
 }
@@ -213,7 +212,6 @@ QueueSetHandle_t connection_init() {
 
     //Adding the different queues that handle different I/O peripherals
     xQueueAddToSet((QueueSetMemberHandle_t) joystick_queue, out_set);
-    xQueueAddToSet((QueueSetMemberHandle_t) playback_evt_queue, out_set);
     xQueueAddToSet((QueueSetMemberHandle_t) pot_queue, out_set);
     xQueueAddToSet((QueueSetMemberHandle_t) pad_queue, out_set);
     return out_set;
@@ -224,17 +222,19 @@ QueueSetHandle_t connection_init() {
 void main_fsm(QueueSetHandle_t in_set) {
     while(1) {
         //
-        QueueSetMemberHandle_t curr_io_queue = xQueueSelectFromSet(in_set, pdMS_TO_TICKS(10)); //TODO: determine the period
+        QueueSetMemberHandle_t curr_io_queue = xQueueSelectFromSet(in_set, pdMS_TO_TICKS(50)); //TODO: determine the period
+        printf("%d\n", curr_menu);
         
         if (curr_io_queue == joystick_queue) {
 
             JoystickDir curr_js;
             xQueueReceive(curr_io_queue, &curr_js, 0);
             joystick_handler(curr_js);  
-            printf("%d\n", curr_menu);
 
-        } else if (curr_io_queue == playback_evt_queue) {
-
+        } else if (curr_io_queue == pad_queue) {
+            pad_queue_msg_t curr_pad;
+            xQueueReceive(curr_io_queue, &curr_pad, 0);
+            set_button_pressed(curr_pad.pad_id);
 
         } else {
         } 
