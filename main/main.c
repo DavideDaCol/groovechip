@@ -42,6 +42,8 @@ void change_vol(int pot_value);
 void toggle_distortion_menu(int pot_value);
 void toggle_bit_crusher_menu(int pot_value);
 void change_pitch(int pot_value);
+void rotate_mode(int pot_value);
+mode_t next_mode(int next, mode_t curr_mode);
 
 //Enum that describes every type of menu we have in our project
 typedef enum {
@@ -56,6 +58,9 @@ menu_types curr_menu;
 
 //Records the last pressed button, which is useful to know the button to apply the changes to 
 int8_t pressed_button = -1;
+
+//Records the last mode set (or the default one if never changed)
+mode_t mode = ONESHOT;
 
 //Actual function to perform when an input is received
 typedef void (*action_t) (void); 
@@ -138,7 +143,7 @@ opt_interactions_t set_handlers[] = {
     {
         .print = "Mode",
         .js_right_action = sink,
-        .pt_action = sink, //TODO
+        .pt_action = rotate_mode,
     },
     {
         .print = "Volume",
@@ -377,4 +382,22 @@ void toggle_distortion_menu(int pot_value){
     } else {
         toggle_distortion(pressed_button, distortion);
     }
+}
+
+void rotate_mode(int pot_value){
+    int next = -1;
+    if (pot_value > 0){
+        next = 1;
+    }
+    if (pressed_button < 0) {
+        for (uint8_t i = 0; i < SAMPLE_NUM; i++){
+            set_playback_mode(i, next_mode(next, mode));
+        }
+    } else {
+        set_playback_mode(pressed_button, next_mode(next, get_playback_mode(pressed_button)));
+    }
+}
+
+mode_t next_mode(int next, mode_t curr_mode){
+    return (mode_t)((curr_mode + next + 3)%3);
 }
