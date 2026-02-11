@@ -16,6 +16,9 @@
 // Maximum number of available samples
 #define SAMPLE_NUM 8
 
+// Max volume
+#define VOLUME_THRESHOLD_UP 0.2f
+
 #pragma region TYPES
 
 // Type used to store the metadata of a WAV file

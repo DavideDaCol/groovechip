@@ -48,6 +48,10 @@ void toggle_bit_crusher(uint8_t bank_index, bool state){
     sample_effects[bank_index].bitcrusher.enabled = state;
 }
 
+bool get_bit_crusher_state(uint8_t bank_index){
+    return sample_effects[bank_index].bitcrusher.enabled;
+}
+
 void set_bit_crusher_bit_depth(uint8_t bank_index, uint8_t bit_depth){
     if(bank_index < SAMPLE_NUM && bit_depth >= 1 && bit_depth <= BIT_DEPTH_MAX){
         sample_effects[bank_index].bitcrusher.bit_depth = bit_depth;
@@ -86,6 +90,10 @@ void toggle_distortion(uint8_t bank_index, bool state){
     if(bank_index < SAMPLE_NUM){
         sample_effects[bank_index].distortion.enabled = state;
     }
+}
+
+bool get_distortion_state(uint8_t bank_index){
+    return sample_effects[bank_index].distortion.enabled;
 }
 
 void set_distortion_gain(uint8_t bank_index, float gain){

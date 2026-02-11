@@ -19,6 +19,9 @@
 #define SETTINGS_NUM_OPT 2
 #define EFFECTS_NUM_OPT 3
 
+#define VOLUME_NORMALIZER_VALUE 0.01f // TODO lo ho impostato a caso
+#define PITCH_NORMALIZER_VALUE 0.03f // TODO lo ho impostato a caso
+
 QueueSetHandle_t connection_init();
 void main_fsm(QueueSetHandle_t in_set);
 void joystick_handler(JoystickDir in_dir);
@@ -34,8 +37,11 @@ void sink();
 void set_button_pressed(int pad_id);
 void set_new_pot_value (int* old_val);
 void save();
-void change_vol();
-void change_btn_vol(int pad_id);
+void potentiometer_handler(int diff_percent_pot_value);
+void change_vol(int pot_value);
+void toggle_distortion_menu(int pot_value);
+void toggle_bit_crusher_menu(int pot_value);
+void change_pitch(int pot_value);
 
 //Enum that describes every type of menu we have in our project
 typedef enum {
@@ -52,13 +58,14 @@ menu_types curr_menu;
 int8_t pressed_button = -1;
 
 //Actual function to perform when an input is received
-typedef void (*action) (void); 
+typedef void (*action_t) (void); 
+typedef void (*pt_action_t) (int); 
 
 //Interaction with a single voice of the menu
 typedef struct {
     char print[16];         //String to print on screen for each voice of the menu
-    action js_right_action; //Function to execute for each voice when a right shift of the joystick is detected
-    action pt_action;       //Function to execute for each voice when a potentiometer action is detected 
+    action_t js_right_action; //Function to execute for each voice when a right shift of the joystick is detected
+    pt_action_t pt_action;       //Function to execute for each voice when a potentiometer action_t is detected 
 } opt_interactions_t;
 
 //Datatype that represent a single menu (between the one enlisted above)
@@ -154,17 +161,17 @@ opt_interactions_t eff_handlers[] = {
     {
         .print = "Bitcrusher: ",
         .js_right_action = sink,
-        .pt_action = sink, //TODO
+        .pt_action = toggle_bit_crusher,
     },
     {
         .print = "Pitch: ",
         .js_right_action = sink, 
-        .pt_action = sink, //TODO
+        .pt_action = change_pitch,
     },
     {
         .print = "Distortion: ",
         .js_right_action = sink,
-        .pt_action = sink, //TODO
+        .pt_action = toggle_distortion,
     }
 };
 
@@ -239,7 +246,7 @@ void main_fsm(QueueSetHandle_t in_set) {
         } else if (curr_io_queue == pot_queue){
             int diff_percent_pot_value;
             xQueueReceive(curr_io_queue, &diff_percent_pot_value, 0);
-            
+
         } 
 
     }
@@ -319,10 +326,55 @@ void goto_selection() {
     return;
 }
 
-void change_vol(float volume_to_add) {
+void potentiometer_handler(int diff_percent_pot_value){
+    int curr_index = menu_navigation[curr_menu] -> curr_index;
+    (menu_navigation[curr_menu] -> opt_handlers[curr_index]).pt_action(diff_percent_pot_value);
+}
+
+void change_vol(int pot_value) {
     if (pressed_button < 0) {
         for (uint8_t i = 0; i < SAMPLE_NUM; i++)
-            set_volume(i, volume_to_add);
+            set_volume(i, (float)pot_value * VOLUME_NORMALIZER_VALUE);
     } else
-        change_btn_vol((uint8_t)pressed_button);
+        set_volume((uint8_t)pressed_button, (float)pot_value * VOLUME_NORMALIZER_VALUE);
+}
+
+void change_pitch(int pot_value){
+    if (pressed_button < 0) {
+        for (uint8_t i = 0; i < SAMPLE_NUM; i++) {
+            float sample_i_pitch_factor = get_pitch_factor(i);
+            set_pitch_factor(i, sample_i_pitch_factor + (float)pot_value * PITCH_NORMALIZER_VALUE);
+        }
+    } else {
+        float sample_i_pitch_factor = get_pitch_factor(pressed_button);
+        set_pitch_factor(pressed_button, sample_i_pitch_factor + (float)pot_value * PITCH_NORMALIZER_VALUE);
+    }
+}
+
+void toggle_bit_crusher_menu(int pot_value){
+    bool bit_crusher = false;
+    if (pot_value >= 0){
+        bit_crusher = true;
+    }
+    if (pressed_button < 0) {
+        for (uint8_t i = 0; i < SAMPLE_NUM; i++){
+            toggle_bit_crusher(i, bit_crusher);
+        }
+    } else {
+        toggle_bit_crusher(pressed_button, bit_crusher);
+    }
+}
+
+void toggle_distortion_menu(int pot_value){
+    bool distortion = false;
+    if (pot_value >= 0){
+        distortion = true;
+    }
+    if (pressed_button < 0) {
+        for (uint8_t i = 0; i < SAMPLE_NUM; i++){
+            toggle_distortion(i, distortion);
+        }
+    } else {
+        toggle_distortion(pressed_button, distortion);
+    }
 }

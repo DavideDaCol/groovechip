@@ -145,6 +145,12 @@ static inline void apply_bitcrusher(uint8_t bank_index, int16_t *out_L, int16_t 
 
 void set_volume(uint8_t bank_index, float volume_to_add){
     sample_bank[bank_index].volume += volume_to_add;
+    if (sample_bank[bank_index].volume > VOLUME_THRESHOLD_UP) {
+        sample_bank[bank_index].volume = VOLUME_THRESHOLD_UP;
+    }
+    if (sample_bank[bank_index].volume < 0) {
+        sample_bank[bank_index].volume = 0;
+    }
 }
 
 #pragma endregion
