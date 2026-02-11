@@ -95,6 +95,9 @@ void action_ignore(int);
 void set_sample_end_ptr(uint8_t, uint32_t);
 void set_sample_start_ptr(uint8_t, float);
 
+// volume
+void set_volume(uint8_t, float);
+
 //metronome actions
 void init_metronome();
 void toggle_metronome_state(bool);

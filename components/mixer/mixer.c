@@ -141,6 +141,14 @@ static inline void apply_bitcrusher(uint8_t bank_index, int16_t *out_L, int16_t 
     bc->last_R = *out_R;
 }
 
+#pragma region VOLUME
+
+void set_volume(uint8_t bank_index, float volume_to_add){
+    sample_bank[bank_index].volume += volume_to_add;
+}
+
+#pragma endregion
+
 #pragma region METRONOME
 
 void init_metronome(){
@@ -287,10 +295,6 @@ static void mixer_task_wip(void *args)
 
     ESP_ERROR_CHECK(i2s_channel_enable(out_channel));
 
-    // quick and dirty volume control. 
-    // WARNING: the stereo out is usually very loud, this value shoud stay below 0.1
-    float volume = 0.1f; 
-
     // for the metronome: counts how many samples have been played since the last tick
     int16_t sample_lookahead = 0;
 
@@ -325,8 +329,8 @@ static void mixer_task_wip(void *args)
                     get_sample_interpolated(&sample_bank[j], &left, &right, sample_bank[j].total_frames);
                     
                     //volume adjustment
-                    left *= volume;
-                    right *= volume;
+                    left *= sample_bank[j].volume;
+                    right *= sample_bank[j].volume;
 
                     //apply bit crushing
                     apply_bitcrusher(j, &left, &right);

@@ -236,7 +236,10 @@ void main_fsm(QueueSetHandle_t in_set) {
             xQueueReceive(curr_io_queue, &curr_pad, 0);
             set_button_pressed(curr_pad.pad_id);
 
-        } else {
+        } else if (curr_io_queue == pot_queue){
+            int diff_percent_pot_value;
+            xQueueReceive(curr_io_queue, &diff_percent_pot_value, 0);
+            
         } 
 
     }
@@ -316,14 +319,10 @@ void goto_selection() {
     return;
 }
 
-void change_vol() {
+void change_vol(float volume_to_add) {
     if (pressed_button < 0) {
-        for (int i = 0; i < SAMPLE_NUM; i++)
-            change_btn_vol(i);
+        for (uint8_t i = 0; i < SAMPLE_NUM; i++)
+            set_volume(i, volume_to_add);
     } else
-        change_btn_vol(pressed_button);
-}
-
-void change_btn_vol(int pad_id) {
-    //TODO
+        change_btn_vol((uint8_t)pressed_button);
 }
