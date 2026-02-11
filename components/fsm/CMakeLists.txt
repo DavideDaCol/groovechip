@@ -1,4 +1,4 @@
-idf_component_register(SRCS "main.c"
+idf_component_register(SRCS "fsm.c"
                     REQUIRES driver freertos esp_timer
                     PRIV_REQUIRES 
                         spi_flash 
@@ -10,5 +10,4 @@ idf_component_register(SRCS "main.c"
                         joystick 
                         potentiometer
                         adc1
-                        fsm
-                    INCLUDE_DIRS ".")
+                    INCLUDE_DIRS "include")
