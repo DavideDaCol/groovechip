@@ -1,24 +1,25 @@
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "esp_log.h" // Add this
 #include "lcd.h"
+
+static const char *TAG = "APP";
 
 void app_main(void)
 {
-    // 1. Initialize the hardware
     lcd_driver_init();
 
-    // 2. Initial Clear (Good practice to start fresh)
-    LCD_clearScreen();
-    
-    while (1) {
-        // --- Screen 1 ---
-        LCD_clearScreen();
-        LCD_setCursor(0x0, 0x0);       // Col 0, Row 0
-        LCD_writeStr("GrooveChip");
-        
-        
+    while(1) {
+        print_single("Hello World!   ");
 
-        vTaskDelay(pdMS_TO_TICKS(2000));
+        vTaskDelay(pdTICKS_TO_MS(4000));
+        
+        print_double("Come           ", "Stai           ");
+
+        vTaskDelay(pdTICKS_TO_MS(4000));
     }
+    
+
+
 }
