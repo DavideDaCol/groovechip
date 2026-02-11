@@ -161,7 +161,7 @@ opt_interactions_t eff_handlers[] = {
     {
         .print = "Bitcrusher: ",
         .js_right_action = sink,
-        .pt_action = toggle_bit_crusher,
+        .pt_action = toggle_bit_crusher_menu,
     },
     {
         .print = "Pitch: ",
@@ -171,7 +171,7 @@ opt_interactions_t eff_handlers[] = {
     {
         .print = "Distortion: ",
         .js_right_action = sink,
-        .pt_action = toggle_distortion,
+        .pt_action = toggle_distortion_menu,
     }
 };
 
