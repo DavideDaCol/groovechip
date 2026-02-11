@@ -15,8 +15,8 @@ i2c_master_dev_handle_t lcd_handle;
 static QueueHandle_t lcd_queue;
 
 typedef struct {
-    char *first_row;
-    char *sec_row;
+    char first_row[17];
+    char sec_row[17];
 } lcd_msg_t;
 
 static void i2c_init() {
@@ -78,7 +78,7 @@ void lcd_driver_init() {
 
     lcd_queue = xQueueCreate(10, sizeof(lcd_msg_t*));
 
-    xTaskCreate(lcd_task, "LCD Task", 2048, NULL, 5, NULL);
+    xTaskCreate(lcd_task, "LCD Task", 4096, NULL, 5, NULL);
 }
 
 
@@ -133,21 +133,21 @@ void lcd_task(void *args) {
     lcd_msg_t* msg_ptr = NULL; // This will hold the pointer received from queue
 
     while(1) {
-        printf("Ciao\n");
         // Pass the ADDRESS of the pointer variable (&msg_ptr)
         // FreeRTOS copies the pointer from the queue into msg_ptr
         if (xQueueReceive(lcd_queue, &msg_ptr, portMAX_DELAY) == pdPASS) {
             
-            printf("Ciao bello\n");
             // Now msg_ptr points to the malloc'd struct
             if (msg_ptr != NULL) {
                 LCD_clearScreen(); // Good practice to clear before writing new frame
                 
                 LCD_setCursor(0, 0); 
                 LCD_writeStr(msg_ptr->first_row);
-                
+
                 LCD_setCursor(0, 1);
                 LCD_writeStr(msg_ptr->sec_row);
+
+                vTaskDelay(pdMS_TO_TICKS(2000));
                 
                 // IMPORTANT: Free the memory allocated in the sender
                 free(msg_ptr);
@@ -156,32 +156,17 @@ void lcd_task(void *args) {
     }
 }
 
-void print_single (char* in_row) {
-    // 1. Allocate memory for the message struct
-    lcd_msg_t* new_msg = malloc(sizeof(lcd_msg_t));
-    if (new_msg == NULL) return; // Safety check
-
-    new_msg->first_row = in_row;
-    // Note: Ensure "in_row" stays valid! (e.g., String literal or global)
-    // If "in_row" is a local array from the caller, it will vanish before the task reads it.
-    
-    new_msg->sec_row = "           ";
-
-    // 2. Send the POINTER to the queue
-    // We pass &new_msg because xQueueSend copies the CONTENT of new_msg (which is the pointer address)
-    if (xQueueSend(lcd_queue, &new_msg, 0) != pdPASS) {
-        free(new_msg); // Free immediately if queue is full to avoid leak
-    }
+void print_single(char* in_row) {
+    print_double(in_row, "               \0");
 }
 
 void print_double (char* first_in_row, char* sec_in_row) {
     lcd_msg_t* new_msg = malloc(sizeof(lcd_msg_t));
     if (new_msg == NULL) return;
 
-    new_msg->first_row = first_in_row;
-    new_msg->sec_row = sec_in_row;
+    // Copy the string content, not just the pointer address
+    snprintf(new_msg->first_row, 17, "%s", first_in_row);
+    snprintf(new_msg->sec_row, 17, "%s", sec_in_row); // Blank line
 
-    if (xQueueSend(lcd_queue, &new_msg, 0) != pdPASS) {
-        free(new_msg);
-    }
+    xQueueSend(lcd_queue, &new_msg, 0);
 }

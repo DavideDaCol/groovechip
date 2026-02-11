@@ -11,13 +11,13 @@ void app_main(void)
     lcd_driver_init();
 
     while(1) {
-        print_single("Hello World!   ");
+        print_single("Hello World!   \0");
 
-        vTaskDelay(pdTICKS_TO_MS(4000));
+        vTaskDelay(pdMS_TO_TICKS(4000));
         
-        print_double("Come           ", "Stai           ");
+        print_double("Come           \0", "Stai           \0");
 
-        vTaskDelay(pdTICKS_TO_MS(4000));
+        vTaskDelay(pdMS_TO_TICKS(4000));
     }
     
 
