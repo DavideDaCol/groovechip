@@ -6,7 +6,7 @@
 #include "freertos/queue.h"
 #include "include/potentiometer.h" 
 
-#define POT_CHANNEL ADC_CHANNEL_5  // GPIO 37
+#define POT_CHANNEL ADC_CHANNEL_5  // GPIO 33
 #define POT_READ_INTERVAL_MS 100   // reading interval in ms
 
 QueueHandle_t pot_queue;
