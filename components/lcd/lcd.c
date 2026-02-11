@@ -17,16 +17,12 @@
 #define LCD_WRITE               0x01
 
 #define LCD_SET_DDRAM_ADDR      0x80
-#define LCD_READ_BF             0x40
 
 // LCD instructions (based on the 1602A datasheet)
 #define LCD_CLEAR               0x01        // replace all characters with ASCII 'space'
 #define LCD_HOME                0x02        // return cursor to first position on first line
-#define LCD_ENTRY_MODE          0x06        // shift cursor from left to right on read/write
-#define LCD_DISPLAY_OFF         0x08        // turn display off
-#define LCD_DISPLAY_ON          0x0C        // display on, cursor off, don't blink character
 #define LCD_FUNCTION_RESET      0x30        // reset the LCD
-#define LCD_FUNCTION_SET_4BIT   0x28        // 4-bit data, 2-line display, 5 x 7 font
+#define LCD_FUNCTION_SET_4BIT   0x20        // 4-bit data, 2-line display, 5 x 7 font
 #define LCD_SET_CURSOR          0x80        // set cursor position
 
 static void i2c_init();
@@ -65,19 +61,39 @@ static void i2c_init() {
 void lcd_driver_init() {
     i2c_init();
 
-    //Reset the LCD controller (with delays defined by the implementation)
-    LCD_writeNibble(LCD_FUNCTION_RESET, LCD_COMMAND);                   // First part of reset sequence
-    vTaskDelay(10 / portTICK_PERIOD_MS);                                  // 4.1 mS delay (min)
-    LCD_writeNibble(LCD_FUNCTION_RESET, LCD_COMMAND);                   // second part of reset sequence
-    ets_delay_us(200);                                                  // 100 uS delay (min)
-    LCD_writeNibble(LCD_FUNCTION_RESET, LCD_COMMAND);                   // Third time's a charm
-    LCD_writeNibble(LCD_FUNCTION_SET_4BIT, LCD_COMMAND);                // Activate 4-bit mode
-    ets_delay_us(80); 
+    // 1. Hardware Reset (Strictly follows datasheet Page 17)
+    LCD_writeNibble(0x30, LCD_COMMAND);
+    vTaskDelay(pdMS_TO_TICKS(20));      // Wait >4.1ms
+    LCD_writeNibble(0x30, LCD_COMMAND);
+    ets_delay_us(200);                  // Wait >100us
+    LCD_writeNibble(0x30, LCD_COMMAND);
+    
+    // 2. Switch to 4-bit Mode (Critical: Send once as a nibble)
+    LCD_writeNibble(0x20, LCD_COMMAND); 
+    ets_delay_us(80);
+
+    // 3. Configure Settings (Now use writeByte for safety/simplicity)
+    
+    // Function Set: 4-bit, 2-line, 5x8 font -> 0x28
+    LCD_writeByte(0x28, LCD_COMMAND);
+    
+    // Display OFF -> 0x08
+    LCD_writeByte(0x08, LCD_COMMAND);
+    
+    // Clear Display -> 0x01 (Use your function to ensure 2ms delay!)
+    LCD_clearScreen(); 
+    
+    // Entry Mode Set: Increment (I/D=1), No Shift (S=0) -> 0x06
+    LCD_writeByte(0x06, LCD_COMMAND);
+    
+    // Display ON: Display(D=1), Cursor(C=0), Blink(B=0) -> 0x0C
+    LCD_writeByte(0x0C, LCD_COMMAND);
 }
+
 
 void LCD_setCursor(uint8_t col, uint8_t row)
 {
-    row %= 1;
+    row %= 2;
     uint8_t row_offsets[] = {LCD_LINEONE, LCD_LINETWO};
     LCD_writeByte(LCD_SET_DDRAM_ADDR | (col + row_offsets[row]), LCD_COMMAND);
 }

@@ -1,15 +1,24 @@
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "esp_system.h"
-#include "esp_mac.h"
-#include "driver/gpio.h"
-#include "pad_section.h"
-#define BLINK_GPIO 2
+#include "lcd.h"
 
 void app_main(void)
 {
-    // xTaskCreate(&simpleTask, "simple task", 2048, NULL, 5, NULL);
-    // printf("Aspetto...");
-    pad_section_init();
+    // 1. Initialize the hardware
+    lcd_driver_init();
+
+    // 2. Initial Clear (Good practice to start fresh)
+    LCD_clearScreen();
+    
+    while (1) {
+        // --- Screen 1 ---
+        LCD_clearScreen();
+        LCD_setCursor(0x0, 0x0);       // Col 0, Row 0
+        LCD_writeStr("GrooveChip");
+        
+        
+
+        vTaskDelay(pdMS_TO_TICKS(2000));
+    }
 }

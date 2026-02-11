@@ -1,5 +1,8 @@
 {
     "files.associations": {
         "adc_channel.h": "c"
-    }
+    },
+    "idf.port": "/dev/ttyUSB0",
+    "idf.currentSetup": "/home/MZ/esp/v5.5.1/esp-idf",
+    "idf.flashType": "UART"
 }
