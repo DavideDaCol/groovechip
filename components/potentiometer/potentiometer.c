@@ -48,13 +48,23 @@ float potentiometer_read_voltage() {
     return (raw * 3.3f) / 4095.0f;
 }
 
+int potentiometer_read_filtered() {
+    int sum = 0;
+    for(int i = 0; i < 8; i++) {
+        int raw;
+        adc_oneshot_read(adc1_handle, POT_CHANNEL, &raw);
+        sum += raw;
+    }
+    return sum / 8;
+}
+
 // main task
 void potentiometer_task(void *args) {
     // the default value is set to 0 (it is not printed or sent to the queue)
     int last_pot_value = 0;
     while(1) {
         // reading the value
-        pot_value = potentiometer_read_raw();
+        pot_value = potentiometer_read_filtered();
         int percent = (pot_value * 100) / 4095;
         float voltage = (pot_value * 3.3f) / 4095.0f;
         int diff = pot_value - last_pot_value;
