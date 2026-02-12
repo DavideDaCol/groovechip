@@ -66,6 +66,18 @@ typedef enum {
     DISTORTION
 } menu_types;
 
+typedef enum{
+    ENABLED,
+    BIT_DEPTH,
+    DOWNSAMPLE
+} bitcrusher_menu_t;
+
+typedef enum{
+    ENABLED,
+    GAIN,
+    THRESHOLD
+} distortion_menu_t;
+
 //Menu that we are currently navigating
 extern menu_types curr_menu;
 
@@ -78,10 +90,12 @@ extern mode_t mode;
 //Actual functions to perform when an input is received through joystick or potentiometer
 typedef void (*action_t) (void); 
 typedef void (*pt_action_t) (int); 
+typedef char* (*second_line_t) (void);
 
 //Interaction with a single voice of the menu
 typedef struct {
-    char print[16];         //String to print on screen for each voice of the menu
+    char first_line[16];         //String to first_line on screen for each voice of the menu
+    second_line_t second_line;
     action_t js_right_action; //Function to execute for each voice when a right shift of the joystick is detected
     pt_action_t pt_action;       //Function to execute for each voice when a potentiometer action_t is detected 
 } opt_interactions_t;

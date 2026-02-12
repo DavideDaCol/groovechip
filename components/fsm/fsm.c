@@ -3,9 +3,11 @@
 
 menu_types curr_menu = GEN_MENU;
 
-int8_t pressed_button = -1;
+uint8_t pressed_button = NOT_DEFINED;
 
 mode_t mode = ONESHOT;
+
+char* get_second_line();
 
 #pragma region GENERAL MENU
 /***********************************
@@ -13,12 +15,14 @@ GENERAL MENU
 ***********************************/
 opt_interactions_t gen_handlers[] = {
     {
-        .print = "Settings",
+        .first_line = "Settings",
+        .second_line = get_second_line,
         .js_right_action = goto_settings,
         .pt_action = sink
     }, 
     {
-        .print = "Effects",
+        .first_line = "Effects",
+        .second_line = get_second_line,
         .js_right_action = goto_effects,
         .pt_action = sink
     }
@@ -38,22 +42,26 @@ BUTTON SPECIFIC MENU
 ***********************************/
 opt_interactions_t btn_handlers[] = {
     {
-        .print = "Settings",
+        .first_line = "Settings",
+        .second_line = get_second_line,
         .js_right_action = goto_settings,
         .pt_action = sink
     },
     {
-        .print = "Effects",
+        .first_line = "Effects",
+        .second_line = get_second_line,
         .js_right_action = goto_effects,
         .pt_action = sink
     }, 
     {
-        .print = "Select sample",
+        .first_line = "Select sample",
+        .second_line = get_second_line,
         .js_right_action = sink, //TODO
         .pt_action = sink
     }, 
     {
-        .print = "Save changes",
+        .first_line = "Save changes",
+        .second_line = get_second_line,
         .js_right_action = sink, //TODO
         .pt_action = sink
     }
@@ -73,12 +81,14 @@ SETTINGS MENU (structure is the same whether it's related to a specific button o
 ***********************************/
 opt_interactions_t set_handlers[] = {
     {
-        .print = "Mode",
+        .first_line = "Mode",
+        .second_line = get_second_line,
         .js_right_action = sink,
         .pt_action = rotate_mode,
     },
     {
-        .print = "Volume",
+        .first_line = "Volume",
+        .second_line = get_second_line,
         .js_right_action = sink, 
         .pt_action = change_vol,
     }
@@ -98,18 +108,21 @@ EFFECTS MENU (structure is the same whether it's related to a specific button or
 ***********************************/
 opt_interactions_t eff_handlers[] = {
     {
-        .print = "Bitcrusher",
-        .js_right_action = goto_bitcrusher, // TODO
+        .first_line = "Bitcrusher",
+        .second_line = get_second_line,
+        .js_right_action = goto_bitcrusher,
         .pt_action = sink,
     },
     {
-        .print = "Pitch",
-        .js_right_action = goto_pitch, // TODO 
+        .first_line = "Pitch",
+        .second_line = get_second_line,
+        .js_right_action = goto_pitch,
         .pt_action = sink,
     },
     {
-        .print = "Distortion",
-        .js_right_action = goto_distortion, // TODO
+        .first_line = "Distortion",
+        .second_line = get_second_line,
+        .js_right_action = goto_distortion,
         .pt_action = sink,
     }
 };
@@ -129,19 +142,22 @@ BITCRUSHER MENU (structure is the same whether it's related to a specific button
 
 opt_interactions_t bit_crusher_handlers[] = {
     {
-        .print = "Bitcrusher: ",
+        .first_line = "Bitcrusher: ",
+        .second_line = get_second_line,
         .js_right_action = sink,
         .pt_action = toggle_bit_crusher_menu,
     },
     {
-        .print = "Bit depth: ",
+        .first_line = "Bit depth: ",
+        .second_line = get_second_line,
         .js_right_action = sink, 
-        .pt_action = change_bit_depth, // TODO
+        .pt_action = change_bit_depth,
     },
     {
-        .print = "Downsample: ",
+        .first_line = "Downsample: ",
+        .second_line = get_second_line,
         .js_right_action = sink,
-        .pt_action = change_downsample, // TODO
+        .pt_action = change_downsample,
     }
 };
 
@@ -160,7 +176,8 @@ PITCH MENU (structure is the same whether it's related to a specific button or i
 
 opt_interactions_t pitch_handlers[] = {
     {
-        .print = "Pitch: ",
+        .first_line = "Pitch: ",
+        .second_line = get_second_line,
         .js_right_action = sink,
         .pt_action = change_pitch,
     }
@@ -181,19 +198,22 @@ DISTORTION MENU (structure is the same whether it's related to a specific button
 
 opt_interactions_t distortion_handlers[] = {
     {
-        .print = "Distortion: ",
+        .first_line = "Distortion: ",
+        .second_line = get_second_line,
         .js_right_action = sink,
         .pt_action = toggle_distortion_menu,
     },
     {
-        .print = "Gain: ",
+        .first_line = "Gain: ",
+        .second_line = get_second_line,
         .js_right_action = sink, 
-        .pt_action = change_distortion_gain, // TODO
+        .pt_action = change_distortion_gain,
     },
     {
-        .print = "Threshold: ",
+        .first_line = "Threshold: ",
+        .second_line = get_second_line,
         .js_right_action = sink,
-        .pt_action = change_distortion_threshold, // TODO
+        .pt_action = change_distortion_threshold,
     }
 };
 
@@ -216,6 +236,50 @@ menu_t* menu_navigation[] = {
     &distortion_menu
 };
 
+
+char* get_second_line(){
+    char* res = "";
+    uint8_t sample_id = get_sample_bank_index(pressed_button);
+    switch (curr_menu)
+    {
+    case BITCRUSHER:
+        switch (menu_navigation[curr_menu]->curr_index)
+        {
+        case ENABLED:
+            // retrieve current value and return
+            uint8_t sample_id = get_sample_bank_index(pressed_button);
+            if(sample_id != NOT_DEFINED){
+                if(get_bit_crusher_state(sample_id)){
+                    res = "On";
+                }
+                else res = "Off";
+            }
+            break;
+        
+        case BIT_DEPTH:
+            
+            break;
+
+        case DOWNSAMPLE:
+            /* code */
+            break;
+        default:
+            break;
+        }
+        break;
+    case PITCH:
+        break;
+    case DISTORTION:
+        break;
+    case SETTINGS:
+        break;
+    
+    default:
+        break;
+    }
+    return res;
+}
+
 #pragma region MAIN FSM
 //FSM implementation function
 void main_fsm(QueueSetHandle_t in_set) {
@@ -228,14 +292,19 @@ void main_fsm(QueueSetHandle_t in_set) {
             xQueueReceive(curr_io_queue, &curr_js, 0);
             joystick_handler(curr_js);  
             if(curr_js != CENTER){
-                print_single((menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).print);
+                char* line1 = (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).first_line;
+                char* line2 = (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).second_line();
+                print_double(line1, line2);
             }
 
         } else if (curr_io_queue == pad_queue) {
             pad_queue_msg_t curr_pad;
             xQueueReceive(curr_io_queue, &curr_pad, 0);
             set_button_pressed(curr_pad.pad_id);
-            print_single((menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).print);
+            
+            char* line1 = (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).first_line;
+            char* line2 = (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).second_line();
+            print_double(line1, line2);
 
         } else if (curr_io_queue == pot_queue){
             int diff_percent_pot_value;
@@ -256,7 +325,7 @@ void joystick_handler(JoystickDir in_dir) {
         case UP: js_up_handler(); break;
         default: sink(); return;
     }
-    printf("%s\n", (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).print);
+    printf("%s\n", (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).first_line);
 
 }
 
@@ -340,8 +409,10 @@ void js_down_handler() {
 
 //Function to call when a button bound to a sample is pressed
 void set_button_pressed(int pad_id) {
-    pressed_button = pad_id;
-    curr_menu = BTN_MENU;
+    if(pad_id != pressed_button){
+        pressed_button = pad_id;
+        curr_menu = BTN_MENU;
+    }
 }
 
 // Sing function
@@ -350,6 +421,7 @@ void sink() {
 }
 
 #pragma endregion
+
 
 #pragma region POTENTIOMETER HANDLING
 
