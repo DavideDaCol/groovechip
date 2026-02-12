@@ -5,10 +5,7 @@
 #include "esp_mac.h"
 #include "freertos/queue.h"
 #include "include/potentiometer.h" 
-<<<<<<< Updated upstream
-=======
 #include <stdlib.h>
->>>>>>> Stashed changes
 
 #define POT_CHANNEL ADC_CHANNEL_5  // GPIO 33
 #define POT_READ_INTERVAL_MS 100   // reading interval in ms
