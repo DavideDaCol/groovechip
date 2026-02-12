@@ -6,8 +6,12 @@
 
 #define BIT_DEPTH_MAX 16
 #define DOWNSAMPLE_MAX 10
-#define DISTORTION_GAIN_MIX 1.0
+#define DISTORTION_GAIN_MAX 1.0
 #define DISTORTION_THRESHOLD_MAX 32000
+
+#define VOLUME_NORMALIZER_VALUE 0.01f // TODO lo ho impostato a caso
+#define PITCH_NORMALIZER_VALUE 0.03f // TODO lo ho impostato a caso
+#define THRESHOLD_NORMALIZER_VALUE 320
 
 //pitch struct
 typedef struct{
@@ -64,7 +68,11 @@ bool get_bit_crusher_state(uint8_t bank_index);
 
 void set_bit_crusher_bit_depth(uint8_t bank_index, uint8_t bit_depth);
 
+uint8_t get_bit_crusher_bit_depth(uint8_t bank_index);
+
 void set_bit_crusher_downsample(uint8_t bank_index, uint8_t downsample_value);
+
+uint8_t get_bit_crusher_downsample(uint8_t bank_index);
 
 //================================================================
 #pragma endregion
@@ -78,7 +86,11 @@ bool get_distortion_state(uint8_t bank_index);
 
 void set_distortion_gain(uint8_t bank_index, float gain);
 
+float get_distortion_gain(uint8_t bank_index);
+
 void set_distortion_threshold(uint8_t bank_index, int16_t threshold_value);
+
+int16_t get_distortion_threshold(uint8_t bank_index);
 
 //================================================================
 void effects_init();

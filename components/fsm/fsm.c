@@ -1,4 +1,5 @@
 #include "fsm.h"
+#include <math.h>
 
 menu_types curr_menu = GEN_MENU;
 
@@ -6,6 +7,7 @@ int8_t pressed_button = -1;
 
 mode_t mode = ONESHOT;
 
+#pragma region GENERAL MENU
 /***********************************
 GENERAL MENU 
 ***********************************/
@@ -28,7 +30,9 @@ menu_t gen_menu = {
     .opt_handlers = gen_handlers
 };
 /***********************************/
+#pragma endregion
 
+#pragma region BUTTON SPECIFIC MENU
 /***********************************
 BUTTON SPECIFIC MENU 
 ***********************************/
@@ -61,7 +65,9 @@ menu_t btn_menu = {
     .opt_handlers = btn_handlers
 };
 /***********************************/
+#pragma endregion
 
+#pragma region SETTINGS MENU
 /***********************************
 SETTINGS MENU (structure is the same whether it's related to a specific button or is general) 
 ***********************************/
@@ -84,25 +90,27 @@ menu_t settings = {
     .opt_handlers = set_handlers
 };
 /***********************************/
+#pragma endregion
 
+#pragma region EFFECTS MENU
 /***********************************
 EFFECTS MENU (structure is the same whether it's related to a specific button or is general) 
 ***********************************/
 opt_interactions_t eff_handlers[] = {
     {
-        .print = "Bitcrusher: ",
-        .js_right_action = sink,
-        .pt_action = toggle_bit_crusher_menu,
+        .print = "Bitcrusher",
+        .js_right_action = goto_bitcrusher, // TODO
+        .pt_action = sink,
     },
     {
-        .print = "Pitch: ",
-        .js_right_action = sink, 
-        .pt_action = change_pitch,
+        .print = "Pitch",
+        .js_right_action = goto_pitch, // TODO 
+        .pt_action = sink,
     },
     {
-        .print = "Distortion: ",
-        .js_right_action = sink,
-        .pt_action = toggle_distortion_menu,
+        .print = "Distortion",
+        .js_right_action = goto_distortion, // TODO
+        .pt_action = sink,
     }
 };
 
@@ -112,6 +120,90 @@ menu_t effects = {
     .opt_handlers = eff_handlers
 };
 /***********************************/
+#pragma endregion
+
+#pragma region BITCRUSHER MENU
+/***********************************
+BITCRUSHER MENU (structure is the same whether it's related to a specific button or is general) 
+***********************************/
+
+opt_interactions_t bit_crusher_handlers[] = {
+    {
+        .print = "Bitcrusher: ",
+        .js_right_action = sink,
+        .pt_action = toggle_bit_crusher_menu,
+    },
+    {
+        .print = "Bit depth: ",
+        .js_right_action = sink, 
+        .pt_action = change_bit_depth, // TODO
+    },
+    {
+        .print = "Downsample: ",
+        .js_right_action = sink,
+        .pt_action = change_downsample, // TODO
+    }
+};
+
+menu_t bit_crusher_menu = {
+    .curr_index = -1,
+    .max_size = BITCRUSHER_NUM_OPT,
+    .opt_handlers = bit_crusher_handlers
+};
+/***********************************/
+#pragma endregion
+
+#pragma region PITCH MENU
+/***********************************
+PITCH MENU (structure is the same whether it's related to a specific button or is general) 
+***********************************/
+
+opt_interactions_t pitch_handlers[] = {
+    {
+        .print = "Pitch: ",
+        .js_right_action = sink,
+        .pt_action = change_pitch,
+    }
+};
+
+menu_t pitch_menu = {
+    .curr_index = -1,
+    .max_size = PITCH_NUM_OPT,
+    .opt_handlers = pitch_handlers
+};
+/***********************************/
+#pragma endregion
+
+#pragma region DISTORTION MENU
+/***********************************
+DISTORTION MENU (structure is the same whether it's related to a specific button or is general) 
+***********************************/
+
+opt_interactions_t distortion_handlers[] = {
+    {
+        .print = "Distortion: ",
+        .js_right_action = sink,
+        .pt_action = toggle_distortion_menu,
+    },
+    {
+        .print = "Gain: ",
+        .js_right_action = sink, 
+        .pt_action = change_distortion_gain, // TODO
+    },
+    {
+        .print = "Threshold: ",
+        .js_right_action = sink,
+        .pt_action = change_distortion_threshold, // TODO
+    }
+};
+
+menu_t distortion_menu = {
+    .curr_index = -1,
+    .max_size = DISTORTION_NUM_OPT,
+    .opt_handlers = distortion_handlers
+};
+/***********************************/
+#pragma endregion
 
 //Menu collection, essential for the navigation
 menu_t* menu_navigation[] = {
@@ -119,8 +211,12 @@ menu_t* menu_navigation[] = {
     &btn_menu,
     &settings,
     &effects,
+    &bit_crusher_menu,
+    &pitch_menu,
+    &distortion_menu
 };
 
+#pragma region MAIN FSM
 //FSM implementation function
 void main_fsm(QueueSetHandle_t in_set) {
     while(1) {
@@ -147,7 +243,9 @@ void main_fsm(QueueSetHandle_t in_set) {
 
     }
 }
+#pragma endregion
 
+#pragma region MENU NAVIGATION
 //Joystick handler implementation 
 void joystick_handler(JoystickDir in_dir) {
     switch (in_dir){
@@ -165,21 +263,49 @@ void menu_move(int* index, int max_opt, int direction) {
     *index = (*index + direction + max_opt) % max_opt;
 }
 
+// Atomic function that sets the current menu and the current index
 void goto_settings() {
     settings.curr_index = 0;
     curr_menu = SETTINGS;
 }
 
+// Atomic function that sets the current menu and the current index
 void goto_effects() {
     effects.curr_index = 0;
     curr_menu = EFFECTS;
 }
 
+// Atomic function that sets the current menu and the current index
+void goto_bitcrusher() {
+    bit_crusher_menu.curr_index = 0;
+    curr_menu = BITCRUSHER;
+}
+
+// Atomic function that sets the current menu and the current index
+void goto_pitch() {
+    pitch_menu.curr_index = 0;
+    curr_menu = PITCH;
+}
+
+// Atomic function that sets the current menu and the current index
+void goto_distortion() {
+    distortion_menu.curr_index = 0;
+    curr_menu = DISTORTION;
+}
+
+// TODO
+void goto_selection() {
+    //TODO
+    return;
+}
+
+// Function that calls the correct handler based on the current menu
 void js_right_handler() {
     int index = menu_navigation[curr_menu] -> curr_index;
     menu_navigation[curr_menu] -> opt_handlers[index].js_right_action();
 }
 
+// Function that sets the current menu the the previoous one
 void js_left_handler() {
     if (pressed_button != -1) {
         if (curr_menu == BTN_MENU) {
@@ -191,6 +317,7 @@ void js_left_handler() {
         curr_menu = GEN_MENU;
 }
 
+// Function that lets the menu navigation up
 void js_up_handler() {
     menu_move(
         &(menu_navigation[curr_menu] -> curr_index), 
@@ -199,6 +326,7 @@ void js_up_handler() {
     );
 }
 
+// Function that lets the menu navigation down
 void js_down_handler() {
     menu_move(
         &(menu_navigation[curr_menu] -> curr_index), 
@@ -213,20 +341,22 @@ void set_button_pressed(int pad_id) {
     curr_menu = BTN_MENU;
 }
 
+// Sing function
 void sink() {
     return;
 }
 
-void goto_selection() {
-    //TODO
-    return;
-}
+#pragma endregion
 
+#pragma region POTENTIOMETER HANDLING
+
+// Function that handles the potentiometer value by calling the handler based on the current menu
 void potentiometer_handler(int diff_percent_pot_value){
     int curr_index = menu_navigation[curr_menu] -> curr_index;
     (menu_navigation[curr_menu] -> opt_handlers[curr_index]).pt_action(diff_percent_pot_value);
 }
 
+// Function that changes the volume
 void change_vol(int pot_value) {
     if (pressed_button < 0) {
         for (uint8_t i = 0; i < SAMPLE_NUM; i++)
@@ -235,6 +365,7 @@ void change_vol(int pot_value) {
         set_volume((uint8_t)pressed_button, (float)pot_value * VOLUME_NORMALIZER_VALUE);
 }
 
+// Function that changes the pitch
 void change_pitch(int pot_value){
     if (pressed_button < 0) {
         for (uint8_t i = 0; i < SAMPLE_NUM; i++) {
@@ -247,6 +378,7 @@ void change_pitch(int pot_value){
     }
 }
 
+// Function that toggles the bit crusher
 void toggle_bit_crusher_menu(int pot_value){
     bool bit_crusher = false;
     if (pot_value >= 0){
@@ -261,6 +393,7 @@ void toggle_bit_crusher_menu(int pot_value){
     }
 }
 
+// Function that toggles the distortion 
 void toggle_distortion_menu(int pot_value){
     bool distortion = false;
     if (pot_value >= 0){
@@ -275,6 +408,7 @@ void toggle_distortion_menu(int pot_value){
     }
 }
 
+// Function that rotates the mode based on the enum in playback_mode.h
 void rotate_mode(int pot_value){
     int next = -1;
     if (pot_value > 0){
@@ -289,6 +423,79 @@ void rotate_mode(int pot_value){
     }
 }
 
+// Function that gets the next mode
 mode_t next_mode(int next, mode_t curr_mode){
-    return (mode_t)((curr_mode + next + 3)%3);
+    return (mode_t)((curr_mode + next + MODE_NUM_OPT)%MODE_NUM_OPT);
 }
+
+// Function that changes the bit depth
+void change_bit_depth(int pot_value){
+    int8_t bit_depth_changing = -1;
+    if (pot_value > 0){
+        bit_depth_changing = 1;
+    }
+    if (pressed_button < 0){
+        for (uint8_t i = 0; i < SAMPLE_NUM; i++){
+            uint8_t curr_bit_depth = get_bit_crusher_bit_depth(i);
+            uint8_t new_bit_depth = (curr_bit_depth + bit_depth_changing + BIT_DEPTH_MAX) % BIT_DEPTH_MAX;
+            set_bit_crusher_bit_depth(i, new_bit_depth);
+        }
+    } else {
+        uint8_t curr_bit_depth = get_bit_crusher_bit_depth(pressed_button);
+        uint8_t new_bit_depth = (curr_bit_depth + bit_depth_changing + BIT_DEPTH_MAX) % BIT_DEPTH_MAX;
+            set_bit_crusher_bit_depth(pressed_button, new_bit_depth);
+    }
+}
+
+// Function that changes the downsample
+void change_downsample(int pot_value){
+    int8_t downsample_changing = -1;
+    if (pot_value > 0){
+        downsample_changing = 1;
+    }
+    if (pressed_button < 0){
+        for (uint8_t i = 0; i < SAMPLE_NUM; i++){
+            uint8_t curr_downsample = get_bit_crusher_downsample(i);
+            uint8_t new_downsample = (curr_downsample + downsample_changing + DOWNSAMPLE_MAX) % DOWNSAMPLE_MAX;
+            set_bit_crusher_downsample(i, new_downsample);
+        }
+    } else {
+        uint8_t curr_downsample = get_bit_crusher_downsample(pressed_button);
+        uint8_t new_downsample = (curr_downsample + downsample_changing + DOWNSAMPLE_MAX) % DOWNSAMPLE_MAX;
+        set_bit_crusher_downsample(pressed_button, new_downsample);
+    }
+}
+
+// Function that changes the distortion gain
+void change_distortion_gain(int pot_value){
+    float gain_changing = (float)(pot_value * VOLUME_NORMALIZER_VALUE);
+    if (pressed_button < 0){
+        for (uint8_t i = 0; i < SAMPLE_NUM; i++){
+            float curr_gain = get_distortion_gain(i);
+            float new_gain = fmodf(curr_gain + gain_changing + DISTORTION_GAIN_MAX, DISTORTION_GAIN_MAX);
+            set_distortion_gain(i, new_gain);
+        }
+    } else {
+        float curr_gain = get_distortion_gain(pressed_button);
+        float new_gain = fmodf(curr_gain + gain_changing + DISTORTION_GAIN_MAX, DISTORTION_GAIN_MAX);
+        set_distortion_gain(pressed_button, new_gain);
+    }
+}
+
+// Function that changes the distortion threshold
+void change_distortion_threshold(int pot_value){
+    int16_t threshold_changing = (int16_t)(pot_value * THRESHOLD_NORMALIZER_VALUE);
+    if (pressed_button < 0){
+        for (uint8_t i = 0; i < SAMPLE_NUM; i++){
+            int16_t curr_threshold = get_distortion_threshold(i);
+            int16_t new_threshold = (curr_threshold + threshold_changing + DISTORTION_THRESHOLD_MAX) % DISTORTION_THRESHOLD_MAX;
+            set_distortion_threshold(i, new_threshold);
+        }
+    } else {
+        int16_t curr_threshold = get_distortion_threshold(pressed_button);
+        int16_t new_threshold = (curr_threshold + threshold_changing + DISTORTION_THRESHOLD_MAX) % DISTORTION_THRESHOLD_MAX;
+        set_distortion_threshold(pressed_button, new_threshold);
+    }
+}
+
+#pragma endregion

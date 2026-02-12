@@ -63,6 +63,10 @@ void set_bit_crusher_bit_depth(uint8_t bank_index, uint8_t bit_depth){
     }
 }
 
+uint8_t get_bit_crusher_bit_depth(uint8_t bank_index){
+    return sample_effects[bank_index].bitcrusher.bit_depth;
+}
+
 void set_bit_crusher_downsample(uint8_t bank_index, uint8_t downsample_value){
     if(bank_index < SAMPLE_NUM && downsample_value >= 1 && downsample_value <= DOWNSAMPLE_MAX){
         sample_effects[bank_index].bitcrusher.downsample = downsample_value;
@@ -73,6 +77,11 @@ void set_bit_crusher_downsample(uint8_t bank_index, uint8_t downsample_value){
         sample_effects[bank_index].bitcrusher.last_R = 0.0;
     }
 }
+
+uint8_t get_bit_crusher_downsample(uint8_t bank_index){
+    return sample_effects[bank_index].bitcrusher.downsample;
+}
+
 //================================================================
 #pragma endregion
 
@@ -81,7 +90,7 @@ void set_bit_crusher_downsample(uint8_t bank_index, uint8_t downsample_value){
 void init_distortion(uint8_t bank_index){
     if(bank_index < SAMPLE_NUM){
         sample_effects[bank_index].distortion.enabled = false;
-        sample_effects[bank_index].distortion.gain = DISTORTION_GAIN_MIX;
+        sample_effects[bank_index].distortion.gain = DISTORTION_GAIN_MAX;
         sample_effects[bank_index].distortion.threshold = DISTORTION_THRESHOLD_MAX;
     }
 }
@@ -102,11 +111,20 @@ void set_distortion_gain(uint8_t bank_index, float gain){
     }
 }
 
+float get_distortion_gain(uint8_t bank_index){
+    return sample_effects[bank_index].distortion.gain;
+}
+
 void set_distortion_threshold(uint8_t bank_index, int16_t threshold_value){
     if(bank_index < SAMPLE_NUM){
         sample_effects[bank_index].distortion.threshold = threshold_value;
     }
 }
+
+int16_t get_distortion_threshold(uint8_t bank_index){
+    return sample_effects[bank_index].distortion.threshold;
+}
+
 //================================================================
 #pragma endregion
 

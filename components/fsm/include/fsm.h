@@ -20,15 +20,19 @@
 #define BTN_MENU_NUM_OPT 4
 #define SETTINGS_NUM_OPT 2
 #define EFFECTS_NUM_OPT 3
-
-#define VOLUME_NORMALIZER_VALUE 0.01f // TODO lo ho impostato a caso
-#define PITCH_NORMALIZER_VALUE 0.03f // TODO lo ho impostato a caso
+#define MODE_NUM_OPT 3
+#define BITCRUSHER_NUM_OPT 3
+#define PITCH_NUM_OPT 1
+#define DISTORTION_NUM_OPT 2
 
 void main_fsm(QueueSetHandle_t in_set);
 void joystick_handler(JoystickDir in_dir);
 void goto_settings();
 void goto_effects();
 void goto_selection();
+void goto_bitcrusher();
+void goto_pitch();
+void goto_distortion();
 void menu_move(int* index, int max_opt, int direction);
 void js_right_handler();
 void js_left_handler();
@@ -44,6 +48,10 @@ void toggle_distortion_menu(int pot_value);
 void toggle_bit_crusher_menu(int pot_value);
 void change_pitch(int pot_value);
 void rotate_mode(int pot_value);
+void change_bit_depth(int pot_value);
+void change_downsample(int pot_value);
+void change_distortion_gain(int pot_value);
+void change_distortion_threshold(int pot_value);
 mode_t next_mode(int next, mode_t curr_mode);
 
 //Enum that describes every type of menu we have in our project
@@ -52,6 +60,9 @@ typedef enum {
     BTN_MENU,
     SETTINGS,
     EFFECTS,
+    BITCRUSHER,
+    PITCH,
+    DISTORTION
 } menu_types;
 
 //Menu that we are currently navigating
@@ -92,6 +103,15 @@ extern menu_t settings;
 
 extern opt_interactions_t eff_handlers[];
 extern menu_t effects;
+
+extern opt_interactions_t bit_crusher_handlers[];
+extern menu_t bit_crusher_menu;
+
+extern opt_interactions_t pitch_handlers[];
+extern menu_t pitch_menu;
+
+extern opt_interactions_t distortion_handlers[];
+extern menu_t distortion_menu;
 
 extern menu_t* menu_navigation[];
 
