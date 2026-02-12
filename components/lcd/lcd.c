@@ -76,7 +76,7 @@ void lcd_driver_init() {
     // turning LCD display on 
     LCD_writeByte(LCD_DISPLAY_ON, LCD_COMMAND);
 
-    lcd_queue = xQueueCreate(10, sizeof(lcd_msg_t*));
+    lcd_queue = xQueueCreate(10, sizeof(lcd_msg_t));
 
     BaseType_t res = xTaskCreate(lcd_task, "LCD Task", 4096, NULL, 5, NULL);
     if (res != pdPASS)
@@ -133,7 +133,7 @@ static void LCD_pulseEnable(uint8_t data) {
 
 
 void lcd_task(void *args) {
-    lcd_msg_t* msg_ptr = NULL; // This will hold the pointer received from queue
+    lcd_msg_t msg_ptr; // This will hold the pointer received from queue
 
     while(1) {
         // Pass the ADDRESS of the pointer variable (&msg_ptr)
@@ -141,22 +141,20 @@ void lcd_task(void *args) {
         if (xQueueReceive(lcd_queue, &msg_ptr, portMAX_DELAY) == pdPASS) {
             
             // Now msg_ptr points to the malloc'd struct
-            if (msg_ptr != NULL) {
-                printf("Recv msg: \n--------------\n%s\n%s\n---------------\n", msg_ptr->first_row, msg_ptr->sec_row);
-                LCD_clearScreen(); // Good practice to clear before writing new frame
-                
-                LCD_setCursor(0, 0); 
-                LCD_writeStr(msg_ptr->first_row);
+            printf("Recv msg: \n--------------\n%s\n%s\n---------------\n", msg_ptr.first_row, msg_ptr.sec_row);
+            LCD_clearScreen(); // Good practice to clear before writing new frame
+            
+            LCD_setCursor(0, 0); 
+            LCD_writeStr(msg_ptr.first_row);
 
-                LCD_setCursor(0, 1);
-                LCD_writeStr(msg_ptr->sec_row);
+            LCD_setCursor(0, 1);
+            LCD_writeStr(msg_ptr.sec_row);
 
-                
-                // IMPORTANT: Free the memory allocated in the sender
-                free(msg_ptr);
-            }
+            
+            // IMPORTANT: Free the memory allocated in the sender
+            // free(msg_ptr);
         }
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        // vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
 
@@ -165,12 +163,16 @@ void print_single(char* in_row) {
 }
 
 void print_double (char* first_in_row, char* sec_in_row) {
-    lcd_msg_t* new_msg = malloc(sizeof(lcd_msg_t));
-    if (new_msg == NULL) return;
+    // lcd_msg_t* new_msg = malloc(sizeof(lcd_msg_t));
+    lcd_msg_t new_msg = {};
+    
+    // if (new_msg == NULL) return;
 
     // Copy the string content, not just the pointer address
-    snprintf(new_msg->first_row, 17, "%s", first_in_row);
-    snprintf(new_msg->sec_row, 17, "%s", sec_in_row); // Blank line
+    snprintf(new_msg.first_row, 17, "%s", first_in_row);
+    snprintf(new_msg.sec_row, 17, "%s", sec_in_row); // Blank line
 
-    xQueueSend(lcd_queue, &new_msg, 0);
+    if (xQueueSend(lcd_queue, &new_msg, 0) != pdPASS){
+        // free(new_msg);
+    }
 }

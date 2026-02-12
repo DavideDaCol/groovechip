@@ -7,7 +7,7 @@
 #include "include/potentiometer.h" 
 #include <stdlib.h>
 
-#define POT_CHANNEL ADC_CHANNEL_5  // GPIO 33
+#define POT_CHANNEL ADC_CHANNEL_0  // GPIO 36
 #define POT_READ_INTERVAL_MS 100   // reading interval in ms
 
 QueueHandle_t pot_queue;
