@@ -9,4 +9,5 @@ idf_component_register(
         spi
         sdmmc
         fatfs
+        esp_psram
 )

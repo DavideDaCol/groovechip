@@ -17,6 +17,7 @@
 #include "diskio_sdmmc.h"
 #include "mixer.h"
 #include "effects.h"
+#include "esp_psram.h"
 
 //Default mountpoint
 #define GRVCHP_MNTPOINT "/sdcard"
@@ -40,8 +41,9 @@ esp_err_t sd_reader_init();
 
 /* Function to transfer a sample from the SD card to the internal memory:
    - bank_index (IN): identifier of the sample we want to receive
-   - out_sample (OUT): pointer to the sample that is contained in memory */
-esp_err_t ld_sample(int bank_index, sample_t* out_sample);
+   - sample_name (IN): name of the sample to load in memory
+   - out_sample_ptr (OUT): pointer to the pointer that will refer to the PSRAM location where the sample is stored */
+esp_err_t ld_sample(int in_bank_index, char* sample_name, sample_t** out_sample_ptr);
 
 /* Function to transfer a sample from the internal memory to the SD card:
    - sample (IN): actual sample of which the transfer is requested */
