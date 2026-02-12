@@ -282,6 +282,7 @@ static void mixer_task_wip(void *args)
     //initialize the sample bank
     for (int j = 0; j < SAMPLE_NUM; j++){
         sample_bank[j].bank_index = j;
+        sample_bank[j].volume = 0.1;
         sample_bank[j].start_ptr = 0;
         sample_bank[j].playback_ptr = 0;
     }
