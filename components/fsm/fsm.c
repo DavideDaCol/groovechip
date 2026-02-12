@@ -1,6 +1,6 @@
 #include "fsm.h"
 
-menu_types curr_menu;
+menu_types curr_menu = GEN_MENU;
 
 int8_t pressed_button = -1;
 
@@ -23,7 +23,7 @@ opt_interactions_t gen_handlers[] = {
 };
 
 menu_t gen_menu = {
-    .curr_index = -1,
+    .curr_index = 0,
     .max_size = GEN_MENU_NUM_OPT,
     .opt_handlers = gen_handlers
 };
@@ -126,13 +126,13 @@ void main_fsm(QueueSetHandle_t in_set) {
     while(1) {
         //
         QueueSetMemberHandle_t curr_io_queue = xQueueSelectFromSet(in_set, pdMS_TO_TICKS(50)); //TODO: determine the period
-        printf("%d\n", curr_menu);
         
         if (curr_io_queue == joystick_queue) {
-
+            
             JoystickDir curr_js;
             xQueueReceive(curr_io_queue, &curr_js, 0);
             joystick_handler(curr_js);  
+            printf("%s\n", (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).print);
 
         } else if (curr_io_queue == pad_queue) {
             pad_queue_msg_t curr_pad;
