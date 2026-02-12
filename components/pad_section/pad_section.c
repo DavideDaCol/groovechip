@@ -52,7 +52,10 @@ static void IRAM_ATTR gpio_isr_handler(void *arg){
 	if(event_type == EVT_PRESS){
 		pad_queue_msg_t msg;
 		msg.pad_id = pad_id;
-		xQueueSendFromISR(pad_queue, &msg, NULL);
+		ESP_EARLY_LOGI(TAG, "SEND PAD %d\n", msg.pad_id);
+		if(xQueueSendFromISR(pad_queue, &msg, NULL) == pdTRUE){
+			ESP_EARLY_LOGI(TAG, "MANDATO\n");
+		}
 	}
 
 	// send the event on the sample task
