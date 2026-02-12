@@ -8,7 +8,7 @@
 #include <stdlib.h>
 
 #define POT_CHANNEL ADC_CHANNEL_0  // GPIO 36
-#define POT_READ_INTERVAL_MS 100   // reading interval in ms
+#define POT_READ_INTERVAL_MS 20   // reading interval in ms
 
 QueueHandle_t pot_queue;
 int pot_value = 0;  // Valore grezzo (0-4095 con 12 bit)
@@ -48,23 +48,35 @@ float potentiometer_read_voltage() {
     return (raw * 3.3f) / 4095.0f;
 }
 
+int potentiometer_read_filtered() {
+    int sum = 0;
+    for(int i = 0; i < 8; i++) {
+        int raw;
+        adc_oneshot_read(adc1_handle, POT_CHANNEL, &raw);
+        sum += raw;
+    }
+    return sum / 8;
+}
+
 // main task
 void potentiometer_task(void *args) {
     // the default value is set to 0 (it is not printed or sent to the queue)
-    int last_pot_value = 0;
+    int last_pot_value = potentiometer_read_filtered();
+    int last_diff_percentage = (last_pot_value * 100) / 4095;
     while(1) {
         // reading the value
-        pot_value = potentiometer_read_raw();
+        pot_value = potentiometer_read_filtered();
         int percent = (pot_value * 100) / 4095;
         float voltage = (pot_value * 3.3f) / 4095.0f;
         int diff = pot_value - last_pot_value;
         int diff_percent = (diff * 100) /4095;
         
         // ignore the repetitive events
-        if (abs(pot_value - last_pot_value) > POT_THRESHOLD){
-            printf("Pot: %d (raw) | %d%% | %.2fV\n", pot_value, diff_percent, voltage);
+        if (abs(diff_percent - last_diff_percentage) > 0){
+            printf("Pot: %d (raw) | %d%% | %.2fV\n", pot_value, percent, voltage);
             xQueueSend(pot_queue, &diff_percent, 0); // parameters -> queue name, message, tick to wait to send the message
             last_pot_value = pot_value;
+            last_diff_percentage = diff_percent;
         }
         
         vTaskDelay(pdMS_TO_TICKS(POT_READ_INTERVAL_MS));
