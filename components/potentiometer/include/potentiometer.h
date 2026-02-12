@@ -10,8 +10,6 @@
 #include "joystick.h"
 #include "adc1.h"
 
-#define POT_THRESHOLD 20
-
 extern QueueHandle_t pot_queue;
 extern int pot_value;
 
