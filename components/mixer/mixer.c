@@ -141,6 +141,42 @@ static inline void apply_bitcrusher(uint8_t bank_index, int16_t *out_L, int16_t 
     bc->last_R = *out_R;
 }
 
+static inline void apply_distortion(uint8_t sample_id, int16_t *out_L, int16_t *out_R){
+    distortion_params_t* dst_params = &get_sample_effect(sample_id)->distortion;
+
+    if(dst_params == NULL) return;
+    if(!dst_params->enabled) return;
+
+    //calculate gain
+    int32_t temp_L = *out_L * dst_params->gain;
+    int32_t temp_R = *out_R * dst_params->gain;
+
+    temp_L = (int16_t)temp_L;
+    temp_R = (int16_t)temp_R;
+
+    //calculate threshold
+    int16_t threshold = dst_params->threshold;
+
+    //left channel
+    if(temp_L > threshold){
+        temp_L = threshold;
+    }
+    else if(temp_L < -threshold){
+        temp_L = -threshold; // anche verso il basso? Da capire
+    }
+
+    //right channel
+    if(temp_R > threshold){
+        temp_R = threshold;
+    }
+    else if(temp_R < -threshold){
+        temp_R = -threshold;
+    }   
+
+    *out_L = temp_L;
+    *out_R = temp_R;
+
+} 
 #pragma region VOLUME
 
 void set_volume(uint8_t bank_index, float volume_to_add){
@@ -286,6 +322,7 @@ static void mixer_task_wip(void *args)
     set_bit_crusher_bit_depth(1, 8);
     set_bit_crusher_downsample(1, 7);
 
+    
     print_wav_header(&sample_bank[1].header);
 
     //test metronome functions (equivalent to 120bpm)
@@ -337,6 +374,9 @@ static void mixer_task_wip(void *args)
                     //volume adjustment
                     left *= sample_bank[j].volume;
                     right *= sample_bank[j].volume;
+
+                    //apply distortion
+                    apply_distortion(j, &left, &right);
 
                     //apply bit crushing
                     apply_bitcrusher(j, &left, &right);
