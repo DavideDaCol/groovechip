@@ -28,6 +28,10 @@ void potentiometer_init() {
     // creating the queue
     pot_queue = xQueueCreate(10, sizeof(int));
 
+    if(pot_queue == pdFALSE){
+        ESP_LOGE(TAG_POT, "Error: unable to create pot queue");
+    }
+
     // create the task
     xTaskCreate(potentiometer_task, "pot_task", 2048, NULL, 5, NULL);
 }
@@ -76,7 +80,9 @@ void potentiometer_task(void *args) {
         // ignore the repetitive events
         if (abs(diff_percent - last_diff_percentage) > 0){
             printf("Pot: %d (raw) | %d%% | %.2fV\n", pot_value, percent, voltage);
-            xQueueSend(pot_queue, &diff_percent, 0); // parameters -> queue name, message, tick to wait to send the message
+            if(xQueueSend(pot_queue, &diff_percent, 0) == pdFALSE){
+                ESP_LOGE(TAG_POT, "Error: unable to send the message in pot queue");
+            } // parameters -> queue name, message, tick to wait to send the message
             last_pot_value = pot_value;
             last_diff_percentage = diff_percent;
         }
