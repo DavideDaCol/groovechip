@@ -9,7 +9,7 @@ mode_t mode = ONESHOT;
 
 void get_second_line(char *);
 
-const char* TAG = "FSM";
+const char* TAG_FSM = "FSM";
 
 #pragma region GENERAL MENU
 /***********************************
@@ -297,7 +297,7 @@ void main_fsm(QueueSetHandle_t in_set) {
         if (curr_io_queue == joystick_queue) {
             JoystickDir curr_js;
             if(xQueueReceive(curr_io_queue, &curr_js, 0) == pdFALSE){
-                ESP_LOGE(TAG, "Error: unable to read the joystick_queue");
+                ESP_LOGE(TAG_FSM, "Error: unable to read the joystick_queue");
                 continue;
             }
             joystick_handler(curr_js);  
@@ -308,7 +308,7 @@ void main_fsm(QueueSetHandle_t in_set) {
         } else if (curr_io_queue == pad_queue) {
             pad_queue_msg_t curr_pad;
             if(xQueueReceive(curr_io_queue, &curr_pad, 0) == pdFALSE){
-                ESP_LOGE(TAG, "Error: unable to read the pad_queue");
+                ESP_LOGE(TAG_FSM, "Error: unable to read the pad_queue");
                 continue;
             }
 
@@ -326,7 +326,7 @@ void main_fsm(QueueSetHandle_t in_set) {
         } else if (curr_io_queue == pot_queue){
             int diff_percent_pot_value;
             if(xQueueReceive(curr_io_queue, &diff_percent_pot_value, 0) == pdFALSE){
-                ESP_LOGE(TAG, "Error: unable to read the pad_queue");
+                ESP_LOGE(TAG_FSM, "Error: unable to read the pad_queue");
                 continue;
             }
             printf("diff_percent: %d\n", diff_percent_pot_value);

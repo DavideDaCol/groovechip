@@ -5,12 +5,14 @@
 #include "esp_mac.h"
 #include "freertos/queue.h"
 #include "include/potentiometer.h" 
+#include "esp_log.h"
 #include <stdlib.h>
 
 #define POT_CHANNEL ADC_CHANNEL_0  // GPIO 36
 #define POT_READ_INTERVAL_MS 20   // reading interval in ms
 
-QueueHandle_t pot_queue;
+const char* TAG_POT = "Potentiometer";
+QueueHandle_t pot_queue = NULL;
 int pot_value = 0;  // Valore grezzo (0-4095 con 12 bit)
 
 void potentiometer_init() {

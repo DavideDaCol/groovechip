@@ -27,8 +27,8 @@
 #define GPIO_BUTTON_3     13
 #define GPIO_BUTTON_4     14
 #define GPIO_BUTTON_5     15
-#define GPIO_BUTTON_6     16
-#define GPIO_BUTTON_7     17
+#define GPIO_BUTTON_6     2
+#define GPIO_BUTTON_7     39
 #define GPIO_BUTTON_8     32
 #define PAD_NUM 8
 
