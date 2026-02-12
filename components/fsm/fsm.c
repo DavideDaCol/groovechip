@@ -7,7 +7,9 @@ uint8_t pressed_button = NOT_DEFINED;
 
 mode_t mode = ONESHOT;
 
-char* get_second_line();
+void get_second_line(char *);
+
+const char* TAG = "FSM";
 
 #pragma region GENERAL MENU
 /***********************************
@@ -237,32 +239,37 @@ menu_t* menu_navigation[] = {
 };
 
 
-char* get_second_line(){
-    char* res = "";
-    uint8_t sample_id = get_sample_bank_index(pressed_button);
+void get_second_line(char* out){
+    uint8_t bank_index = get_sample_bank_index(pressed_button);
+    printf("PressedButton: %u\n", pressed_button);
+    printf("Bank index: %u\n", bank_index);
     switch (curr_menu)
     {
     case BITCRUSHER:
+        if(bank_index == NOT_DEFINED) break; // if there is no associated sample_id, exit
+        uint8_t value;
         switch (menu_navigation[curr_menu]->curr_index)
         {
-        case ENABLED:
-            // retrieve current value and return
-            uint8_t sample_id = get_sample_bank_index(pressed_button);
-            if(sample_id != NOT_DEFINED){
-                if(get_bit_crusher_state(sample_id)){
-                    res = "On";
-                }
-                else res = "Off";
+        // retrieve current value set res
+        case ENABLED_BC:
+            if(get_bit_crusher_state(bank_index)){
+                sprintf(out, "On");
             }
+            else sprintf(out, "Off");
             break;
-        
+
         case BIT_DEPTH:
-            
+            value = get_bit_crusher_bit_depth(bank_index);
+            printf("BD: %u", value);
+            sprintf(out, "%u", value);
             break;
 
         case DOWNSAMPLE:
-            /* code */
+            value = get_bit_crusher_downsample(bank_index);
+            printf("DS: %u", value);
+            sprintf(out, "%u", value);
             break;
+            
         default:
             break;
         }
@@ -277,40 +284,64 @@ char* get_second_line(){
     default:
         break;
     }
-    return res;
 }
 
 #pragma region MAIN FSM
 //FSM implementation function
 void main_fsm(QueueSetHandle_t in_set) {
     while(1) {
-        //
         QueueSetMemberHandle_t curr_io_queue = xQueueSelectFromSet(in_set, pdMS_TO_TICKS(50)); //TODO: determine the period
-        
+        bool is_changed = false;
+        if(curr_io_queue == NULL) continue;
+
         if (curr_io_queue == joystick_queue) {
             JoystickDir curr_js;
-            xQueueReceive(curr_io_queue, &curr_js, 0);
+            if(xQueueReceive(curr_io_queue, &curr_js, 0) == pdFALSE){
+                ESP_LOGE(TAG, "Error: unable to read the joystick_queue");
+                continue;
+            }
             joystick_handler(curr_js);  
             if(curr_js != CENTER){
-                char* line1 = (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).first_line;
-                char* line2 = (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).second_line();
-                print_double(line1, line2);
+                is_changed = true;
             }
 
         } else if (curr_io_queue == pad_queue) {
             pad_queue_msg_t curr_pad;
-            xQueueReceive(curr_io_queue, &curr_pad, 0);
+            if(xQueueReceive(curr_io_queue, &curr_pad, 0) == pdFALSE){
+                ESP_LOGE(TAG, "Error: unable to read the pad_queue");
+                continue;
+            }
+
             set_button_pressed(curr_pad.pad_id);
+
+            printf("CurrPadId: %d\n", curr_pad.pad_id);
             
-            char* line1 = (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).first_line;
-            char* line2 = (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).second_line();
-            print_double(line1, line2);
+            // char* line1 = (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).first_line;
+            // char line2[17] = "";
+                
+            // (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).second_line(line2);
+            // print_double(line1, line2);
+            is_changed = true;
 
         } else if (curr_io_queue == pot_queue){
             int diff_percent_pot_value;
-            xQueueReceive(curr_io_queue, &diff_percent_pot_value, 0);
+            if(xQueueReceive(curr_io_queue, &diff_percent_pot_value, 0) == pdFALSE){
+                ESP_LOGE(TAG, "Error: unable to read the pad_queue");
+                continue;
+            }
+            printf("diff_percent: %d\n", diff_percent_pot_value);
+            potentiometer_handler(diff_percent_pot_value);
+            is_changed = true;
         } 
 
+        if(is_changed){
+            char* line1 = (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).first_line;
+            char line2[17] = "";
+            
+            (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).second_line(line2);
+            print_double(line1, line2);
+            is_changed = false;
+        }
     }
 }
 #pragma endregion
@@ -411,6 +442,7 @@ void js_down_handler() {
 void set_button_pressed(int pad_id) {
     if(pad_id != pressed_button){
         pressed_button = pad_id;
+        btn_menu.curr_index = 0;
         curr_menu = BTN_MENU;
     }
 }

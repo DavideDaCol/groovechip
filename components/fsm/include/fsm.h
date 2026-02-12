@@ -67,13 +67,13 @@ typedef enum {
 } menu_types;
 
 typedef enum{
-    ENABLED,
+    ENABLED_BC,
     BIT_DEPTH,
     DOWNSAMPLE
 } bitcrusher_menu_t;
 
 typedef enum{
-    ENABLED,
+    ENABLED_D,
     GAIN,
     THRESHOLD
 } distortion_menu_t;
@@ -82,7 +82,7 @@ typedef enum{
 extern menu_types curr_menu;
 
 //Records the last pressed button, which is useful to know the button to apply the changes to 
-extern int8_t pressed_button;
+extern uint8_t pressed_button;
 
 //Records the last mode set (or the default one if never changed)
 extern mode_t mode;
@@ -90,7 +90,7 @@ extern mode_t mode;
 //Actual functions to perform when an input is received through joystick or potentiometer
 typedef void (*action_t) (void); 
 typedef void (*pt_action_t) (int); 
-typedef char* (*second_line_t) (void);
+typedef void (*second_line_t) (char*);
 
 //Interaction with a single voice of the menu
 typedef struct {

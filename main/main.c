@@ -15,7 +15,7 @@
 #include "fsm.h"
 #include "lcd.h"
 
-#define SET_LENGTH 3
+#define SET_LENGTH 30
 
 QueueSetHandle_t connection_init();
 

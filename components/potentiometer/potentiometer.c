@@ -62,7 +62,7 @@ void potentiometer_task(void *args) {
         
         // ignore the repetitive events
         if (abs(pot_value - last_pot_value) > POT_THRESHOLD){
-            printf("Pot: %d (raw) | %d%% | %.2fV\n", pot_value, percent, voltage);
+            printf("Pot: %d (raw) | %d%% | %.2fV\n", pot_value, diff_percent, voltage);
             xQueueSend(pot_queue, &diff_percent, 0); // parameters -> queue name, message, tick to wait to send the message
             last_pot_value = pot_value;
         }
