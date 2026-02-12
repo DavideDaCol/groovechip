@@ -290,7 +290,7 @@ void get_second_line(char* out){
 
 #pragma region MAIN FSM
 //FSM implementation function
-void main_fsm_task() {
+void main_fsm_task(void *pvParameters) {
     while(1) {
         bool is_changed = false;
         fsm_queue_msg_t msg;

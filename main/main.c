@@ -19,16 +19,16 @@ void app_main(void)
 {
     // xTaskCreate(&simpleTask, "simple task", 2048, NULL, 5, NULL);
     // printf("Aspetto...");
+    lcd_driver_init();
+    fsm_init();
     adc1_init();
     pad_section_init();
     playback_mode_init();
     effects_init();
     potentiometer_init();
     joystick_init();
-    lcd_driver_init();
 
     i2s_chan_handle_t master = i2s_driver_init();
     create_mixer(master);
 
-    fsm_init();
 }

@@ -35,7 +35,7 @@ typedef struct {
     int payload;
 } fsm_queue_msg_t;
 
-void main_fsm_task();
+void main_fsm_task(void *pvParameters);
 void joystick_handler(JoystickDir in_dir);
 void goto_settings();
 void goto_effects();
