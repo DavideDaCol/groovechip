@@ -11,6 +11,7 @@
 
 
 #include <cJSON.h>
+#include <dirent.h>
 #include "spi_driver.h" 
 #include "sdmmc_cmd.h"
 #include "esp_vfs_fat.h"
@@ -18,6 +19,10 @@
 #include "mixer.h"
 #include "effects.h"
 #include "esp_psram.h"
+
+extern char **sample_names;
+extern int sample_names_size;
+
 
 //Default mountpoint
 #define GRVCHP_MNTPOINT "/sdcard"

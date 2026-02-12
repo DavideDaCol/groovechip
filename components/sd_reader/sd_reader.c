@@ -1,6 +1,12 @@
 #include "include/sd_reader.h"
 
+char** sample_names = NULL;
+int sample_names_size = 0;
+
 static sdmmc_card_t sd_card;
+
+/* Function to explore the mount point and to fill the sample_names array*/
+static esp_err_t sd_exploration();
 
 esp_err_t sd_reader_init() {
     esp_err_t res;
@@ -9,6 +15,7 @@ esp_err_t sd_reader_init() {
     res = sdspi_driver_init(&sd_card);
     if (res != ESP_OK)
         return res;
+
 
     //Defining the mountpoint configuration
     esp_vfs_fat_conf_t sd_mntpoint_conf = {
@@ -38,7 +45,7 @@ esp_err_t sd_reader_init() {
         return ESP_FAIL;
     }
 
-    return ESP_OK;
+    return sd_exploration();
 }
 
 esp_err_t ld_sample(int in_bank_index, char* sample_name, sample_t** out_sample_ptr) {
@@ -125,3 +132,34 @@ esp_err_t st_sample(sample_t* in_sample) {
     }
     return ESP_OK;
 }
+
+static esp_err_t sd_exploration() {
+    struct dirent* dir_entry;
+
+    //Opening the SD filesystem via ANSI C functions 
+    DIR* dir = opendir(GRVCHP_MNTPOINT);
+
+    if (dir == NULL) {
+        return ESP_FAIL;
+    }
+
+    //Obtaining the number of files (=entries in the directory) 
+    sample_names_size = 0;
+    while ((dir_entry = readdir(dir)) != NULL) sample_names_size++;
+    
+    //Allocating the array with the previously calculated size 
+    sample_names = malloc(sample_names_size*sizeof(char *));
+
+    dir = opendir(GRVCHP_MNTPOINT);
+
+    //Filling the array with the names of the samples in the SD card
+    for (int i = 0; i < sample_names_size; i++) {
+        dir_entry = readdir(dir);
+        if (dir_entry == NULL) {
+            return ESP_FAIL;
+        }
+        sample_names[i] = malloc(MAX_SIZE * sizeof(char));
+        sscanf(dir_entry -> d_name, "%s.WAV", sample_names[i]);
+    }
+    return ESP_OK;
+}  

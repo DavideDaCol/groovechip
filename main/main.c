@@ -14,6 +14,7 @@
 #include "adc1.h"
 #include "fsm.h"
 #include "lcd.h"
+#include "sd_reader.h"
 
 #define SET_LENGTH 3
 
@@ -21,22 +22,11 @@ QueueSetHandle_t connection_init();
 
 void app_main(void)
 {
-    // xTaskCreate(&simpleTask, "simple task", 2048, NULL, 5, NULL);
-    // printf("Aspetto...");
-    adc1_init();
-    pad_section_init();
-    playback_mode_init();
-    effects_init();
-    potentiometer_init();
-    joystick_init();
-    lcd_driver_init();
+    sd_reader_init();
 
-    i2s_chan_handle_t master = i2s_driver_init();
-    create_mixer(master);
-
-    QueueSetHandle_t io_queue_set = connection_init();
-
-    main_fsm(io_queue_set);
+    for (int i = 0; i < sample_names_size; i++) {
+        printf("%s\n", sample_names[i]);
+    }
 }
 
 //Setup function

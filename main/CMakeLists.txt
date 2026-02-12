@@ -12,4 +12,6 @@ idf_component_register(SRCS "main.c"
                         adc1
                         fsm
                         lcd
+                        sd_reader
+                        json
                     INCLUDE_DIRS ".")

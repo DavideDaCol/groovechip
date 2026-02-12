@@ -5,6 +5,9 @@
  *          The pins have been selected according to the ESP32 datasheet.         *
  **********************************************************************************/
 
+#ifndef SPI_H
+#define SPI_H
+
 #include "driver/spi_common.h"
 #include "sdmmc_cmd.h"
 #include "driver/sdspi_host.h"
@@ -20,3 +23,5 @@
 *  - out_card (OUT): pointer to the card's info
 */
 esp_err_t sdspi_driver_init(sdmmc_card_t* out_card);
+
+#endif
