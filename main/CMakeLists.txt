@@ -11,4 +11,5 @@ idf_component_register(SRCS "main.c"
                         potentiometer
                         adc1
                         fsm
+                        lcd
                     INCLUDE_DIRS ".")

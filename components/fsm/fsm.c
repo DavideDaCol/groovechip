@@ -224,21 +224,22 @@ void main_fsm(QueueSetHandle_t in_set) {
         QueueSetMemberHandle_t curr_io_queue = xQueueSelectFromSet(in_set, pdMS_TO_TICKS(50)); //TODO: determine the period
         
         if (curr_io_queue == joystick_queue) {
-            
             JoystickDir curr_js;
             xQueueReceive(curr_io_queue, &curr_js, 0);
             joystick_handler(curr_js);  
-            printf("%s\n", (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).print);
+            if(curr_js != CENTER){
+                print_single((menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).print);
+            }
 
         } else if (curr_io_queue == pad_queue) {
             pad_queue_msg_t curr_pad;
             xQueueReceive(curr_io_queue, &curr_pad, 0);
             set_button_pressed(curr_pad.pad_id);
+            print_single((menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).print);
 
         } else if (curr_io_queue == pot_queue){
             int diff_percent_pot_value;
             xQueueReceive(curr_io_queue, &diff_percent_pot_value, 0);
-
         } 
 
     }
@@ -253,8 +254,10 @@ void joystick_handler(JoystickDir in_dir) {
         case DOWN: js_down_handler(); break;
         case RIGHT: js_right_handler(); break;
         case UP: js_up_handler(); break;
-        default: sink();
+        default: sink(); return;
     }
+    printf("%s\n", (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).print);
+
 }
 
 //Atomic function to navigate the menu

@@ -78,7 +78,10 @@ void lcd_driver_init() {
 
     lcd_queue = xQueueCreate(10, sizeof(lcd_msg_t*));
 
-    xTaskCreate(lcd_task, "LCD Task", 4096, NULL, 5, NULL);
+    BaseType_t res = xTaskCreate(lcd_task, "LCD Task", 4096, NULL, 5, NULL);
+    if (res != pdPASS)
+        printf("hell nah\n");
+    
 }
 
 
@@ -139,6 +142,7 @@ void lcd_task(void *args) {
             
             // Now msg_ptr points to the malloc'd struct
             if (msg_ptr != NULL) {
+                printf("Recv msg: \n--------------\n%s\n%s\n---------------\n", msg_ptr->first_row, msg_ptr->sec_row);
                 LCD_clearScreen(); // Good practice to clear before writing new frame
                 
                 LCD_setCursor(0, 0); 
@@ -147,12 +151,12 @@ void lcd_task(void *args) {
                 LCD_setCursor(0, 1);
                 LCD_writeStr(msg_ptr->sec_row);
 
-                vTaskDelay(pdMS_TO_TICKS(2000));
                 
                 // IMPORTANT: Free the memory allocated in the sender
                 free(msg_ptr);
             }
         }
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
 

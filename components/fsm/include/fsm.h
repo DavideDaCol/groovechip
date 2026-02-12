@@ -15,6 +15,7 @@
 #include "joystick.h"
 #include "potentiometer.h"
 #include "adc1.h"
+#include "lcd.h"
 
 #define GEN_MENU_NUM_OPT 2
 #define BTN_MENU_NUM_OPT 4

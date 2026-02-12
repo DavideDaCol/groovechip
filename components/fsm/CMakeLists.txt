@@ -10,4 +10,5 @@ idf_component_register(SRCS "fsm.c"
                         joystick 
                         potentiometer
                         adc1
+                        lcd
                     INCLUDE_DIRS "include")

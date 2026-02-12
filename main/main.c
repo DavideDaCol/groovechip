@@ -13,6 +13,7 @@
 #include "potentiometer.h"
 #include "adc1.h"
 #include "fsm.h"
+#include "lcd.h"
 
 #define SET_LENGTH 3
 
@@ -28,6 +29,7 @@ void app_main(void)
     effects_init();
     potentiometer_init();
     joystick_init();
+    lcd_driver_init();
 
     i2s_chan_handle_t master = i2s_driver_init();
     create_mixer(master);
