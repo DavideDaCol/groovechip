@@ -2,6 +2,7 @@
 #include "mixer.h"
 #include "playback_mode.h"
 #include "esp_log.h"
+#include "fsm.h"
 static const char* TAG = "PadSection";
 
 // pad config
@@ -48,14 +49,8 @@ static void IRAM_ATTR gpio_isr_handler(void *arg){
 
 	enum evt_type_t event_type = level == 0 ? EVT_PRESS : EVT_RELEASE;
 
-	// send press event to the fsm
-	if(event_type == EVT_PRESS){
-		pad_queue_msg_t msg;
-		msg.pad_id = pad_id;
-		ESP_EARLY_LOGI(TAG, "SEND PAD %d\n", msg.pad_id);
-		if(xQueueSendFromISR(pad_queue, &msg, NULL) == pdTRUE){
-			ESP_EARLY_LOGI(TAG, "MANDATO\n");
-		}
+	if (event_type == EVT_PRESS){
+		send_message_to_fsm_queue_from_ISR(PAD, pad_id);
 	}
 
 	// send the event on the sample task
@@ -65,9 +60,6 @@ static void IRAM_ATTR gpio_isr_handler(void *arg){
 #pragma endregion
 
 void pad_section_init(){
-	// init queue
-	pad_queue = xQueueCreate(10, sizeof(pad_queue_msg_t));
-
 	// GPIO config
 	gpio_config_t io_conf = {};
 	io_conf.intr_type = GPIO_INTR_ANYEDGE; // on press and release

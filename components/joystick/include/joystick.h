@@ -24,8 +24,6 @@ typedef struct {
 
 extern Joystick my_joystick;
 
-extern QueueHandle_t joystick_queue;
-
 void joystick_init(void);
 
 void joystick_get_raw(void);

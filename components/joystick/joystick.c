@@ -4,6 +4,7 @@
 #include "esp_adc/adc_oneshot.h"
 #include "esp_mac.h"
 #include "include/joystick.h"
+#include "fsm.h"
 
 
 #define ADC_CHANNEL_X ADC_CHANNEL_6
@@ -16,7 +17,6 @@
 #define DEBOUNCE_MS  30
 
 Joystick my_joystick = { 0, 0, 1};
-QueueHandle_t joystick_queue;
 
 void joystick_init() {
 
@@ -37,9 +37,6 @@ void joystick_init() {
         .pull_up_en = GPIO_PULLUP_ENABLE // if pushed, it's 0, otherwise it's 1 
     };
     gpio_config(&io_conf);
-
-    // creating the queue
-    joystick_queue = xQueueCreate(10, sizeof(JoystickDir)); // don't know how many messages the queue should be able to contain at a time, i put 10 as a starting point (can be changed)
 
     // creating the task
     xTaskCreate(joystick_task, "joystick_task", 2048, NULL, 5, NULL); // not sure about these parameters (expecially the stack depth), but for now should work
@@ -85,7 +82,7 @@ void joystick_task(void *args){
 
         // ignore the repetitive events
         if (new_dir != last_dir){
-            xQueueSend(joystick_queue, &new_dir, 0); // parameters -> queue name, message, tick to wait to send the message
+            send_message_to_fsm_queue(JOYSTICK, new_dir); 
             last_dir = new_dir;
         }
 

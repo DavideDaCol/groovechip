@@ -7,12 +7,12 @@
 #include "include/potentiometer.h" 
 #include "esp_log.h"
 #include <stdlib.h>
+#include "fsm.h"
 
 #define POT_CHANNEL ADC_CHANNEL_0  // GPIO 36
 #define POT_READ_INTERVAL_MS 20   // reading interval in ms
 
 const char* TAG_POT = "Potentiometer";
-QueueHandle_t pot_queue = NULL;
 int pot_value = 0;  // Valore grezzo (0-4095 con 12 bit)
 
 void potentiometer_init() {
@@ -24,13 +24,6 @@ void potentiometer_init() {
     };
     
     adc_oneshot_config_channel(adc1_handle, POT_CHANNEL, &config);
-    
-    // creating the queue
-    pot_queue = xQueueCreate(10, sizeof(int));
-
-    if(pot_queue == pdFALSE){
-        ESP_LOGE(TAG_POT, "Error: unable to create pot queue");
-    }
 
     // create the task
     xTaskCreate(potentiometer_task, "pot_task", 2048, NULL, 5, NULL);
@@ -80,9 +73,7 @@ void potentiometer_task(void *args) {
         // ignore the repetitive events
         if (abs(diff_percent - last_diff_percentage) > 0){
             printf("Pot: %d (raw) | %d%% | %.2fV\n", pot_value, percent, voltage);
-            if(xQueueSend(pot_queue, &diff_percent, 0) == pdFALSE){
-                ESP_LOGE(TAG_POT, "Error: unable to send the message in pot queue");
-            } // parameters -> queue name, message, tick to wait to send the message
+            send_message_to_fsm_queue(POTENTIOMETER, diff_percent);
             last_pot_value = pot_value;
             last_diff_percentage = diff_percent;
         }

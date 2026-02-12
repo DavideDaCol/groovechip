@@ -1,6 +1,8 @@
 #include "fsm.h"
 #include <math.h>
 
+static QueueHandle_t fsm_queue = NULL;
+
 menu_types curr_menu = GEN_MENU;
 
 uint8_t pressed_button = NOT_DEFINED;
@@ -288,52 +290,34 @@ void get_second_line(char* out){
 
 #pragma region MAIN FSM
 //FSM implementation function
-void main_fsm(QueueSetHandle_t in_set) {
+void main_fsm_task() {
     while(1) {
-        QueueSetMemberHandle_t curr_io_queue = xQueueSelectFromSet(in_set, pdMS_TO_TICKS(50)); //TODO: determine the period
         bool is_changed = false;
-        if(curr_io_queue == NULL) continue;
-
-        if (curr_io_queue == joystick_queue) {
-            JoystickDir curr_js;
-            if(xQueueReceive(curr_io_queue, &curr_js, 0) == pdFALSE){
-                ESP_LOGE(TAG_FSM, "Error: unable to read the joystick_queue");
-                continue;
-            }
-            joystick_handler(curr_js);  
-            if(curr_js != CENTER){
+        fsm_queue_msg_t msg;
+        if (xQueueReceive(fsm_queue, &msg, portMAX_DELAY) == pdFALSE){
+            ESP_LOGE(TAG_FSM, "Error: unable to read the fsm_queue");
+            continue;
+        }
+        int payload = msg.payload;
+        switch (msg.source)
+        {
+        case JOYSTICK:
+            joystick_handler(payload);  
+            if(payload != CENTER){
                 is_changed = true;
             }
-
-        } else if (curr_io_queue == pad_queue) {
-            pad_queue_msg_t curr_pad;
-            if(xQueueReceive(curr_io_queue, &curr_pad, 0) == pdFALSE){
-                ESP_LOGE(TAG_FSM, "Error: unable to read the pad_queue");
-                continue;
-            }
-
-            set_button_pressed(curr_pad.pad_id);
-
-            printf("CurrPadId: %d\n", curr_pad.pad_id);
-            
-            // char* line1 = (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).first_line;
-            // char line2[17] = "";
-                
-            // (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).second_line(line2);
-            // print_double(line1, line2);
+            break;
+        case POTENTIOMETER:
+            potentiometer_handler(payload);
             is_changed = true;
-
-        } else if (curr_io_queue == pot_queue){
-            int diff_percent_pot_value;
-            if(xQueueReceive(curr_io_queue, &diff_percent_pot_value, 0) == pdFALSE){
-                ESP_LOGE(TAG_FSM, "Error: unable to read the pad_queue");
-                continue;
-            }
-            printf("diff_percent: %d\n", diff_percent_pot_value);
-            potentiometer_handler(diff_percent_pot_value);
+            break;
+        case PAD:
+            set_button_pressed(payload);
             is_changed = true;
-        } 
-
+            break;
+        default:
+            break;
+        }
         if(is_changed){
             char* line1 = (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).first_line;
             char line2[17] = "";
@@ -342,6 +326,7 @@ void main_fsm(QueueSetHandle_t in_set) {
             print_double(line1, line2);
             is_changed = false;
         }
+        vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
 #pragma endregion
@@ -602,6 +587,36 @@ void change_distortion_threshold(int pot_value){
         int16_t curr_threshold = get_distortion_threshold(get_sample_bank_index(pressed_button));
         int16_t new_threshold = (curr_threshold + threshold_changing + DISTORTION_THRESHOLD_MAX) % DISTORTION_THRESHOLD_MAX;
         set_distortion_threshold(get_sample_bank_index(pressed_button), new_threshold);
+    }
+}
+
+#pragma endregion
+
+void fsm_init(){
+    fsm_queue = xQueueCreate(30, sizeof(fsm_queue_msg_t));
+
+    xTaskCreate(main_fsm_task, "fsm_task", 2048, NULL, 5, NULL);
+}
+
+#pragma region SINGLE QUEUE FUNCTIONS
+
+void send_message_to_fsm_queue(message_source_t source, int payload){
+    fsm_queue_msg_t msg = {
+        .source = source,
+        .payload = payload
+    };
+    if (xQueueSend(fsm_queue, &msg, 0) == pdFALSE){
+        ESP_LOGE(TAG_FSM, "Error: unable to send the message to the fsm_queue");
+    }
+}
+
+void IRAM_ATTR send_message_to_fsm_queue_from_ISR(message_source_t source, int payload){
+    fsm_queue_msg_t msg = {
+        .source = source,
+        .payload = payload
+    };
+    if (xQueueSendFromISR(fsm_queue, &msg, NULL) == pdFALSE){
+        ESP_LOGE(TAG_FSM, "Error: unable to send the message to the fsm_queue");
     }
 }
 

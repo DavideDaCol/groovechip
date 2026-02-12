@@ -7,13 +7,11 @@
 #include "esp_system.h"
 #include "esp_mac.h"
 #include "driver/gpio.h"
-#include "i2s_driver.h"
-#include "mixer.h"
 #include "effects.h"
+#include "mixer.h"
 #include "playback_mode.h"
 #include "pad_section.h"
 #include "joystick.h"
-#include "potentiometer.h"
 #include "adc1.h"
 #include "lcd.h"
 
@@ -26,7 +24,18 @@
 #define PITCH_NUM_OPT 1
 #define DISTORTION_NUM_OPT 2
 
-void main_fsm(QueueSetHandle_t in_set);
+typedef enum {
+    JOYSTICK,
+    POTENTIOMETER,
+    PAD,
+} message_source_t;
+
+typedef struct {
+    message_source_t source;
+    int payload;
+} fsm_queue_msg_t;
+
+void main_fsm_task();
 void joystick_handler(JoystickDir in_dir);
 void goto_settings();
 void goto_effects();
@@ -54,6 +63,9 @@ void change_downsample(int pot_value);
 void change_distortion_gain(int pot_value);
 void change_distortion_threshold(int pot_value);
 mode_t next_mode(int next, mode_t curr_mode);
+void send_message_to_fsm_queue(message_source_t source, int payload);
+void send_message_to_fsm_queue_from_ISR(message_source_t source, int payload);
+void fsm_init();
 
 //Enum that describes every type of menu we have in our project
 typedef enum {
