@@ -100,6 +100,7 @@ void pad_section_init(){
 	for(int i = 0; i < PAD_NUM; i++){
 		gpio_isr_handler_add(BUTTONS[i], gpio_isr_handler, (void *)BUTTONS[i]); // ISR installation
 		map_gpio_to_pad_num[BUTTONS[i]] = i + 1; // map gpio to pad num
+        ESP_LOGI(TAG, "mapped GPIO %i to pad number %i", BUTTONS[i], map_gpio_to_pad_num[BUTTONS[i]]);
 	}
 
 	ESP_LOGI(TAG, "[Pad Section] Ready\n");

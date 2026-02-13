@@ -434,11 +434,12 @@ void goto_distortion() {
 
 void sample_load() {
     ESP_LOGW(TAG_FSM, "pressed_button is %i", pressed_button);
-    int sample_idx = get_sample_bank_index(pressed_button);
+    int sample_idx = get_pad_num(pressed_button) - 1;
+
     int index = menu_navigation[curr_menu] -> curr_index;
     ld_sample(sample_idx, sample_names[index], &sample_bank[sample_idx]);
 
-    map_pad_to_sample(pressed_button, index);
+    map_pad_to_sample(pressed_button, sample_idx);
 }
 
 // Function that calls the correct handler based on the current menu

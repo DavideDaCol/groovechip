@@ -129,7 +129,7 @@ void sample_task(void *pvParameter){
 			case SRC_PAD_SECTION:
 				//the message came from PAD_SECTION, get the associated bank_index
 				if (queue_msg.payload.pad_id < GPIO_NUM_MAX) {
-                    bank_index = pad_to_sample_map[queue_msg.payload.pad_id];
+                    bank_index = get_sample_bank_index(queue_msg.payload.pad_id);
                 }
 				break;
 			case SRC_MIXER:
@@ -168,6 +168,8 @@ void sample_task(void *pvParameter){
 }
 
 void playback_mode_init(){
+
+
     // set default sample mode (HOLD)
 	for(int i = 0; i < SAMPLE_NUM; i++){
 		set_playback_mode(i, HOLD);
@@ -175,7 +177,7 @@ void playback_mode_init(){
 
 	// init pad to sample to NOT_DEFINED
 	for(int i = 0; i  < GPIO_NUM_MAX; i++){
-		map_pad_to_sample(i, NOT_DEFINED);
+        pad_to_sample_map[i] = NOT_DEFINED;
 	}
 
 	// init queue
