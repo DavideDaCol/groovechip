@@ -15,6 +15,7 @@
 #include "adc1.h"
 #include "lcd.h"
 
+#define MENU_NUM 7
 #define GEN_MENU_NUM_OPT 2
 #define BTN_MENU_NUM_OPT 4
 #define SETTINGS_NUM_OPT 2
@@ -67,6 +68,7 @@ void send_message_to_fsm_queue(message_source_t source, int payload);
 void send_message_to_fsm_queue_from_ISR(message_source_t source, int payload);
 void fsm_init();
 
+
 //Enum that describes every type of menu we have in our project
 typedef enum {
     GEN_MENU,
@@ -77,6 +79,7 @@ typedef enum {
     PITCH,
     DISTORTION
 } menu_types;
+
 
 typedef enum{
     ENABLED_BC,
@@ -119,6 +122,16 @@ typedef struct {
     opt_interactions_t* opt_handlers;   //Array of handlers for each voice
 } menu_t;
 
+typedef struct{
+    menu_types menu;
+    uint8_t index;
+} menu_pair_t;
+
+// stack for navigate the menu
+void menu_push(menu_types menu, int index);
+menu_pair_t menu_pop();
+void clear_stack();
+
 extern opt_interactions_t gen_handlers[];
 extern menu_t gen_menu;
 
@@ -141,5 +154,7 @@ extern opt_interactions_t distortion_handlers[];
 extern menu_t distortion_menu;
 
 extern menu_t* menu_navigation[];
+// extern const menu_pair_t PREV_MENU_GENERAL[];
+// extern const menu_pair_t PREV_MENU_PAD[];
 
 #endif
