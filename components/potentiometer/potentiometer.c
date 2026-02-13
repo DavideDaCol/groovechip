@@ -94,7 +94,7 @@ void potentiometer_task(void *args) {
             ESP_LOGI(TAG_POT, "Changed: %d%% (raw: %d, %.2fV, diff: %+d%%)", 
                      percent, pot_value, voltage, percent - last_percentage);
             
-            send_message_to_fsm_queue(POTENTIOMETER, percent - last_percentage);
+            send_message_to_fsm_queue(POTENTIOMETER, percent);
             last_percentage = percent;
         }
         
