@@ -269,6 +269,7 @@ void clear_stack(){
 }
 
 void get_second_line(char* out){
+    sprintf(out, " "); //reset string
     uint8_t bank_index = get_sample_bank_index(pressed_button);
     uint8_t pad_num = get_pad_num(pressed_button);
 
@@ -279,8 +280,6 @@ void get_second_line(char* out){
     case GEN_MENU: //general case
         sprintf(out, "General");
         break;
-
-    case SETTINGS:
     case BTN_MENU:
     case EFFECTS:
         if(pad_num != PAD_NUM_NOT_DEFINED){
@@ -289,6 +288,31 @@ void get_second_line(char* out){
         else sprintf(out, "General"); //general menu
         break;
 
+    case SETTINGS:
+        if(bank_index != NOT_DEFINED){
+            mode_t curr_mode = HOLD;
+            float volume = 0.0;
+            
+            printf("Current index: %d\n", menu_navigation[curr_menu]->curr_index);
+            switch (menu_navigation[curr_menu]->curr_index)
+            {
+            case MODE:
+                curr_mode = get_playback_mode(bank_index);
+                get_mode_stringify(curr_menu, out);
+                break;
+            case VOLUME:
+                volume = get_volume(bank_index);
+                sprintf(out, "%f", volume);
+                break;
+            default:
+                break;
+            }
+        }
+        else{
+            sprintf(out, "General");
+        }
+        break;
+        
     // single effects cases
     case BITCRUSHER:
         if(bank_index == NOT_DEFINED) break; // if there is no associated sample_id, exit

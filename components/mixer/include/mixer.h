@@ -100,7 +100,7 @@ void set_sample_start_ptr(uint8_t, float);
 
 // volume
 void set_volume(uint8_t, float);
-
+float get_volume(uint8_t);
 //metronome actions
 void init_metronome();
 void toggle_metronome_state(bool);

@@ -50,6 +50,26 @@ const playback_mode_t* PLAYBACK_MODES[] = {
 static const playback_mode_t* samples_config[SAMPLE_NUM];
 static int pad_to_sample_map[GPIO_NUM_MAX];
 
+void get_mode_stringify(mode_t mode, char* out){
+	switch (mode)
+	{
+	case HOLD:
+		sprintf(out, "HOLD");
+		break;
+	case ONESHOT:
+		sprintf(out, "ONESHOT");
+		break;
+	case ONESHOT_LOOP: 
+		sprintf(out, "ONESHOT LOOP");
+		break;
+	case LOOP:
+		sprintf(out, "LOOP");
+		break;
+	default:
+		break;
+	}
+}
+
 uint8_t get_sample_bank_index(uint8_t pad_id){
 	if(pad_id >= 0 && pad_id < GPIO_NUM_MAX){
 		return pad_to_sample_map[pad_id];

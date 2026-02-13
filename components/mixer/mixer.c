@@ -189,6 +189,13 @@ void set_volume(uint8_t bank_index, float volume_to_add){
     }
 }
 
+float get_volume(uint8_t bank_index){
+    if(bank_index < SAMPLE_NUM){
+        return sample_bank[bank_index].volume;
+    } 
+    else return 0.0;
+}
+
 #pragma endregion
 
 #pragma region METRONOME

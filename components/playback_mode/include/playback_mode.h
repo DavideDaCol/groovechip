@@ -63,6 +63,8 @@ typedef struct {
     event_handler on_finish;
 } playback_mode_t;
 
+void get_mode_stringify(mode_t, char*);
+
 mode_t get_playback_mode(uint8_t);
 
 // exposed function to select the pad mode

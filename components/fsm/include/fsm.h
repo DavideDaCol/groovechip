@@ -20,7 +20,7 @@
 #define BTN_MENU_NUM_OPT 4
 #define SETTINGS_NUM_OPT 2
 #define EFFECTS_NUM_OPT 3
-#define MODE_NUM_OPT 3
+#define MODE_NUM_OPT 4
 #define BITCRUSHER_NUM_OPT 3
 #define PITCH_NUM_OPT 1
 #define DISTORTION_NUM_OPT 2
@@ -92,6 +92,11 @@ typedef enum{
     GAIN,
     THRESHOLD
 } distortion_menu_t;
+
+typedef enum{
+    MODE,
+    VOLUME
+} settings_menu_t;
 
 //Menu that we are currently navigating
 extern menu_types curr_menu;
