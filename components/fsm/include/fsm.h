@@ -63,7 +63,8 @@ typedef enum {
     EFFECTS,
     BITCRUSHER,
     PITCH,
-    DISTORTION
+    DISTORTION,
+    SAMPLE_LOAD
 } menu_types;
 
 //Menu that we are currently navigating

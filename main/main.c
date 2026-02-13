@@ -22,11 +22,35 @@ QueueSetHandle_t connection_init();
 
 void app_main(void)
 {
+
+    // Test if printf works at all
+    printf("=== PRINTF TEST 1 ===\n");
+    fflush(stdout);
+    
+    // Print heap info
+    printf("Free heap: %lu\n", esp_get_free_heap_size());
+    printf("Free PSRAM: %lu\n", esp_get_free_internal_heap_size());
+    fflush(stdout);
+
     sd_reader_init();
 
     for (int i = 0; i < sample_names_size; i++) {
         printf("%s\n", sample_names[i]);
     }
+
+    adc1_init();
+    joystick_init();
+    pad_section_init();
+    playback_mode_init();
+    effects_init();
+    potentiometer_init();
+    lcd_driver_init();
+
+    i2s_chan_handle_t master = i2s_driver_init();
+    create_mixer(master);
+
+    QueueSetHandle_t io_queue_set = connection_init();
+    main_fsm(io_queue_set);
 }
 
 //Setup function

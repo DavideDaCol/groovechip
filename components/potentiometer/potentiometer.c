@@ -27,7 +27,7 @@ void potentiometer_init() {
     pot_queue = xQueueCreate(10, sizeof(int));
 
     // create the task
-    xTaskCreate(potentiometer_task, "pot_task", 2048, NULL, 5, NULL);
+    xTaskCreate(potentiometer_task, "pot_task", 4096, NULL, 5, NULL);
 }
 
 int potentiometer_read_raw() {

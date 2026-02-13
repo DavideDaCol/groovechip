@@ -1,4 +1,5 @@
 #include "fsm.h"
+#include "sd_reader.h"
 #include <math.h>
 
 menu_types curr_menu = GEN_MENU;
@@ -213,12 +214,32 @@ menu_t* menu_navigation[] = {
     &effects,
     &bit_crusher_menu,
     &pitch_menu,
-    &distortion_menu
+    &distortion_menu,
+    NULL //TODO questa deve corrispondere al menu di sample load a runtime
 };
+
+menu_t sample_load_menu = {};
+opt_interactions_t* sample_load_actions = NULL;
 
 #pragma region MAIN FSM
 //FSM implementation function
 void main_fsm(QueueSetHandle_t in_set) {
+
+    sample_load_actions = (opt_interactions_t *)malloc(sample_names_size * sizeof(opt_interactions_t));
+    //for every sample, create the menu options
+    for(int i = 0; i < sample_names_size; i++){
+        sample_load_actions[i].js_right_action = sink;
+        sprintf(sample_load_actions[i].print,sample_names[i]);
+        sample_load_actions[i].pt_action = sink;
+    }
+    // create the menu for the samples in the SD card
+    sample_load_menu.curr_index = -1;
+    sample_load_menu.max_size = sample_names_size;
+    sample_load_menu.opt_handlers = sample_load_actions;
+
+    // TODO make this nicer
+    menu_navigation[7] = &sample_load_menu;
+
     while(1) {
         //
         QueueSetMemberHandle_t curr_io_queue = xQueueSelectFromSet(in_set, pdMS_TO_TICKS(50)); //TODO: determine the period
@@ -266,6 +287,11 @@ void menu_move(int* index, int max_opt, int direction) {
     *index = (*index + direction + max_opt) % max_opt;
 }
 
+void goto_sample_load() {
+    sample_load_menu.curr_index = 0;
+    curr_menu = SAMPLE_LOAD;
+}
+
 // Atomic function that sets the current menu and the current index
 void goto_settings() {
     settings.curr_index = 0;
@@ -296,10 +322,9 @@ void goto_distortion() {
     curr_menu = DISTORTION;
 }
 
-// TODO
-void goto_selection() {
-    //TODO
-    return;
+void sample_load() {
+    int index = menu_navigation[curr_menu] -> curr_index;
+    ld_sample(pressed_button, sample_names[index], &sample_bank[pressed_button]);
 }
 
 // Function that calls the correct handler based on the current menu
@@ -342,6 +367,7 @@ void js_down_handler() {
 void set_button_pressed(int pad_id) {
     pressed_button = pad_id;
     curr_menu = BTN_MENU;
+    btn_menu.curr_index = 0;
 }
 
 // Sing function

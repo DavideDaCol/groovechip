@@ -81,7 +81,7 @@ void pad_section_init(){
 
 	
 	// ISR installation
-	ESP_ERROR_CHECK(gpio_install_isr_service(0));
+	ESP_ERROR_CHECK(gpio_install_isr_service(ESP_INTR_FLAG_IRAM));
 	gpio_isr_handler_add(GPIO_BUTTON_1, gpio_isr_handler, (void *)GPIO_BUTTON_1);
 	gpio_isr_handler_add(GPIO_BUTTON_2, gpio_isr_handler, (void *)GPIO_BUTTON_2);
 	gpio_isr_handler_add(GPIO_BUTTON_3, gpio_isr_handler, (void *)GPIO_BUTTON_3);

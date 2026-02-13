@@ -64,8 +64,8 @@ esp_err_t ld_sample(int in_bank_index, char* sample_name, sample_t** out_sample_
     }
     
     //Allocating in the PSRAM the section of memory for the sample infos
-    *out_sample_ptr = heap_caps_malloc(sizeof(sample_t), MALLOC_CAP_SPIRAM);
-    
+    // *out_sample_ptr = heap_caps_malloc(sizeof(sample_t), MALLOC_CAP_SPIRAM);
+    *out_sample_ptr = malloc(sizeof(sample_t));
     sample_t* out_sample = *out_sample_ptr;
 
     //Assigning the file's content to the pointer out_sample_ptr
@@ -81,7 +81,8 @@ esp_err_t ld_sample(int in_bank_index, char* sample_name, sample_t** out_sample_
     }
 
     //Allocating the section of memory for the actual sample (wav buffer)
-    out_sample -> raw_data = heap_caps_malloc((out_sample -> header).data_size, MALLOC_CAP_SPIRAM);
+    //out_sample -> raw_data = heap_caps_malloc((out_sample -> header).data_size, MALLOC_CAP_SPIRAM);
+    out_sample -> raw_data = malloc((out_sample -> header).data_size);
 
     //Reading the area of the file where the data is located
     read_cnt = fread(out_sample -> raw_data, 1, (out_sample -> header).data_size, fp);
@@ -159,7 +160,8 @@ static esp_err_t sd_exploration() {
             return ESP_FAIL;
         }
         sample_names[i] = malloc(MAX_SIZE * sizeof(char));
-        sscanf(dir_entry -> d_name, "%s.WAV", sample_names[i]);
+        strncpy(sample_names[i], dir_entry->d_name, MAX_SIZE - 1);
+        sample_names[i][MAX_SIZE - 1] = '\0';
     }
     return ESP_OK;
 }  
