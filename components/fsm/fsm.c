@@ -318,13 +318,18 @@ opt_interactions_t* sample_load_actions = NULL;
 #pragma region MAIN FSM
 //FSM implementation function
 void main_fsm_task(void *pvParameters) {
+
+    for (int i = 0; i < sample_names_size; i++){
+        ESP_LOGI(TAG_FSM, "sample name %i is %s", i, sample_names[i]);
+    }
     
     sample_load_actions = (opt_interactions_t *)malloc(sample_names_size * sizeof(opt_interactions_t));
     //for every sample, create the menu options
     for(int i = 0; i < sample_names_size; i++){
-        char title[17] = "";
-        snprintf(title, sizeof(title), "%s", sample_names[i]);
+        // char title[17] = "";
+        // snprintf(title, sizeof(sample_names[i]), "%s", sample_names[i]);
 
+        ESP_LOGI(TAG_FSM, "created menu entry for %s", sample_names[i]);
         sample_load_actions[i].js_right_action = sample_load;
         sprintf(sample_load_actions[i].first_line,"Sample list:");
         sample_load_actions[i].second_line = get_sample_load_second_line;
@@ -433,10 +438,10 @@ void goto_distortion() {
 }
 
 void sample_load() {
-    ESP_LOGW(TAG_FSM, "pressed_button is %i", pressed_button);
     int sample_idx = get_pad_num(pressed_button) - 1;
-
+    
     int index = menu_navigation[curr_menu] -> curr_index;
+    ESP_LOGW(TAG_FSM, "pressed_button is %i, sample path is %s", pressed_button, sample_names[index]);
     ld_sample(sample_idx, sample_names[index], &sample_bank[sample_idx]);
 
     map_pad_to_sample(pressed_button, sample_idx);

@@ -187,122 +187,77 @@ esp_err_t st_sample(sample_t* in_sample) {
 
 
 static esp_err_t sd_fs_init() {
-    //file_path = directory with the samples to insert
-    char wav_files_path[GRVCHP_MNTPOINT_SIZE + WAV_FILES_DIR_SIZE + 2];
-    snprintf(wav_files_path, sizeof(wav_files_path), "%s/%s", GRVCHP_MNTPOINT, WAV_FILES_DIR);
+    char wav_path[128], json_path[128];
+    snprintf(wav_path, sizeof(wav_path), "%s/%s", GRVCHP_MNTPOINT, WAV_FILES_DIR);
+    snprintf(json_path, sizeof(json_path), "%s/%s", GRVCHP_MNTPOINT, JSON_FILES_DIR);
 
-    char json_files_path[GRVCHP_MNTPOINT_SIZE + JSON_FILES_DIR_SIZE + 2];
-    snprintf(json_files_path, sizeof(json_files_path), "%s/%s", GRVCHP_MNTPOINT, JSON_FILES_DIR);
-    
-    //opening the directory
-    DIR *wav_files_dir = opendir(wav_files_path);
-    if (!wav_files_dir) return ESP_FAIL;
+    DIR *dir = opendir(wav_path);
+    if (!dir) return ESP_FAIL;
 
-    struct dirent* dir_entry;
+    struct dirent* entry;
+    int count = 0;
 
-    //cycle for each new sample
-    while ((dir_entry = readdir(wav_files_dir)) != NULL) {
-        if (dir_entry->d_name[0] == '.') continue;
+    //read directory entries while you can
+    while ((entry = readdir(dir)) != NULL) {
+        if (entry->d_name[0] == '.') continue;
 
-        char sample_name[MAX_SIZE];
-        
-        //extracts the sample name, that will be used for naming the new directory, by truncating the actual name at the MAX_SIZEth character 
-        if (sscanf(dir_entry->d_name, RESOLVE(MAX_SIZE), sample_name) == 1) {
+        //skip all files that don't end in .wav
+        char *ext = strrchr(entry->d_name, '.');
+        if (!ext || (strcasecmp(ext, ".wav") != 0)) continue;
+
+        //extract and truncate the file name
+        char clean_name[MAX_SIZE];
+        snprintf(clean_name, sizeof(clean_name), "%.*s", (int)(ext - entry->d_name), entry->d_name);
+
+        //if the name was truncated rename the original file
+        char full_old_path[256];
+        char full_new_path[256];
+        snprintf(full_old_path, sizeof(full_old_path)*2, "%s/%s", wav_path, entry->d_name);
+        snprintf(full_new_path, sizeof(full_new_path)*2, "%s/%s.wav", wav_path, clean_name);
+
+        if (strcmp(entry->d_name, clean_name) != 0 && !strstr(entry->d_name, clean_name)) {
+             if (rename(full_old_path, full_new_path) != 0) {
+                 ESP_LOGE(TAG, "Rename failed: %s", entry->d_name);
+                 continue; 
+             }
+        }
+
+        //copy the necessary information for the json
+        wav_header_t header;
+        FILE* fp = fopen(full_new_path, "rb");
+        if (fp) {
+            fread(&header, sizeof(wav_header_t), 1, fp);
+            fclose(fp);
+
+            char json_file_path[256];
+            snprintf(json_file_path, sizeof(json_file_path), "%s/%s.json", json_path, clean_name);
             
-            //save the current (absolute) path of the sample wav file
-            char new_sample_path[MAX_BUFF_SIZE + sizeof(wav_files_path) + 2 + WAV_EXTENSION_SIZE];
-            snprintf(new_sample_path, sizeof(new_sample_path), "%s/%s.wav", wav_files_path, sample_name);
+            set_json(json_file_path, false, DOWNSAMPLE_MAX, BIT_DEPTH_MAX, 1.0, 
+                     false, DISTORTION_THRESHOLD_MAX, DISTORTION_GAIN_MAX, 0, header.data_size);
             
-            //case: the file name has been truncated (over 17 characters)
-            if (strcmp(dir_entry->d_name, sample_name) != 0){
-                //get the full path again
-                char curr_sample_path[MAX_BUFF_SIZE + sizeof(wav_files_path) + 2];
-                snprintf(curr_sample_path, sizeof(curr_sample_path), "%s/%s", wav_files_path, dir_entry -> d_name);
-                //rename the long sample name to its truncated version
-                if (rename(curr_sample_path,new_sample_path) != 0) return ESP_FAIL;
-            }
-
-            ESP_LOGI(TAG, "path after rename: %s", new_sample_path);
-
-            //ext = extension of the current file
-            char *ext = strchr(dir_entry -> d_name, '.');
-            printf("%s\n", ext);
-            
-            //checks that the extension must be contained in the name and that it is a wav
-            if (ext != NULL) {
-                if (strcmp(ext, ".wav") == 0 || strcmp(ext, ".WAV") == 0) {
-                    // //temp_path1 = path of the directory that will the current new sample
-                    // if (snprintf(temp_path1, sizeof(temp_path1), "%s/%s", GRVCHP_MNTPOINT, sample_name) < 0) return ESP_FAIL;
-                    
-                    // // creating the directory using the path just created
-                    // mkdir(temp_path1, STD_ACCESS_MODE);
-                    
-                    // //temp_path2 = current file
-                    // if (snprintf(temp_path2, sizeof(temp_path2), "%s/%s", file_path, dir_entry->d_name) < 0) return ESP_FAIL;
-                    
-                    // //reuse temp_path1 carefully or use a third buffer
-                    // char destination[MAX_BUFF_SIZE];
-                    // if (snprintf(destination, sizeof(destination), "%s/%s/%s", GRVCHP_MNTPOINT, sample_name, SAMPLE_FL_NAME) < 0) return ESP_FAIL;
-                    
-                    // //moving the file in the directory and renaming it "sample.wav"
-                    // if (rename(temp_path2, destination) != 0) return ESP_FAIL;
-                    
-                    // //getting the WAV header for reading the data size
-                    // wav_header_t curr_wav_header;
-                    // FILE* fp = fopen(destination, "r");
-                    
-                    // fread(&curr_wav_header, sizeof(wav_header_t), 1, fp);
-                    
-                    // fclose(fp);
-
-                    sample_names_size++;
-
-                    wav_header_t curr_wav_header;
-                    FILE* fp = fopen(new_sample_path, "r");
-
-                    fread(&curr_wav_header, sizeof(wav_header_t), 1, fp);
-
-                    fclose(fp);
-                    
-                    //buffers that will contain the file names
-                    char new_json_file[sizeof(json_files_path) + MAX_SIZE + JSON_EXTENSION_SIZE + 2];
-                    sprintf(new_json_file, "%s/%s.json", json_files_path, sample_name);
-                    
-                    
-                    //creating the json file 
-                    ESP_ERROR_CHECK_WITHOUT_ABORT(
-                        set_json(
-                            new_json_file,
-                            false,
-                            DOWNSAMPLE_MAX,
-                            BIT_DEPTH_MAX,
-                            1.0,
-                            false,
-                            DISTORTION_THRESHOLD_MAX,
-                            DISTORTION_GAIN_MAX,
-                            0,
-                            curr_wav_header.data_size
-                        )
-                    );
-                } else {
-                    ESP_LOGW(TAG,"Wrong file extension (bruh)");
-                    remove(new_sample_path);
-                }
-            }
+            count++; // Only increment count for valid processed WAVs
         }
     }
 
-    sample_names = malloc(sample_names_size * MAX_SIZE);
+    sample_names = malloc(count * sizeof(char*));
+    sample_names_size = count;
 
-    rewinddir(wav_files_dir);
-    for (int i=0; ((dir_entry = readdir(wav_files_dir)) != NULL) && i < sample_names_size; i++) {
-        if (dir_entry->d_name[0] == '.') continue;
-        sscanf(dir_entry->d_name, RESOLVE(MAX_SIZE), sample_names[i]);
-        ESP_LOGI(TAG, "dir_ent: %s", dir_entry->d_name);
+    //get back to the beginning of the directory
+    rewinddir(dir);
+    int idx = 0;
+    while ((entry = readdir(dir)) != NULL && idx < count) {
+        if (entry->d_name[0] == '.') continue;
+        
+        char *ext = strrchr(entry->d_name, '.');
+        if (ext && strcasecmp(ext, ".wav") == 0) {
+            //create the list of samples that the fsm will read
+            sample_names[idx] = malloc(MAX_SIZE);
+            snprintf(sample_names[idx], MAX_SIZE, "%.*s", (int)(ext - entry->d_name), entry->d_name);
+            idx++;
+        }
     }
 
-
-    closedir(wav_files_dir);
+    closedir(dir);
     return ESP_OK;
 }
 
