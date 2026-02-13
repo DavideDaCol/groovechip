@@ -10,9 +10,11 @@
 #define DISTORTION_GAIN_MAX 1.0
 #define DISTORTION_THRESHOLD_MAX 32000
 
-#define VOLUME_NORMALIZER_VALUE 0.01f // TODO lo ho impostato a caso
+#define VOLUME_NORMALIZER_VALUE 0.1f // TODO lo ho impostato a caso
 #define PITCH_NORMALIZER_VALUE 0.03f // TODO lo ho impostato a caso
 #define THRESHOLD_NORMALIZER_VALUE 320
+#define DOWNSAMPLE_NORMALIZER_VALUE 0.1f
+#define BIT_DEPTH_NORMALIZER_VALUE 0.16f
 
 //pitch struct
 typedef struct{

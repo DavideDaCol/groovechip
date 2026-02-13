@@ -13,6 +13,8 @@ void get_second_line(char *);
 
 const char* TAG_FSM = "FSM";
 
+static int last_pot_value = 2000;
+
 #pragma region GENERAL MENU
 /***********************************
 GENERAL MENU 
@@ -402,6 +404,7 @@ void main_fsm_task(void *pvParameters) {
             break;
         case POTENTIOMETER:
             potentiometer_handler(payload);
+            last_pot_value = payload;
             is_changed = true;
             break;
         case PAD:
@@ -562,49 +565,39 @@ void change_vol(int pot_value) {
 void change_pitch(int pot_value){
     if (pressed_button == NOT_DEFINED) {
         for (uint8_t i = 0; i < SAMPLE_NUM; i++) {
-            float sample_i_pitch_factor = get_pitch_factor(i);
-            set_pitch_factor(i, sample_i_pitch_factor + (float)pot_value * PITCH_NORMALIZER_VALUE);
+            set_pitch_factor(i, (float)pot_value * PITCH_NORMALIZER_VALUE);
         }
     } else {
-        float sample_i_pitch_factor = get_pitch_factor(get_sample_bank_index(pressed_button));
-        set_pitch_factor(get_sample_bank_index(pressed_button), sample_i_pitch_factor + (float)pot_value * PITCH_NORMALIZER_VALUE);
+        set_pitch_factor(get_sample_bank_index(pressed_button), (float)pot_value * PITCH_NORMALIZER_VALUE);
     }
 }
 
 // Function that toggles the bit crusher
 void toggle_bit_crusher_menu(int pot_value){
-    bool bit_crusher = false;
-    if (pot_value >= 0){
-        bit_crusher = true;
-    }
     if (pressed_button == NOT_DEFINED) {
         for (uint8_t i = 0; i < SAMPLE_NUM; i++){
-            toggle_bit_crusher(i, bit_crusher);
+            toggle_bit_crusher(i, (pot_value - last_pot_value) > 0);
         }
     } else {
-        toggle_bit_crusher(get_sample_bank_index(pressed_button), bit_crusher);
+        toggle_bit_crusher(get_sample_bank_index(pressed_button), (pot_value - last_pot_value) > 0);
     }
 }
 
 // Function that toggles the distortion 
 void toggle_distortion_menu(int pot_value){
-    bool distortion = false;
-    if (pot_value >= 0){
-        distortion = true;
-    }
     if (pressed_button == NOT_DEFINED) {
         for (uint8_t i = 0; i < SAMPLE_NUM; i++){
-            toggle_distortion(i, distortion);
+            toggle_distortion(i, (pot_value - last_pot_value) > 0);
         }
     } else {
-        toggle_distortion(get_sample_bank_index(pressed_button), distortion);
+        toggle_distortion(get_sample_bank_index(pressed_button), (pot_value - last_pot_value) > 0);
     }
 }
 
 // Function that rotates the mode based on the enum in playback_mode.h
 void rotate_mode(int pot_value){
     int next = -1;
-    if (pot_value > 0){
+    if ((pot_value - last_pot_value) > 0){
         next = 1;
     }
     if (pressed_button == NOT_DEFINED) {
@@ -623,70 +616,48 @@ mode_t next_mode(int next, mode_t curr_mode){
 
 // Function that changes the bit depth
 void change_bit_depth(int pot_value){
-    int8_t bit_depth_changing = -1;
-    if (pot_value > 0){
-        bit_depth_changing = 1;
-    }
+    uint8_t new_bit_depth = 1 + round(((float)pot_value * 15.0) / 100.0);
     if (pressed_button == NOT_DEFINED){
         for (uint8_t i = 0; i < SAMPLE_NUM; i++){
-            uint8_t curr_bit_depth = get_bit_crusher_bit_depth(i);
-            uint8_t new_bit_depth = (curr_bit_depth + bit_depth_changing + BIT_DEPTH_MAX + 1) % (BIT_DEPTH_MAX + 1);
             set_bit_crusher_bit_depth(i, new_bit_depth);
         }
     } else {
-        uint8_t curr_bit_depth = get_bit_crusher_bit_depth(get_sample_bank_index(pressed_button));
-        uint8_t new_bit_depth = (curr_bit_depth + bit_depth_changing + BIT_DEPTH_MAX + 1) % (BIT_DEPTH_MAX + 1);
-            set_bit_crusher_bit_depth(get_sample_bank_index(pressed_button), new_bit_depth);
+        set_bit_crusher_bit_depth(get_sample_bank_index(pressed_button), new_bit_depth);
     }
 }
 
 // Function that changes the downsample
 void change_downsample(int pot_value){
-    int8_t downsample_changing = -1;
-    if (pot_value > 0){
-        downsample_changing = 1;
-    }
+    uint8_t new_downsample = 1 + round(((float)pot_value * 9.0) / 100.0);
     if (pressed_button == NOT_DEFINED){
         for (uint8_t i = 0; i < SAMPLE_NUM; i++){
-            uint8_t curr_downsample = get_bit_crusher_downsample(i);
-            uint8_t new_downsample = (curr_downsample + downsample_changing + DOWNSAMPLE_MAX + 1) % (DOWNSAMPLE_MAX + 1);
             set_bit_crusher_downsample(i, new_downsample);
         }
     } else {
-        uint8_t curr_downsample = get_bit_crusher_downsample(get_sample_bank_index(pressed_button));
-        uint8_t new_downsample = (curr_downsample + downsample_changing + DOWNSAMPLE_MAX + 1) % (DOWNSAMPLE_MAX + 1);
         set_bit_crusher_downsample(get_sample_bank_index(pressed_button), new_downsample);
     }
 }
 
 // Function that changes the distortion gain
 void change_distortion_gain(int pot_value){
-    float gain_changing = (float)(pot_value * VOLUME_NORMALIZER_VALUE);
+    float new_gain = (float)(pot_value * VOLUME_NORMALIZER_VALUE);
     if (pressed_button == NOT_DEFINED){
         for (uint8_t i = 0; i < SAMPLE_NUM; i++){
-            float curr_gain = get_distortion_gain(i);
-            float new_gain = fmodf(curr_gain + gain_changing + DISTORTION_GAIN_MAX, DISTORTION_GAIN_MAX);
             set_distortion_gain(i, new_gain);
         }
     } else {
-        float curr_gain = get_distortion_gain(get_sample_bank_index(pressed_button));
-        float new_gain = fmodf(curr_gain + gain_changing + DISTORTION_GAIN_MAX, DISTORTION_GAIN_MAX);
         set_distortion_gain(get_sample_bank_index(pressed_button), new_gain);
     }
 }
 
 // Function that changes the distortion threshold
 void change_distortion_threshold(int pot_value){
-    int16_t threshold_changing = (int16_t)(pot_value * THRESHOLD_NORMALIZER_VALUE);
+    int16_t new_threshold = (int16_t)(pot_value * THRESHOLD_NORMALIZER_VALUE);
     if (pressed_button == NOT_DEFINED){
         for (uint8_t i = 0; i < SAMPLE_NUM; i++){
-            int16_t curr_threshold = get_distortion_threshold(i);
-            int16_t new_threshold = (curr_threshold + threshold_changing + DISTORTION_THRESHOLD_MAX) % DISTORTION_THRESHOLD_MAX;
             set_distortion_threshold(i, new_threshold);
         }
     } else {
-        int16_t curr_threshold = get_distortion_threshold(get_sample_bank_index(pressed_button));
-        int16_t new_threshold = (curr_threshold + threshold_changing + DISTORTION_THRESHOLD_MAX) % DISTORTION_THRESHOLD_MAX;
         set_distortion_threshold(get_sample_bank_index(pressed_button), new_threshold);
     }
 }
@@ -719,6 +690,10 @@ void IRAM_ATTR send_message_to_fsm_queue_from_ISR(message_source_t source, int p
     if (xQueueSendFromISR(fsm_queue, &msg, NULL) == pdFALSE){
         ESP_LOGE(TAG_FSM, "Error: unable to send the message to the fsm_queue");
     }
+}
+
+void set_last_pot_value(int pot_value){
+    last_pot_value = pot_value;
 }
 
 #pragma endregion

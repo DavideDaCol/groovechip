@@ -12,13 +12,14 @@
 
 extern int pot_value;
 
+#define POT_CHANNEL ADC_CHANNEL_0
+#define POT_READ_INTERVAL_MS 50        
+#define THRESHOLD_PERCENT 4            
+#define FILTER_SAMPLES 16
+
 void potentiometer_init();
 
-int potentiometer_read_raw();
-
-int potentiometer_read_percent();
-
-float potentiometer_read_voltage();
+int potentiometer_read_filtered();
 
 void potentiometer_task(void *args);
 

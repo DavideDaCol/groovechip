@@ -67,6 +67,7 @@ mode_t next_mode(int next, mode_t curr_mode);
 void send_message_to_fsm_queue(message_source_t source, int payload);
 void send_message_to_fsm_queue_from_ISR(message_source_t source, int payload);
 void fsm_init();
+void set_last_pot_value(int pot_value);
 
 
 //Enum that describes every type of menu we have in our project

@@ -7,12 +7,8 @@
 #include "include/potentiometer.h" 
 #include "esp_log.h"
 #include <stdlib.h>
+#include <math.h>
 #include "fsm.h"
-
-#define POT_CHANNEL ADC_CHANNEL_0
-#define POT_READ_INTERVAL_MS 50        
-#define THRESHOLD_PERCENT 5            
-#define FILTER_SAMPLES 16
 
 const char* TAG_POT = "Potentiometer";
 int pot_value = 0;
@@ -24,6 +20,9 @@ void potentiometer_init() {
     };
     
     adc_oneshot_config_channel(adc1_handle, POT_CHANNEL, &config);
+
+    set_last_pot_value(round(potentiometer_read_filtered() * 100 / 4096));
+
     xTaskCreate(potentiometer_task, "pot_task", 4096, NULL, 3, NULL);
 }
 
@@ -84,7 +83,7 @@ void potentiometer_task(void *args) {
         pot_value = new_pot_value;
         
         // compute percentage
-        int percent = (pot_value * 100) / 4095;
+        int percent = round((pot_value * 100) / 4095);
         int diff = abs(percent - last_percentage);
         
         // send message to the queue
