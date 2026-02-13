@@ -1,12 +1,12 @@
 idf_component_register(
-    SRCS "joystick.c"
+    SRCS "potentiometer.c"
     INCLUDE_DIRS "include"
     # questo serve per linkare moduli da compilare prima di questo
-    REQUIRES
+    REQUIRES 
         freertos
         driver
         esp_adc
+        joystick
         adc1
         fsm
-        mixer
 )

@@ -4,6 +4,8 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "driver/gpio.h"
+#include "esp_adc/adc_oneshot.h"
+#include "adc1.h"
 
 typedef enum {
     CENTER,
@@ -21,8 +23,6 @@ typedef struct {
 } joystick_t;
 
 extern joystick_t my_joystick;
-
-extern QueueHandle_t joystick_queue;
 
 void joystick_init(void);
 
