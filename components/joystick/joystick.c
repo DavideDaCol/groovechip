@@ -11,8 +11,8 @@
 #define ADC_CHANNEL_Y ADC_CHANNEL_7
 #define GPIO_SW GPIO_NUM_27
 
-#define THRESH_LOW 1200
-#define THRESH_UP 2800
+#define THRESH_LOW 800
+#define THRESH_UP 3200
 
 #define DEBOUNCE_MS  30
 

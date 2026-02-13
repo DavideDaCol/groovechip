@@ -243,10 +243,24 @@ menu_t* menu_navigation[] = {
 
 void get_second_line(char* out){
     uint8_t bank_index = get_sample_bank_index(pressed_button);
+    uint8_t pad_num = get_pad_num(pressed_button);
+
     printf("PressedButton: %u\n", pressed_button);
     printf("Bank index: %u\n", bank_index);
     switch (curr_menu)
     {
+    case GEN_MENU: //general case
+        sprintf(out, "General");
+        break;
+
+    // in the following cases only print the current pressed button
+    case SETTINGS:
+    case BTN_MENU:
+    case EFFECTS:
+        sprintf(out, "Pad %u", pad_num);
+        break;
+
+    // single effects cases
     case BITCRUSHER:
         if(bank_index == NOT_DEFINED) break; // if there is no associated sample_id, exit
         uint8_t value;
@@ -280,9 +294,6 @@ void get_second_line(char* out){
         break;
     case DISTORTION:
         break;
-    case SETTINGS:
-        break;
-    
     default:
         break;
     }

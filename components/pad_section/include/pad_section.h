@@ -41,6 +41,8 @@
                              (1ULL<<GPIO_BUTTON_7) | \
                              (1ULL<<GPIO_BUTTON_8))
 
+#define PAD_NUM_NOT_DEFINED GPIO_NUM_MAX
+
 
 // #define NOT_DEFINED SAMPLE_NUM + 1 // to specify when a pad isn't associated with any sample
 
@@ -48,7 +50,8 @@
 //     uint32_t bank_index; // id of the associated sample
 // } pad_settings_t;
 
-// extern pad_settings_t pads_config[GPIO_NUM_MAX];
+
+uint8_t get_pad_num(int gpio_num);
 
 void pad_section_init();
 
