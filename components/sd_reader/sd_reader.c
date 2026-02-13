@@ -1,6 +1,8 @@
 #include "include/sd_reader.h"
 #include <sys/stat.h>
 
+const char* TAG = "SdReader";
+
 char** sample_names = NULL;
 int sample_names_size = 0;
 
@@ -53,23 +55,25 @@ esp_err_t sd_reader_init() {
 }
 
 esp_err_t ld_sample(int in_bank_index, char* sample_name, sample_t** out_sample_ptr) {
+    ESP_LOGI(TAG, "ld_sample(): in_bank_index: %i, sample_name: %s", in_bank_index, sample_name);
     if (out_sample_ptr == NULL)
         return ESP_ERR_INVALID_ARG;
 
     //Defining the file path to read from
     char file_path[MAX_SIZE];
-    sprintf(file_path, "%s/%s.wav", GRVCHP_MNTPOINT, sample_name);
+    sprintf(file_path, "%s/%s", GRVCHP_MNTPOINT, sample_name);
+    ESP_LOGI(TAG, "requested file path is %s", file_path);
 
     //Opening the file in read mode
     FILE* fp = fopen(file_path, "rb");
     if (fp == NULL) {
-        fprintf(stderr, "Sample not found\n");
+        ESP_LOGE(TAG,"Sample not found");
         return ESP_ERR_NOT_FOUND;
     }
     
     //Allocating in the PSRAM the section of memory for the sample infos
-    *out_sample_ptr = heap_caps_malloc(sizeof(sample_t), MALLOC_CAP_SPIRAM);
-    
+    // *out_sample_ptr = heap_caps_malloc(sizeof(sample_t), MALLOC_CAP_SPIRAM);
+    *out_sample_ptr = malloc(sizeof(sample_t));
     sample_t* out_sample = *out_sample_ptr;
 
     //Assigning the file's content to the pointer out_sample_ptr
@@ -85,7 +89,8 @@ esp_err_t ld_sample(int in_bank_index, char* sample_name, sample_t** out_sample_
     }
 
     //Allocating the section of memory for the actual sample (wav buffer)
-    out_sample -> raw_data = heap_caps_malloc((out_sample -> header).data_size, MALLOC_CAP_SPIRAM);
+    //out_sample -> raw_data = heap_caps_malloc((out_sample -> header).data_size, MALLOC_CAP_SPIRAM);
+    out_sample -> raw_data = malloc((out_sample -> header).data_size);
 
     //Reading the area of the file where the data is located
     read_cnt = fread(out_sample -> raw_data, 1, (out_sample -> header).data_size, fp);
@@ -211,5 +216,4 @@ static esp_err_t set_new_samples() {
     closedir(new_files_dir);
     return ESP_OK;
 }
-
-esp_err_t 
+ 

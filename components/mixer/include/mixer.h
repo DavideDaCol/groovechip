@@ -28,7 +28,7 @@ typedef struct wav_header_t
       char riff_section_id[4];      // literally the letters "RIFF"
       uint32_t size;                // (size of entire file) - 8
       char riff_format[4];          // literally "WAVE"
-         
+        
       char format_id[4];            // letters "fmt"
       uint32_t format_size;         // (size of format section) - 8
       uint16_t fmt_id;              // 1=uncompressed PCM, any other number isn't WAV
@@ -84,7 +84,7 @@ typedef struct metronome {
 } metronome;
 
 // all samples that can be played
-extern sample_t sample_bank[SAMPLE_NUM];
+extern sample_t* sample_bank[SAMPLE_NUM];
 
 #pragma endregion
 

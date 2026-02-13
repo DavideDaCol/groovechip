@@ -27,8 +27,8 @@
 #define GPIO_BUTTON_3     13
 #define GPIO_BUTTON_4     14
 #define GPIO_BUTTON_5     15
-#define GPIO_BUTTON_6     16
-#define GPIO_BUTTON_7     17
+#define GPIO_BUTTON_6     2
+#define GPIO_BUTTON_7     39
 #define GPIO_BUTTON_8     32
 #define PAD_NUM 8
 
@@ -41,6 +41,8 @@
                              (1ULL<<GPIO_BUTTON_7) | \
                              (1ULL<<GPIO_BUTTON_8))
 
+#define PAD_NUM_NOT_DEFINED GPIO_NUM_MAX
+
 
 // #define NOT_DEFINED SAMPLE_NUM + 1 // to specify when a pad isn't associated with any sample
 
@@ -48,14 +50,8 @@
 //     uint32_t bank_index; // id of the associated sample
 // } pad_settings_t;
 
-// extern pad_settings_t pads_config[GPIO_NUM_MAX];
 
-// used to comunicate events to the fsm
-extern QueueHandle_t pad_queue;
-
-typedef struct{
-    int pad_id;
-}pad_queue_msg_t;
+uint8_t get_pad_num(int gpio_num);
 
 void pad_section_init();
 

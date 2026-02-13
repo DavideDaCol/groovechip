@@ -7,6 +7,8 @@
 #include "driver/gpio.h"
 #include "esp_timer.h"
 
+const char* TAG_PM = "PlaybackMode";
+
 #pragma region PAYBACK MODES
 
 // init queue
@@ -50,7 +52,14 @@ const playback_mode_t* PLAYBACK_MODES[] = {
 static const playback_mode_t* samples_config[SAMPLE_NUM];
 static int pad_to_sample_map[GPIO_NUM_MAX];
 
-pb_mode_t get_playback_mode(uint8_t bank_index){
+uint8_t get_sample_bank_index(uint8_t pad_id){
+	if(pad_id >= 0 && pad_id < GPIO_NUM_MAX){
+		return pad_to_sample_map[pad_id];
+	}
+	else return NOT_DEFINED;
+}
+
+mode_t get_playback_mode(uint8_t bank_index){
 	if(bank_index < SAMPLE_NUM){
 		return samples_config[bank_index]->mode;
 	}
@@ -133,7 +142,7 @@ void sample_task(void *pvParameter){
 
             if(bank_index == NOT_DEFINED){
                 // there is no associated sample to this pad
-                printf("sample id was NOT defined\n");
+                ESP_LOGW(TAG_PM,"sample id was NOT defined");
                 fflush(stdout);
                 continue;
             }

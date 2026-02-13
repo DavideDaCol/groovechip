@@ -37,7 +37,7 @@ void init_bit_crusher(uint8_t bank_index){
     if(bank_index < SAMPLE_NUM){
         sample_effects[bank_index].bitcrusher.enabled = false;
         sample_effects[bank_index].bitcrusher.bit_depth = BIT_DEPTH_MAX;
-        sample_effects[bank_index].bitcrusher.downsample = DOWNSAMPLE_MAX;
+        sample_effects[bank_index].bitcrusher.downsample = DOWNSAMPLE_MIN;
         sample_effects[bank_index].bitcrusher.counter = 0;
         sample_effects[bank_index].bitcrusher.last_L = 0.0;
         sample_effects[bank_index].bitcrusher.last_R = 0.0;

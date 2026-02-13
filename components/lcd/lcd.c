@@ -108,7 +108,7 @@ void LCD_home(void) {
 
 void LCD_clearScreen(void) {
     LCD_writeByte(LCD_CLEAR, LCD_COMMAND);
-    vTaskDelay(pdMS_TO_TICKS(10));
+    vTaskDelay(pdMS_TO_TICKS(30));
 }
 
 static void LCD_writeNibble(uint8_t nibble, uint8_t mode) {
@@ -144,6 +144,8 @@ void lcd_task(void *args) {
             printf("Recv msg: \n--------------\n%s\n%s\n---------------\n", msg_ptr.first_row, msg_ptr.sec_row);
             LCD_clearScreen(); // Good practice to clear before writing new frame
             
+            // msg_ptr.first_row[7] = '\0';
+
             LCD_setCursor(0, 0); 
             LCD_writeStr(msg_ptr.first_row);
 

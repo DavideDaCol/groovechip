@@ -2,7 +2,9 @@
 #include "mixer.h"
 #include "playback_mode.h"
 #include "esp_log.h"
+#include "fsm.h"
 static const char* TAG = "PadSection";
+static uint8_t map_gpio_to_pad_num[GPIO_NUM_MAX] = {0};
 
 // pad config
 // pad_settings_t pads_config[GPIO_NUM_MAX];
@@ -11,8 +13,11 @@ static const char* TAG = "PadSection";
 static volatile uint64_t last_isr_time[GPIO_NUM_MAX] = {0};
 static volatile int last_level[GPIO_NUM_MAX];
 
-// fsm queue
-QueueHandle_t pad_queue = NULL;
+uint8_t get_pad_num(int gpio_num){
+	if (gpio_num < GPIO_NUM_MAX)
+		return map_gpio_to_pad_num[gpio_num];
+	else return PAD_NUM_NOT_DEFINED;
+}
 
 //  pads interrupt handler
 static void IRAM_ATTR gpio_isr_handler(void *arg){
@@ -48,11 +53,8 @@ static void IRAM_ATTR gpio_isr_handler(void *arg){
 
 	enum evt_type_t event_type = level == 0 ? EVT_PRESS : EVT_RELEASE;
 
-	// send press event to the fsm
-	if(event_type == EVT_PRESS){
-		pad_queue_msg_t msg;
-		msg.pad_id = pad_id;
-		xQueueSendFromISR(pad_queue, &msg, NULL);
+	if (event_type == EVT_PRESS){
+		send_message_to_fsm_queue_from_ISR(PAD, pad_id);
 	}
 
 	// send the event on the sample task
@@ -62,9 +64,6 @@ static void IRAM_ATTR gpio_isr_handler(void *arg){
 #pragma endregion
 
 void pad_section_init(){
-	// init queue
-	pad_queue = xQueueCreate(10, sizeof(pad_queue_msg_t));
-
 	// GPIO config
 	gpio_config_t io_conf = {};
 	io_conf.intr_type = GPIO_INTR_ANYEDGE; // on press and release
@@ -79,18 +78,29 @@ void pad_section_init(){
 		last_level[i] = 1;
 	}
 
-	
-	// ISR installation
-	ESP_ERROR_CHECK(gpio_install_isr_service(0));
-	gpio_isr_handler_add(GPIO_BUTTON_1, gpio_isr_handler, (void *)GPIO_BUTTON_1);
-	gpio_isr_handler_add(GPIO_BUTTON_2, gpio_isr_handler, (void *)GPIO_BUTTON_2);
-	gpio_isr_handler_add(GPIO_BUTTON_3, gpio_isr_handler, (void *)GPIO_BUTTON_3);
-	gpio_isr_handler_add(GPIO_BUTTON_4, gpio_isr_handler, (void *)GPIO_BUTTON_4);
-	gpio_isr_handler_add(GPIO_BUTTON_5, gpio_isr_handler, (void *)GPIO_BUTTON_5);
-	gpio_isr_handler_add(GPIO_BUTTON_6, gpio_isr_handler, (void *)GPIO_BUTTON_6);
-	gpio_isr_handler_add(GPIO_BUTTON_7, gpio_isr_handler, (void *)GPIO_BUTTON_7);
-	gpio_isr_handler_add(GPIO_BUTTON_8, gpio_isr_handler, (void *)GPIO_BUTTON_8);
-	
+	const uint8_t BUTTONS[PAD_NUM] = {
+		GPIO_BUTTON_1,
+		GPIO_BUTTON_2,
+		GPIO_BUTTON_3,
+		GPIO_BUTTON_4,
+		GPIO_BUTTON_5,
+		GPIO_BUTTON_6,
+		GPIO_BUTTON_7,
+		GPIO_BUTTON_8,
+	};
 
-	printf("[Pad Section] Ready\n");
+	// init map to not mapped
+	for(int i = 0; i < GPIO_NUM_MAX; i++){
+		map_gpio_to_pad_num[i] = PAD_NUM_NOT_DEFINED;
+	}
+	
+	ESP_ERROR_CHECK(gpio_install_isr_service(0));
+
+	
+	for(int i = 0; i < PAD_NUM; i++){
+		gpio_isr_handler_add(BUTTONS[i], gpio_isr_handler, (void *)BUTTONS[i]); // ISR installation
+		map_gpio_to_pad_num[BUTTONS[i]] = i + 1; // map gpio to pad num
+	}
+
+	ESP_LOGI(TAG, "[Pad Section] Ready\n");
 }
