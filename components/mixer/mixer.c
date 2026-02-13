@@ -99,7 +99,7 @@ static inline void get_sample_interpolated(sample_t *smp, int16_t *out_L, int16_
     
     //loop handling
     if (frame_b >= total_frames) {
-        mode_t playback_mode = get_playback_mode(smp->bank_index);
+        pb_mode_t playback_mode = get_playback_mode(smp->bank_index);
         if (playback_mode == LOOP || playback_mode == ONESHOT_LOOP) {
             frame_b = 0; //return to first sample
         } else {

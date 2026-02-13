@@ -9,7 +9,7 @@ menu_types curr_menu = GEN_MENU;
 
 uint8_t pressed_button = NOT_DEFINED;
 
-mode_t mode = ONESHOT;
+pb_mode_t mode = ONESHOT;
 
 void get_second_line(char *);
 
@@ -571,8 +571,8 @@ void rotate_mode(int pot_value){
 }
 
 // Function that gets the next mode
-mode_t next_mode(int next, mode_t curr_mode){
-    return (mode_t)((curr_mode + next + MODE_NUM_OPT)%MODE_NUM_OPT);
+pb_mode_t next_mode(int next, pb_mode_t curr_mode){
+    return (pb_mode_t)((curr_mode + next + MODE_NUM_OPT)%MODE_NUM_OPT);
 }
 
 // Function that changes the bit depth
