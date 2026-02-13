@@ -4,9 +4,13 @@
 
 menu_types curr_menu = GEN_MENU;
 
-int8_t pressed_button = -1;
+uint8_t pressed_button = NOT_DEFINED;
 
 mode_t mode = ONESHOT;
+
+void get_second_line(char *);
+
+const char* TAG_FSM = "FSM";
 
 #pragma region GENERAL MENU
 /***********************************
@@ -14,12 +18,14 @@ GENERAL MENU
 ***********************************/
 opt_interactions_t gen_handlers[] = {
     {
-        .print = "Settings",
+        .first_line = "Settings",
+        .second_line = get_second_line,
         .js_right_action = goto_settings,
         .pt_action = sink
     }, 
     {
-        .print = "Effects",
+        .first_line = "Effects",
+        .second_line = get_second_line,
         .js_right_action = goto_effects,
         .pt_action = sink
     }
@@ -39,22 +45,26 @@ BUTTON SPECIFIC MENU
 ***********************************/
 opt_interactions_t btn_handlers[] = {
     {
-        .print = "Settings",
+        .first_line = "Settings",
+        .second_line = get_second_line,
         .js_right_action = goto_settings,
         .pt_action = sink
     },
     {
-        .print = "Effects",
+        .first_line = "Effects",
+        .second_line = get_second_line,
         .js_right_action = goto_effects,
         .pt_action = sink
     }, 
     {
-        .print = "Select sample",
+        .first_line = "Select sample",
+        .second_line = get_second_line,
         .js_right_action = sink, //TODO
         .pt_action = sink
     }, 
     {
-        .print = "Save changes",
+        .first_line = "Save changes",
+        .second_line = get_second_line,
         .js_right_action = sink, //TODO
         .pt_action = sink
     }
@@ -74,12 +84,14 @@ SETTINGS MENU (structure is the same whether it's related to a specific button o
 ***********************************/
 opt_interactions_t set_handlers[] = {
     {
-        .print = "Mode",
+        .first_line = "Mode",
+        .second_line = get_second_line,
         .js_right_action = sink,
         .pt_action = rotate_mode,
     },
     {
-        .print = "Volume",
+        .first_line = "Volume",
+        .second_line = get_second_line,
         .js_right_action = sink, 
         .pt_action = change_vol,
     }
@@ -99,18 +111,21 @@ EFFECTS MENU (structure is the same whether it's related to a specific button or
 ***********************************/
 opt_interactions_t eff_handlers[] = {
     {
-        .print = "Bitcrusher",
-        .js_right_action = goto_bitcrusher, // TODO
+        .first_line = "Bitcrusher",
+        .second_line = get_second_line,
+        .js_right_action = goto_bitcrusher,
         .pt_action = sink,
     },
     {
-        .print = "Pitch",
-        .js_right_action = goto_pitch, // TODO 
+        .first_line = "Pitch",
+        .second_line = get_second_line,
+        .js_right_action = goto_pitch,
         .pt_action = sink,
     },
     {
-        .print = "Distortion",
-        .js_right_action = goto_distortion, // TODO
+        .first_line = "Distortion",
+        .second_line = get_second_line,
+        .js_right_action = goto_distortion,
         .pt_action = sink,
     }
 };
@@ -130,19 +145,22 @@ BITCRUSHER MENU (structure is the same whether it's related to a specific button
 
 opt_interactions_t bit_crusher_handlers[] = {
     {
-        .print = "Bitcrusher: ",
+        .first_line = "Bitcrusher: ",
+        .second_line = get_second_line,
         .js_right_action = sink,
         .pt_action = toggle_bit_crusher_menu,
     },
     {
-        .print = "Bit depth: ",
+        .first_line = "Bit depth: ",
+        .second_line = get_second_line,
         .js_right_action = sink, 
-        .pt_action = change_bit_depth, // TODO
+        .pt_action = change_bit_depth,
     },
     {
-        .print = "Downsample: ",
+        .first_line = "Downsample: ",
+        .second_line = get_second_line,
         .js_right_action = sink,
-        .pt_action = change_downsample, // TODO
+        .pt_action = change_downsample,
     }
 };
 
@@ -161,7 +179,8 @@ PITCH MENU (structure is the same whether it's related to a specific button or i
 
 opt_interactions_t pitch_handlers[] = {
     {
-        .print = "Pitch: ",
+        .first_line = "Pitch: ",
+        .second_line = get_second_line,
         .js_right_action = sink,
         .pt_action = change_pitch,
     }
@@ -182,19 +201,22 @@ DISTORTION MENU (structure is the same whether it's related to a specific button
 
 opt_interactions_t distortion_handlers[] = {
     {
-        .print = "Distortion: ",
+        .first_line = "Distortion: ",
+        .second_line = get_second_line,
         .js_right_action = sink,
         .pt_action = toggle_distortion_menu,
     },
     {
-        .print = "Gain: ",
+        .first_line = "Gain: ",
+        .second_line = get_second_line,
         .js_right_action = sink, 
-        .pt_action = change_distortion_gain, // TODO
+        .pt_action = change_distortion_gain,
     },
     {
-        .print = "Threshold: ",
+        .first_line = "Threshold: ",
+        .second_line = get_second_line,
         .js_right_action = sink,
-        .pt_action = change_distortion_threshold, // TODO
+        .pt_action = change_distortion_threshold,
     }
 };
 
@@ -217,6 +239,54 @@ menu_t* menu_navigation[] = {
     &distortion_menu,
     NULL //TODO questa deve corrispondere al menu di sample load a runtime
 };
+
+
+void get_second_line(char* out){
+    uint8_t bank_index = get_sample_bank_index(pressed_button);
+    printf("PressedButton: %u\n", pressed_button);
+    printf("Bank index: %u\n", bank_index);
+    switch (curr_menu)
+    {
+    case BITCRUSHER:
+        if(bank_index == NOT_DEFINED) break; // if there is no associated sample_id, exit
+        uint8_t value;
+        switch (menu_navigation[curr_menu]->curr_index)
+        {
+        // retrieve current value set res
+        case ENABLED_BC:
+            if(get_bit_crusher_state(bank_index)){
+                sprintf(out, "On");
+            }
+            else sprintf(out, "Off");
+            break;
+
+        case BIT_DEPTH:
+            value = get_bit_crusher_bit_depth(bank_index);
+            printf("BD: %u", value);
+            sprintf(out, "%u", value);
+            break;
+
+        case DOWNSAMPLE:
+            value = get_bit_crusher_downsample(bank_index);
+            printf("DS: %u", value);
+            sprintf(out, "%u", value);
+            break;
+            
+        default:
+            break;
+        }
+        break;
+    case PITCH:
+        break;
+    case DISTORTION:
+        break;
+    case SETTINGS:
+        break;
+    
+    default:
+        break;
+    }
+}
 
 menu_t sample_load_menu = {};
 opt_interactions_t* sample_load_actions = NULL;
@@ -241,28 +311,58 @@ void main_fsm(QueueSetHandle_t in_set) {
     menu_navigation[7] = &sample_load_menu;
 
     while(1) {
-        //
         QueueSetMemberHandle_t curr_io_queue = xQueueSelectFromSet(in_set, pdMS_TO_TICKS(50)); //TODO: determine the period
-        
+        bool is_changed = false;
+        if(curr_io_queue == NULL) continue;
+
         if (curr_io_queue == joystick_queue) {
             JoystickDir curr_js;
-            xQueueReceive(curr_io_queue, &curr_js, 0);
+            if(xQueueReceive(curr_io_queue, &curr_js, 0) == pdFALSE){
+                ESP_LOGE(TAG_FSM, "Error: unable to read the joystick_queue");
+                continue;
+            }
             joystick_handler(curr_js);  
             if(curr_js != CENTER){
-                print_single((menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).print);
+                is_changed = true;
             }
 
         } else if (curr_io_queue == pad_queue) {
             pad_queue_msg_t curr_pad;
-            xQueueReceive(curr_io_queue, &curr_pad, 0);
+            if(xQueueReceive(curr_io_queue, &curr_pad, 0) == pdFALSE){
+                ESP_LOGE(TAG_FSM, "Error: unable to read the pad_queue");
+                continue;
+            }
+
             set_button_pressed(curr_pad.pad_id);
-            print_single((menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).print);
+
+            printf("CurrPadId: %d\n", curr_pad.pad_id);
+            
+            // char* line1 = (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).first_line;
+            // char line2[17] = "";
+                
+            // (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).second_line(line2);
+            // print_double(line1, line2);
+            is_changed = true;
 
         } else if (curr_io_queue == pot_queue){
             int diff_percent_pot_value;
-            xQueueReceive(curr_io_queue, &diff_percent_pot_value, 0);
+            if(xQueueReceive(curr_io_queue, &diff_percent_pot_value, 0) == pdFALSE){
+                ESP_LOGE(TAG_FSM, "Error: unable to read the pad_queue");
+                continue;
+            }
+            printf("diff_percent: %d\n", diff_percent_pot_value);
+            potentiometer_handler(diff_percent_pot_value);
+            is_changed = true;
         } 
 
+        if(is_changed){
+            char* line1 = (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).first_line;
+            char line2[17] = "";
+            
+            (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).second_line(line2);
+            print_double(line1, line2);
+            is_changed = false;
+        }
     }
 }
 #pragma endregion
@@ -277,7 +377,7 @@ void joystick_handler(JoystickDir in_dir) {
         case UP: js_up_handler(); break;
         default: sink(); return;
     }
-    printf("%s\n", (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).print);
+    printf("%s\n", (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).first_line);
 
 }
 
@@ -335,10 +435,10 @@ void js_right_handler() {
 
 // Function that sets the current menu the the previoous one
 void js_left_handler() {
-    if (pressed_button != -1) {
+    if (pressed_button != NOT_DEFINED) {
         if (curr_menu == BTN_MENU) {
             curr_menu = GEN_MENU;
-            pressed_button = -1;
+            pressed_button = NOT_DEFINED;
         } else 
             curr_menu = BTN_MENU;
     } else 
@@ -365,9 +465,11 @@ void js_down_handler() {
 
 //Function to call when a button bound to a sample is pressed
 void set_button_pressed(int pad_id) {
-    pressed_button = pad_id;
-    curr_menu = BTN_MENU;
-    btn_menu.curr_index = 0;
+    if(pad_id != pressed_button){
+        pressed_button = pad_id;
+        btn_menu.curr_index = 0;
+        curr_menu = BTN_MENU;
+    }
 }
 
 // Sing function
@@ -376,6 +478,7 @@ void sink() {
 }
 
 #pragma endregion
+
 
 #pragma region POTENTIOMETER HANDLING
 
@@ -387,23 +490,23 @@ void potentiometer_handler(int diff_percent_pot_value){
 
 // Function that changes the volume
 void change_vol(int pot_value) {
-    if (pressed_button < 0) {
+    if (pressed_button == NOT_DEFINED) {
         for (uint8_t i = 0; i < SAMPLE_NUM; i++)
             set_volume(i, (float)pot_value * VOLUME_NORMALIZER_VALUE);
     } else
-        set_volume((uint8_t)pressed_button, (float)pot_value * VOLUME_NORMALIZER_VALUE);
+        set_volume(get_sample_bank_index(pressed_button), (float)pot_value * VOLUME_NORMALIZER_VALUE);
 }
 
 // Function that changes the pitch
 void change_pitch(int pot_value){
-    if (pressed_button < 0) {
+    if (pressed_button == NOT_DEFINED) {
         for (uint8_t i = 0; i < SAMPLE_NUM; i++) {
             float sample_i_pitch_factor = get_pitch_factor(i);
             set_pitch_factor(i, sample_i_pitch_factor + (float)pot_value * PITCH_NORMALIZER_VALUE);
         }
     } else {
-        float sample_i_pitch_factor = get_pitch_factor(pressed_button);
-        set_pitch_factor(pressed_button, sample_i_pitch_factor + (float)pot_value * PITCH_NORMALIZER_VALUE);
+        float sample_i_pitch_factor = get_pitch_factor(get_sample_bank_index(pressed_button));
+        set_pitch_factor(get_sample_bank_index(pressed_button), sample_i_pitch_factor + (float)pot_value * PITCH_NORMALIZER_VALUE);
     }
 }
 
@@ -413,12 +516,12 @@ void toggle_bit_crusher_menu(int pot_value){
     if (pot_value >= 0){
         bit_crusher = true;
     }
-    if (pressed_button < 0) {
+    if (pressed_button == NOT_DEFINED) {
         for (uint8_t i = 0; i < SAMPLE_NUM; i++){
             toggle_bit_crusher(i, bit_crusher);
         }
     } else {
-        toggle_bit_crusher(pressed_button, bit_crusher);
+        toggle_bit_crusher(get_sample_bank_index(pressed_button), bit_crusher);
     }
 }
 
@@ -428,12 +531,12 @@ void toggle_distortion_menu(int pot_value){
     if (pot_value >= 0){
         distortion = true;
     }
-    if (pressed_button < 0) {
+    if (pressed_button == NOT_DEFINED) {
         for (uint8_t i = 0; i < SAMPLE_NUM; i++){
             toggle_distortion(i, distortion);
         }
     } else {
-        toggle_distortion(pressed_button, distortion);
+        toggle_distortion(get_sample_bank_index(pressed_button), distortion);
     }
 }
 
@@ -443,12 +546,12 @@ void rotate_mode(int pot_value){
     if (pot_value > 0){
         next = 1;
     }
-    if (pressed_button < 0) {
+    if (pressed_button == NOT_DEFINED) {
         for (uint8_t i = 0; i < SAMPLE_NUM; i++){
             set_playback_mode(i, next_mode(next, mode));
         }
     } else {
-        set_playback_mode(pressed_button, next_mode(next, get_playback_mode(pressed_button)));
+        set_playback_mode(get_sample_bank_index(pressed_button), next_mode(next, get_playback_mode(get_sample_bank_index(pressed_button))));
     }
 }
 
@@ -463,16 +566,16 @@ void change_bit_depth(int pot_value){
     if (pot_value > 0){
         bit_depth_changing = 1;
     }
-    if (pressed_button < 0){
+    if (pressed_button == NOT_DEFINED){
         for (uint8_t i = 0; i < SAMPLE_NUM; i++){
             uint8_t curr_bit_depth = get_bit_crusher_bit_depth(i);
             uint8_t new_bit_depth = (curr_bit_depth + bit_depth_changing + BIT_DEPTH_MAX) % BIT_DEPTH_MAX;
             set_bit_crusher_bit_depth(i, new_bit_depth);
         }
     } else {
-        uint8_t curr_bit_depth = get_bit_crusher_bit_depth(pressed_button);
+        uint8_t curr_bit_depth = get_bit_crusher_bit_depth(get_sample_bank_index(pressed_button));
         uint8_t new_bit_depth = (curr_bit_depth + bit_depth_changing + BIT_DEPTH_MAX) % BIT_DEPTH_MAX;
-            set_bit_crusher_bit_depth(pressed_button, new_bit_depth);
+            set_bit_crusher_bit_depth(get_sample_bank_index(pressed_button), new_bit_depth);
     }
 }
 
@@ -482,48 +585,48 @@ void change_downsample(int pot_value){
     if (pot_value > 0){
         downsample_changing = 1;
     }
-    if (pressed_button < 0){
+    if (pressed_button == NOT_DEFINED){
         for (uint8_t i = 0; i < SAMPLE_NUM; i++){
             uint8_t curr_downsample = get_bit_crusher_downsample(i);
             uint8_t new_downsample = (curr_downsample + downsample_changing + DOWNSAMPLE_MAX) % DOWNSAMPLE_MAX;
             set_bit_crusher_downsample(i, new_downsample);
         }
     } else {
-        uint8_t curr_downsample = get_bit_crusher_downsample(pressed_button);
+        uint8_t curr_downsample = get_bit_crusher_downsample(get_sample_bank_index(pressed_button));
         uint8_t new_downsample = (curr_downsample + downsample_changing + DOWNSAMPLE_MAX) % DOWNSAMPLE_MAX;
-        set_bit_crusher_downsample(pressed_button, new_downsample);
+        set_bit_crusher_downsample(get_sample_bank_index(pressed_button), new_downsample);
     }
 }
 
 // Function that changes the distortion gain
 void change_distortion_gain(int pot_value){
     float gain_changing = (float)(pot_value * VOLUME_NORMALIZER_VALUE);
-    if (pressed_button < 0){
+    if (pressed_button == NOT_DEFINED){
         for (uint8_t i = 0; i < SAMPLE_NUM; i++){
             float curr_gain = get_distortion_gain(i);
             float new_gain = fmodf(curr_gain + gain_changing + DISTORTION_GAIN_MAX, DISTORTION_GAIN_MAX);
             set_distortion_gain(i, new_gain);
         }
     } else {
-        float curr_gain = get_distortion_gain(pressed_button);
+        float curr_gain = get_distortion_gain(get_sample_bank_index(pressed_button));
         float new_gain = fmodf(curr_gain + gain_changing + DISTORTION_GAIN_MAX, DISTORTION_GAIN_MAX);
-        set_distortion_gain(pressed_button, new_gain);
+        set_distortion_gain(get_sample_bank_index(pressed_button), new_gain);
     }
 }
 
 // Function that changes the distortion threshold
 void change_distortion_threshold(int pot_value){
     int16_t threshold_changing = (int16_t)(pot_value * THRESHOLD_NORMALIZER_VALUE);
-    if (pressed_button < 0){
+    if (pressed_button == NOT_DEFINED){
         for (uint8_t i = 0; i < SAMPLE_NUM; i++){
             int16_t curr_threshold = get_distortion_threshold(i);
             int16_t new_threshold = (curr_threshold + threshold_changing + DISTORTION_THRESHOLD_MAX) % DISTORTION_THRESHOLD_MAX;
             set_distortion_threshold(i, new_threshold);
         }
     } else {
-        int16_t curr_threshold = get_distortion_threshold(pressed_button);
+        int16_t curr_threshold = get_distortion_threshold(get_sample_bank_index(pressed_button));
         int16_t new_threshold = (curr_threshold + threshold_changing + DISTORTION_THRESHOLD_MAX) % DISTORTION_THRESHOLD_MAX;
-        set_distortion_threshold(pressed_button, new_threshold);
+        set_distortion_threshold(get_sample_bank_index(pressed_button), new_threshold);
     }
 }
 

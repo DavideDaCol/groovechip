@@ -43,6 +43,7 @@ void send_pad_event(uint8_t pad_id, enum evt_type_t event_type);
 void send_mixer_event(uint8_t bank_index, enum evt_type_t event_type);
 
 void map_pad_to_sample(uint8_t pad_id, uint8_t bank_index);
+uint8_t get_sample_bank_index(uint8_t pad_id);
 
 #pragma endregion
 

@@ -16,7 +16,7 @@
 #include "lcd.h"
 #include "sd_reader.h"
 
-#define SET_LENGTH 3
+#define SET_LENGTH 30
 
 QueueSetHandle_t connection_init();
 
