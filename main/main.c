@@ -20,8 +20,8 @@ void app_main(void)
     // xTaskCreate(&simpleTask, "simple task", 2048, NULL, 5, NULL);
     // printf("Aspetto...");
     lcd_driver_init();
-    fsm_init();
     adc1_init();
+    fsm_init();
     pad_section_init();
     playback_mode_init();
     effects_init();

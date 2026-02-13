@@ -9,73 +9,93 @@
 #include <stdlib.h>
 #include "fsm.h"
 
-#define POT_CHANNEL ADC_CHANNEL_0  // GPIO 36
-#define POT_READ_INTERVAL_MS 20   // reading interval in ms
+#define POT_CHANNEL ADC_CHANNEL_0
+#define POT_READ_INTERVAL_MS 50        
+#define THRESHOLD_PERCENT 5            
+#define FILTER_SAMPLES 16
 
 const char* TAG_POT = "Potentiometer";
-int pot_value = 0;  // Valore grezzo (0-4095 con 12 bit)
+int pot_value = 0;
 
 void potentiometer_init() {
-    
-    // configure the ADC channel
     adc_oneshot_chan_cfg_t config = {
-        .bitwidth = ADC_BITWIDTH_DEFAULT,  // 12 bit (0-4095)
-        .atten = ADC_ATTEN_DB_12,          // Range 0V - 3.3V
+        .bitwidth = ADC_BITWIDTH_DEFAULT,
+        .atten = ADC_ATTEN_DB_12,
     };
     
     adc_oneshot_config_channel(adc1_handle, POT_CHANNEL, &config);
-
-    // create the task
-    xTaskCreate(potentiometer_task, "pot_task", 2048, NULL, 5, NULL);
-}
-
-int potentiometer_read_raw() {
-    int raw_value;
-    adc_oneshot_read(adc1_handle, POT_CHANNEL, &raw_value);
-    return raw_value;
-}
-
-// converts the raw value to (0-100)
-int potentiometer_read_percent() {
-    int raw = potentiometer_read_raw();
-    return (raw * 100) / 4095;
-}
-
-// Converti il valore grezzo in voltaggio (0.0 - 3.3V)
-float potentiometer_read_voltage() {
-    int raw = potentiometer_read_raw();
-    return (raw * 3.3f) / 4095.0f;
+    xTaskCreate(potentiometer_task, "pot_task", 4096, NULL, 3, NULL);
 }
 
 int potentiometer_read_filtered() {
     int sum = 0;
-    for(int i = 0; i < 8; i++) {
+    int valid_readings = 0;
+    
+    for(int i = 0; i < FILTER_SAMPLES; i++) {
         int raw;
-        adc_oneshot_read(adc1_handle, POT_CHANNEL, &raw);
-        sum += raw;
+        esp_err_t err = adc_oneshot_read(adc1_handle, POT_CHANNEL, &raw);
+        
+        if (err == ESP_OK && raw >= 0 && raw <= 4095) {
+            sum += raw;
+            valid_readings++;
+        } else {
+            ESP_LOGW(TAG_POT, "Invalid ADC reading: %d (err: %d)", raw, err);
+        }
+        
+        // delay between samples
+        vTaskDelay(pdMS_TO_TICKS(1));
     }
-    return sum / 8;
+    
+    if (valid_readings < FILTER_SAMPLES / 2) {
+        ESP_LOGE(TAG_POT, "Too many invalid readings (%d/%d)", 
+                 FILTER_SAMPLES - valid_readings, FILTER_SAMPLES);
+        return -1;  // error
+    }
+    
+    return sum / valid_readings;
 }
 
-// main task
 void potentiometer_task(void *args) {
-    // the default value is set to 0 (it is not printed or sent to the queue)
-    int last_pot_value = potentiometer_read_filtered();
-    int last_diff_percentage = (last_pot_value * 100) / 4095;
+    // initial value
+    pot_value = potentiometer_read_filtered();
+    if (pot_value < 0) {
+        pot_value = 2048;  // set a mid value
+    }
+    
+    int last_percentage = (pot_value * 100) / 4095;
+    
+    ESP_LOGI(TAG_POT, "Initialized at %d%% (%d raw)", last_percentage, pot_value);
+    
     while(1) {
-        // reading the value
-        pot_value = potentiometer_read_filtered();
-        int percent = (pot_value * 100) / 4095;
-        float voltage = (pot_value * 3.3f) / 4095.0f;
-        int diff = pot_value - last_pot_value;
-        int diff_percent = (diff * 100) /4095;
+        int new_pot_value = potentiometer_read_filtered();
         
-        // ignore the repetitive events
-        if (abs(diff_percent - last_diff_percentage) > 0){
-            printf("Pot: %d (raw) | %d%% | %.2fV\n", pot_value, percent, voltage);
-            send_message_to_fsm_queue(POTENTIOMETER, diff_percent);
-            last_pot_value = pot_value;
-            last_diff_percentage = diff_percent;
+        // skip if it's an invalid value
+        if (new_pot_value < 0) {
+            vTaskDelay(pdMS_TO_TICKS(POT_READ_INTERVAL_MS));
+            continue;
+        }
+        
+        if (new_pot_value > 4095) {
+            ESP_LOGW(TAG_POT, "Out of range value: %d", new_pot_value);
+            vTaskDelay(pdMS_TO_TICKS(POT_READ_INTERVAL_MS));
+            continue;
+        }
+        
+        pot_value = new_pot_value;
+        
+        // compute percentage
+        int percent = (pot_value * 100) / 4095;
+        int diff = abs(percent - last_percentage);
+        
+        // send message to the queue
+        if (diff >= THRESHOLD_PERCENT) {
+            float voltage = (pot_value * 3.3f) / 4095.0f;
+            
+            ESP_LOGI(TAG_POT, "Changed: %d%% (raw: %d, %.2fV, diff: %+d%%)", 
+                     percent, pot_value, voltage, percent - last_percentage);
+            
+            send_message_to_fsm_queue(POTENTIOMETER, percent - last_percentage);
+            last_percentage = percent;
         }
         
         vTaskDelay(pdMS_TO_TICKS(POT_READ_INTERVAL_MS));

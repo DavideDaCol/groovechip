@@ -326,7 +326,6 @@ void main_fsm_task(void *pvParameters) {
             print_double(line1, line2);
             is_changed = false;
         }
-        vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
 #pragma endregion
@@ -529,12 +528,12 @@ void change_bit_depth(int pot_value){
     if (pressed_button == NOT_DEFINED){
         for (uint8_t i = 0; i < SAMPLE_NUM; i++){
             uint8_t curr_bit_depth = get_bit_crusher_bit_depth(i);
-            uint8_t new_bit_depth = (curr_bit_depth + bit_depth_changing + BIT_DEPTH_MAX) % BIT_DEPTH_MAX;
+            uint8_t new_bit_depth = (curr_bit_depth + bit_depth_changing + BIT_DEPTH_MAX + 1) % (BIT_DEPTH_MAX + 1);
             set_bit_crusher_bit_depth(i, new_bit_depth);
         }
     } else {
         uint8_t curr_bit_depth = get_bit_crusher_bit_depth(get_sample_bank_index(pressed_button));
-        uint8_t new_bit_depth = (curr_bit_depth + bit_depth_changing + BIT_DEPTH_MAX) % BIT_DEPTH_MAX;
+        uint8_t new_bit_depth = (curr_bit_depth + bit_depth_changing + BIT_DEPTH_MAX + 1) % (BIT_DEPTH_MAX + 1);
             set_bit_crusher_bit_depth(get_sample_bank_index(pressed_button), new_bit_depth);
     }
 }
@@ -548,12 +547,12 @@ void change_downsample(int pot_value){
     if (pressed_button == NOT_DEFINED){
         for (uint8_t i = 0; i < SAMPLE_NUM; i++){
             uint8_t curr_downsample = get_bit_crusher_downsample(i);
-            uint8_t new_downsample = (curr_downsample + downsample_changing + DOWNSAMPLE_MAX) % DOWNSAMPLE_MAX;
+            uint8_t new_downsample = (curr_downsample + downsample_changing + DOWNSAMPLE_MAX + 1) % (DOWNSAMPLE_MAX + 1);
             set_bit_crusher_downsample(i, new_downsample);
         }
     } else {
         uint8_t curr_downsample = get_bit_crusher_downsample(get_sample_bank_index(pressed_button));
-        uint8_t new_downsample = (curr_downsample + downsample_changing + DOWNSAMPLE_MAX) % DOWNSAMPLE_MAX;
+        uint8_t new_downsample = (curr_downsample + downsample_changing + DOWNSAMPLE_MAX + 1) % (DOWNSAMPLE_MAX + 1);
         set_bit_crusher_downsample(get_sample_bank_index(pressed_button), new_downsample);
     }
 }
@@ -595,7 +594,7 @@ void change_distortion_threshold(int pot_value){
 void fsm_init(){
     fsm_queue = xQueueCreate(30, sizeof(fsm_queue_msg_t));
 
-    xTaskCreate(main_fsm_task, "fsm_task", 2048, NULL, 5, NULL);
+    xTaskCreate(main_fsm_task, "fsm_task", 4096, NULL, 5, NULL);
 }
 
 #pragma region SINGLE QUEUE FUNCTIONS

@@ -39,7 +39,7 @@ void joystick_init() {
     gpio_config(&io_conf);
 
     // creating the task
-    xTaskCreate(joystick_task, "joystick_task", 2048, NULL, 5, NULL); // not sure about these parameters (expecially the stack depth), but for now should work
+    xTaskCreate(joystick_task, "joystick_task", 2048, NULL, 3, NULL); // not sure about these parameters (expecially the stack depth), but for now should work
 }
 
 void joystick_get_raw(){
