@@ -1,5 +1,7 @@
 #include "include/sd_reader.h"
-#include <sys/stat.h>
+#include <cJSON.h>
+#include <stdbool.h>
+#include <string.h>
 
 const char* TAG = "SdReader";
 
@@ -11,6 +13,7 @@ static sdmmc_card_t sd_card;
 /* Function to explore the mount point and to fill the sample_names array*/
 static esp_err_t sd_exploration();
 static esp_err_t set_new_samples();
+static esp_err_t set_json(char* dir_path, bool bitcrusher_enabled, uint8_t downsample, uint8_t bit_depth, float pitch_factor, bool distortion_enabled, uint16_t threshold, float gain, float start_ptr, uint32_t end_ptr);
 
 esp_err_t sd_reader_init() {
     esp_err_t res;
@@ -49,9 +52,9 @@ esp_err_t sd_reader_init() {
         return ESP_FAIL;
     }
 
-    set_new_samples();
+    return set_new_samples();
 
-    return sd_exploration();
+    // return sd_exploration();
 }
 
 esp_err_t ld_sample(int in_bank_index, char* sample_name, sample_t** out_sample_ptr) {
@@ -176,44 +179,176 @@ static esp_err_t sd_exploration() {
 
 
 static esp_err_t set_new_samples() {
-    //generating a file path that brings to the directory with the samples to insert
-    char file_path[GRVCHP_MNTPOINT_SIZE + NEW_SAMPLES_DIR_SIZE + 2];
-    snprintf(file_path, sizeof(file_path), "%s/%s", GRVCHP_MNTPOINT, NEW_SAMPLES_DIR);
+    //file_path = directory with the samples to insert
+    char wav_files_path[GRVCHP_MNTPOINT_SIZE + WAV_FILES_DIR_SIZE + 2];
+    snprintf(wav_files_path, sizeof(wav_files_path), "%s/%s", GRVCHP_MNTPOINT, WAV_FILES_DIR);
+
+    char json_files_path[GRVCHP_MNTPOINT_SIZE + JSON_FILES_DIR_SIZE + 2];
+    snprintf(json_files_path, sizeof(json_files_path), "%s/%s", GRVCHP_MNTPOINT, JSON_FILES_DIR);
     
     //opening the directory
-    DIR *new_files_dir = opendir(file_path);
-    if (!new_files_dir) return ESP_FAIL;
+    DIR *wav_files_dir = opendir(wav_files_path);
+    if (!wav_files_dir) return ESP_FAIL;
 
     struct dirent* dir_entry;
 
-    //buffers that will contain the file names
-    char temp_path1[MAX_BUFF_SIZE];
-    char temp_path2[MAX_BUFF_SIZE + GRVCHP_MNTPOINT_SIZE + NEW_SAMPLES_DIR_SIZE + 5];
-    char sample_name[MAX_SIZE + 1];
-
-    //
-    while ((dir_entry = readdir(new_files_dir)) != NULL) {
+    //cycle for each new sample
+    while ((dir_entry = readdir(wav_files_dir)) != NULL) {
         if (dir_entry->d_name[0] == '.') continue;
 
+        char sample_name[MAX_SIZE];
+        
+        //extracts the sample name, that will be used for naming the new directory, by truncating the actual name at the MAX_SIZEth character 
         if (sscanf(dir_entry->d_name, RESOLVE(MAX_SIZE), sample_name) == 1) {
-            // Construct paths using snprintf for safety
-            snprintf(temp_path1, sizeof(temp_path1), "%s/%s", GRVCHP_MNTPOINT, sample_name);
             
-            // Always check if directory creation was successful or if it already exists
-            mkdir(temp_path1, STD_ACCESS_MODE);
+            //ext = extension of the current file
+            char *ext = strchr(dir_entry -> d_name, '.');
+            printf("%s\n", ext);
+            
+            //checks that the extension must be contained in the name and that it is a wav
+            if (ext != NULL) {
+                if (strcmp(ext, ".wav") == 0 || strcmp(ext, ".WAV") == 0) {
+                    // //temp_path1 = path of the directory that will the current new sample
+                    // if (snprintf(temp_path1, sizeof(temp_path1), "%s/%s", GRVCHP_MNTPOINT, sample_name) < 0) return ESP_FAIL;
+                    
+                    // // creating the directory using the path just created
+                    // mkdir(temp_path1, STD_ACCESS_MODE);
+                    
+                    // //temp_path2 = current file
+                    // if (snprintf(temp_path2, sizeof(temp_path2), "%s/%s", file_path, dir_entry->d_name) < 0) return ESP_FAIL;
+                    
+                    // //reuse temp_path1 carefully or use a third buffer
+                    // char destination[MAX_BUFF_SIZE];
+                    // if (snprintf(destination, sizeof(destination), "%s/%s/%s", GRVCHP_MNTPOINT, sample_name, SAMPLE_FL_NAME) < 0) return ESP_FAIL;
+                    
+                    // //moving the file in the directory and renaming it "sample.wav"
+                    // if (rename(temp_path2, destination) != 0) return ESP_FAIL;
+                    
+                    // //getting the WAV header for reading the data size
+                    // wav_header_t curr_wav_header;
+                    // FILE* fp = fopen(destination, "r");
+                    
+                    // fread(&curr_wav_header, sizeof(wav_header_t), 1, fp);
+                    
+                    // fclose(fp);
 
-            snprintf(temp_path2, sizeof(temp_path2), "%s/%s", file_path, dir_entry->d_name);
-            // Reuse temp_path1 carefully or use a third buffer
-            char destination[MAX_BUFF_SIZE];
-            snprintf(destination, sizeof(destination), "%s/%s/%s", GRVCHP_MNTPOINT, sample_name, SAMPLE_FL_NAME);
-            
-            if (rename(temp_path2, destination) != 0) {
-                return ESP_FAIL;
+                    char curr_sample_path[MAX_BUFF_SIZE + sizeof(wav_files_path) + 2];
+                    snprintf(curr_sample_path, sizeof(curr_sample_path), "%s/%s", wav_files_path, dir_entry -> d_name);
+
+                    wav_header_t curr_wav_header;
+                    FILE* fp = fopen(curr_sample_path, "r");
+
+                    fread(&curr_wav_header, sizeof(wav_header_t), 1, fp);
+
+                    fclose(fp);
+                    
+                    //buffers that will contain the file names
+                    char new_json_file[sizeof(json_files_path) + MAX_SIZE + JSON_EXTENSION_SIZE + 2];
+                    sprintf(new_json_file, "%s/%s.json", json_files_path, sample_name);
+                    
+                    
+                    //creating the json file 
+                    ESP_ERROR_CHECK_WITHOUT_ABORT(
+                        set_json(
+                            new_json_file,
+                            false,
+                            DOWNSAMPLE_MAX,
+                            BIT_DEPTH_MAX,
+                            1.0,
+                            false,
+                            DISTORTION_THRESHOLD_MAX,
+                            DISTORTION_GAIN_MAX,
+                            0,
+                            curr_wav_header.data_size
+                        )
+                    );
+                } else {
+                    printf("You're wrong\n");
+                }
             }
         }
     }
 
-    closedir(new_files_dir);
+    closedir(wav_files_dir);
     return ESP_OK;
 }
- 
+
+/*
+"effects" : {
+    "bitcrusher" : {
+        "enabled" : <val>,
+        "downsample" : <val>,
+        "bit depth" : <val>
+    },
+    "pitch" : {
+        "pitch_factor" : <val>
+    },
+    "distortion" : {
+        "enabled" : <val>,
+        "threshold" : <val>,
+        "gain" : <val>
+    }
+},
+"start_ptr" : <val>,
+"end_ptr" : <val>
+*/
+
+static esp_err_t set_json(char* filename, bool bitcrusher_enabled, uint8_t downsample, uint8_t bit_depth, float pitch_factor, bool distortion_enabled, uint16_t threshold, float gain, float start_ptr, uint32_t end_ptr) {
+
+    //strings to add in the JSON file
+    char* bitcrusher_str = "bitcrusher";
+    char* effects_str = "effects";
+    char* downsample_str = "downsample";
+    char* bit_depth_str = "bit depth";
+    char* pitch_str = "pitch";
+    char* pitch_factor_str = "pitch factor";
+    char* distortion_str = "distortion";
+    char* threshold_str = "threshold";
+    char* gain_str = "gain";
+    char* start_ptr_str = "start pointer";
+    char* end_ptr_str = "end pointer";
+    char* enabled_str = "enabled";
+
+    //JSON setup, according to the structure defined above
+    cJSON* distortion_json = cJSON_CreateObject();
+    cJSON_AddBoolToObject(distortion_json, enabled_str, (cJSON_bool) distortion_enabled);
+    cJSON_AddNumberToObject(distortion_json, threshold_str, threshold);
+    cJSON_AddNumberToObject(distortion_json, gain_str, gain);
+    
+    cJSON* pitch_json = cJSON_CreateObject();
+    cJSON_AddNumberToObject(pitch_json, pitch_factor_str, pitch_factor);
+    
+    cJSON* bitcrusher_json = cJSON_CreateObject();
+    cJSON_AddBoolToObject(bitcrusher_json, enabled_str, (cJSON_bool) bitcrusher_enabled);
+    cJSON_AddNumberToObject(bitcrusher_json, downsample_str, downsample);
+    cJSON_AddNumberToObject(bitcrusher_json, bit_depth_str, bit_depth);
+    
+    
+    cJSON* effects_json = cJSON_CreateObject();
+    cJSON_AddItemToObject(effects_json, distortion_str, distortion_json);
+    cJSON_AddItemToObject(effects_json, pitch_str, pitch_json);
+    cJSON_AddItemToObject(effects_json, bitcrusher_str, bitcrusher_json);
+    
+
+    cJSON* metadata_json = cJSON_CreateObject();
+    cJSON_AddItemToObject(metadata_json, effects_str, effects_json);
+    cJSON_AddNumberToObject(metadata_json, start_ptr_str, start_ptr);
+    cJSON_AddNumberToObject(metadata_json, end_ptr_str, end_ptr);
+
+    //Conversion of the JSON object into a string to copy into the file
+    char* json_str = cJSON_Print(metadata_json);
+
+    printf("%s\n", filename);
+    printf("%s\n", json_str);
+
+    FILE* fp = fopen(filename, "w");
+    if (fp == NULL) return ESP_FAIL;
+
+    fputs(json_str, fp);
+
+    fclose(fp);
+    free(json_str);
+    cJSON_Delete(metadata_json);
+
+    return ESP_OK;
+}

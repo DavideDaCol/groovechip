@@ -59,7 +59,7 @@ uint8_t get_sample_bank_index(uint8_t pad_id){
 	else return NOT_DEFINED;
 }
 
-mode_t get_playback_mode(uint8_t bank_index){
+pb_mode_t get_playback_mode(uint8_t bank_index){
 	if(bank_index < SAMPLE_NUM){
 		return samples_config[bank_index]->mode;
 	}

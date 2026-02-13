@@ -19,6 +19,8 @@
 #include "mixer.h"
 #include "effects.h"
 #include "esp_psram.h"
+#include <sys/stat.h>
+
 
 extern char **sample_names;
 extern int sample_names_size;
@@ -39,18 +41,20 @@ extern int sample_names_size;
 #define MAX_SIZE 17
 
 //Directory where the new samples are inserted to be added
-#define NEW_SAMPLES_DIR "new_samples_dir"
-#define NEW_SAMPLES_DIR_SIZE 16
-#define STD_ACCESS_MODE 0777
+#define WAV_FILES_DIR "wav_files"
+#define WAV_FILES_DIR_SIZE 10
+
+#define JSON_FILES_DIR "json_files"
+#define JSON_FILES_DIR_SIZE 11
 
 #define MAX_BUFF_SIZE 256
 
 #define WAV_EXTENSION_SIZE 4
+#define JSON_EXTENSION_SIZE 5
 
 #define FORMAT(S) "%" #S "[^.]"
 #define RESOLVE(S) FORMAT(S)
 
-#define SAMPLE_FL_NAME "sample.wav"
 
 /* Default initialization process:
    - Configure the physical connections and create the SD SPI bus 

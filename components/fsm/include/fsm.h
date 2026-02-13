@@ -64,7 +64,7 @@ void change_downsample(int pot_value);
 void change_distortion_gain(int pot_value);
 void change_distortion_threshold(int pot_value);
 void sample_load();
-mode_t next_mode(int next, mode_t curr_mode);
+pb_mode_t next_mode(int next, pb_mode_t curr_mode);
 void send_message_to_fsm_queue(message_source_t source, int payload);
 void send_message_to_fsm_queue_from_ISR(message_source_t source, int payload);
 void fsm_init();
