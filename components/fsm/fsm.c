@@ -71,6 +71,73 @@ opt_interactions_t btn_handlers[] = {
     }
 };
 
+// array to get the previous general menu when a js_left is triggered
+const menu_pair_t PREV_MENU_GENERAL[] = {
+    {
+        .menu = GEN_MENU,
+        .index = 0
+    },
+    {
+        .menu = GEN_MENU,
+        .index = 0
+    },
+    {
+        .menu = GEN_MENU,
+        .index = 0
+    },
+    {
+        .menu = GEN_MENU,
+        .index = 1
+    },
+    {
+        .menu = EFFECTS,
+        .index = 0
+    },
+    {
+        .menu = EFFECTS,
+        .index = 1
+    },
+    {
+        .menu = EFFECTS,
+        .index = 2
+    }
+};
+
+
+
+// array to get the previous btn menu when a js_left is triggered
+const menu_pair_t PREV_MENU_PAD[] = {
+    {
+        .menu = GEN_MENU,
+        .index = 0
+    },
+    {
+        .menu = GEN_MENU,
+        .index = 0
+    },
+    {
+        .menu = BTN_MENU,
+        .index = 0
+    },
+    {
+        .menu = BTN_MENU,
+        .index = 1
+    },
+    {
+        .menu = EFFECTS,
+        .index = 0
+    },
+    {
+        .menu = EFFECTS,
+        .index = 1
+    },
+    {
+        .menu = EFFECTS,
+        .index = 2
+    }
+};
+
+
 menu_t btn_menu = {
     .curr_index = -1,
     .max_size = BTN_MENU_NUM_OPT,
@@ -240,6 +307,33 @@ menu_t* menu_navigation[] = {
     &distortion_menu
 };
 
+// menu state stack
+static menu_pair_t menu_stack[10];
+static int stack_index = 0;
+
+void menu_push(menu_types menu, int index){
+    menu_pair_t state = {
+        .menu = menu,
+        .index = index
+    };
+
+    menu_stack[stack_index++] = state;
+}
+menu_pair_t menu_pop(){
+    if (stack_index <= 0){
+        ESP_LOGI(TAG_FSM, "Info: empty stack");
+        menu_pair_t pair = {
+            .menu = GEN_MENU,
+            .index = 0
+        };
+        return pair;
+    } 
+    else return menu_stack[--stack_index];
+}
+
+void clear_stack(){
+    stack_index = 0;
+}
 
 void get_second_line(char* out){
     uint8_t bank_index = get_sample_bank_index(pressed_button);
@@ -253,11 +347,13 @@ void get_second_line(char* out){
         sprintf(out, "General");
         break;
 
-    // in the following cases only print the current pressed button
     case SETTINGS:
     case BTN_MENU:
     case EFFECTS:
-        sprintf(out, "Pad %u", pad_num);
+        if(pad_num != PAD_NUM_NOT_DEFINED){
+            sprintf(out, "Pad %u", pad_num); //button is presset
+        }
+        else sprintf(out, "General"); //general menu
         break;
 
     // single effects cases
@@ -290,9 +386,9 @@ void get_second_line(char* out){
             break;
         }
         break;
-    case PITCH:
-        break;
     case DISTORTION:
+        break;
+    case PITCH:
         break;
     default:
         break;
@@ -400,19 +496,26 @@ void goto_selection() {
 // Function that calls the correct handler based on the current menu
 void js_right_handler() {
     int index = menu_navigation[curr_menu] -> curr_index;
+    menu_push(curr_menu, index);
+
     menu_navigation[curr_menu] -> opt_handlers[index].js_right_action();
 }
 
 // Function that sets the current menu the the previoous one
 void js_left_handler() {
-    if (pressed_button != NOT_DEFINED) {
-        if (curr_menu == BTN_MENU) {
-            curr_menu = GEN_MENU;
-            pressed_button = NOT_DEFINED;
-        } else 
-            curr_menu = BTN_MENU;
-    } else 
-        curr_menu = GEN_MENU;
+    // if (pressed_button != NOT_DEFINED) {
+    //     // if (curr_menu == BTN_MENU) {
+    //     //     curr_menu = GEN_MENU;
+    //     //     pressed_button = NOT_DEFINED;
+    //     // } else 
+    //     //     curr_menu = BTN_MENU;
+    //     // menu_pair_t pair = PREV_MENU_PAD[curr_menu];
+    //     // curr_menu
+    // } else 
+    //     curr_menu = GEN_MENU;
+    menu_pair_t state = menu_pop();
+    curr_menu = state.menu;
+    menu_navigation[curr_menu]->curr_index = state.index;
 }
 
 // Function that lets the menu navigation up
@@ -433,9 +536,11 @@ void js_down_handler() {
     );
 }
 
+
 //Function to call when a button bound to a sample is pressed
 void set_button_pressed(int pad_id) {
     if(pad_id != pressed_button){
+        clear_stack();
         pressed_button = pad_id;
         btn_menu.curr_index = 0;
         curr_menu = BTN_MENU;
@@ -444,11 +549,11 @@ void set_button_pressed(int pad_id) {
 
 // Sing function
 void sink() {
+    
     return;
 }
 
 #pragma endregion
-
 
 #pragma region POTENTIOMETER HANDLING
 
