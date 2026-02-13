@@ -292,19 +292,16 @@ void get_second_line(char* out){
 
     case SETTINGS:
         if(bank_index != NOT_DEFINED){
-            mode_t curr_mode = HOLD;
-            float volume = 0.0;
-            
             printf("Current index: %d\n", menu_navigation[curr_menu]->curr_index);
             switch (menu_navigation[curr_menu]->curr_index)
             {
             case MODE:
-                curr_mode = get_playback_mode(bank_index);
+                mode_t curr_mode = get_playback_mode(bank_index);
                 get_mode_stringify(curr_mode, out);
                 break;
             case VOLUME:
-                volume = get_volume(bank_index);
-                sprintf(out, "%f", volume);
+                int volume = get_volume(bank_index) * 100;
+                sprintf(out, "%d", volume);
                 break;
             default:
                 break;
@@ -347,12 +344,10 @@ void get_second_line(char* out){
         break;
     case DISTORTION:
         if(bank_index == NOT_DEFINED) break;
-        int threshold;
-        float gain;
 
         switch (menu_navigation[curr_menu]->curr_index)
         {
-        case ENABLED_BC:
+        case ENABLED_D:
             if(get_distortion_state(bank_index)){
                 sprintf(out, "On");
             }
@@ -360,12 +355,12 @@ void get_second_line(char* out){
             break;
 
         case GAIN:
-            gain = get_distortion_gain(bank_index);
-            sprintf(out, "%f", gain);
+            float gain = get_distortion_gain(bank_index);
+            sprintf(out, "%.2f", gain);
             break;
 
         case THRESHOLD:
-            threshold = get_distortion_threshold(bank_index);
+            int16_t threshold = get_distortion_threshold(bank_index);
             sprintf(out, "%d", threshold);
             break;
 
@@ -376,7 +371,7 @@ void get_second_line(char* out){
     case PITCH:
         // only one parameter
         float factor = get_pitch_factor(bank_index);
-        sprintf(out, "%f", factor);
+        sprintf(out, "%.2f", factor);
         break;
     default:
         break;
@@ -439,7 +434,13 @@ void joystick_handler(joystick_dir_t in_dir) {
     printf("%s\n", (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).first_line);
 
 }
+// void pop_if_equal(int new_index){
+//     menu_pair_t prev_state = menu_stack[stack_index];
+//     int prev_index = prev_state.index;
 
+//     if(prev_index == new_index)
+//         menu_pop();
+// }
 //Atomic function to navigate the menu
 void menu_move(int* index, int max_opt, int direction) {
     // direction: 1 for down, -1 for up
@@ -484,10 +485,14 @@ void goto_selection() {
 
 // Function that calls the correct handler based on the current menu
 void js_right_handler() {
-    int index = menu_navigation[curr_menu] -> curr_index;
-    menu_push(curr_menu, index);
+    if(curr_menu == GEN_MENU || curr_menu == BTN_MENU || curr_menu == EFFECTS ){
+        // change the state only if the current menu can actually go in a submenu. This prevents to push the same state multiple times        
+        int index = menu_navigation[curr_menu] -> curr_index;
+        menu_push(curr_menu, index);
+        
+        menu_navigation[curr_menu] -> opt_handlers[index].js_right_action();
+    }
 
-    menu_navigation[curr_menu] -> opt_handlers[index].js_right_action();
 }
 
 // Function that sets the current menu the the previoous one
@@ -536,10 +541,15 @@ void set_button_pressed(int pad_id) {
     }
 }
 
-// Sing function
+// Sink function
 void sink() {
     
     return;
+}
+
+// sink function, but it also free a stack position. This is needed when we don't want to save the previous state (if we go in the same menu multiple times)
+void sink_free_prev(){
+    menu_pop();
 }
 
 #pragma endregion
@@ -672,8 +682,17 @@ void change_distortion_threshold(int pot_value){
 #pragma endregion
 
 void fsm_init(){
+    // init queue
     fsm_queue = xQueueCreate(30, sizeof(fsm_queue_msg_t));
+    
+    // draw initial display
+    char* line1 = (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).first_line;
+    char line2[17] = "";
+    
+    (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).second_line(line2);
+    print_double(line1, line2);
 
+    // create task
     xTaskCreate(main_fsm_task, "fsm_task", 4096, NULL, 5, NULL);
 }
 
