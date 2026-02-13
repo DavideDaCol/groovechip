@@ -34,6 +34,7 @@ void goto_selection();
 void goto_bitcrusher();
 void goto_pitch();
 void goto_distortion();
+void goto_sample_load();
 void menu_move(int* index, int max_opt, int direction);
 void js_right_handler();
 void js_left_handler();
@@ -53,6 +54,7 @@ void change_bit_depth(int pot_value);
 void change_downsample(int pot_value);
 void change_distortion_gain(int pot_value);
 void change_distortion_threshold(int pot_value);
+void sample_load();
 mode_t next_mode(int next, mode_t curr_mode);
 
 //Enum that describes every type of menu we have in our project

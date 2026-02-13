@@ -339,31 +339,6 @@ static void mixer_task_wip(void *args)
     //initialize the recording struct
     recorder_init();
 
-    //initialize the first sample for testing purposes
-    ESP_ERROR_CHECK_WITHOUT_ABORT(ld_internal_sample(0, kick_clean_wav, "kick"));
-    // sample 0 will be triggered by GPIO 21
-    map_pad_to_sample(GPIO_BUTTON_1, 0);
-    //need to set the handler to something to avoid crashes!
-    //it will actually be set correctly by the sample component
-    // sample_bank[0].playback_mode.on_finish = action_stop_sample;
-    set_playback_mode(0, ONESHOT);
-    //debug function
-    //print_wav_header(&sample_bank[0]->header);
-
-    //initialize the second sample for testing purposes
-    ld_internal_sample(1, snare_clean_wav, "snare");
-    // sample 1 will be triggered by GPIO 19
-    map_pad_to_sample(GPIO_BUTTON_2, 1);
-    // sample_bank[1].playback_mode.on_finish = action_stop_sample;
-    set_playback_mode(1, ONESHOT);
-    //test bitcrush effect
-    toggle_bit_crusher(1, true);
-    set_bit_crusher_bit_depth(1, 8);
-    set_bit_crusher_downsample(1, 7);
-
-    
-    //print_wav_header(&sample_bank[1]->header);
-
     //test metronome functions (equivalent to 120bpm)
     set_metronome_bpm(60.0);
     set_metronome_subdiv(2);
@@ -388,7 +363,6 @@ static void mixer_task_wip(void *args)
             if (sample_lookahead >= mtrn.samples_per_subdivision) {
                 // unlock_metronome
                 toggle_metronome_playback(true);
-                ESP_LOGI(TAG, "metronome click! count: %ld", sample_lookahead);
                 //reset the metronome audio, in case the sample is too long for each tick
                 mtrn.playback_ptr = 0;
                 sample_lookahead = 0;

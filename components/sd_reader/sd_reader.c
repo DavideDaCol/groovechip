@@ -1,5 +1,7 @@
 #include "include/sd_reader.h"
 
+const char* TAG = "SdReader";
+
 char** sample_names = NULL;
 int sample_names_size = 0;
 
@@ -49,17 +51,19 @@ esp_err_t sd_reader_init() {
 }
 
 esp_err_t ld_sample(int in_bank_index, char* sample_name, sample_t** out_sample_ptr) {
+    ESP_LOGI(TAG, "ld_sample(): in_bank_index: %i, sample_name: %s", in_bank_index, sample_name);
     if (out_sample_ptr == NULL)
         return ESP_ERR_INVALID_ARG;
 
     //Defining the file path to read from
     char file_path[MAX_SIZE];
-    sprintf(file_path, "%s/%s.wav", GRVCHP_MNTPOINT, sample_name);
+    sprintf(file_path, "%s/%s", GRVCHP_MNTPOINT, sample_name);
+    ESP_LOGI(TAG, "requested file path is %s", file_path);
 
     //Opening the file in read mode
     FILE* fp = fopen(file_path, "rb");
     if (fp == NULL) {
-        fprintf(stderr, "Sample not found\n");
+        ESP_LOGE(TAG,"Sample not found");
         return ESP_ERR_NOT_FOUND;
     }
     

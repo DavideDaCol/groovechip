@@ -1,5 +1,6 @@
 #include "fsm.h"
 #include "sd_reader.h"
+#include "esp_log.h"
 #include <math.h>
 
 menu_types curr_menu = GEN_MENU;
@@ -59,7 +60,7 @@ opt_interactions_t btn_handlers[] = {
     {
         .first_line = "Select sample",
         .second_line = get_second_line,
-        .js_right_action = sink, //TODO
+        .js_right_action = goto_sample_load,
         .pt_action = sink
     }, 
     {
@@ -288,6 +289,16 @@ void get_second_line(char* out){
     }
 }
 
+void get_sample_load_second_line(char* out)
+{
+    uint8_t index = menu_navigation[SAMPLE_LOAD]->curr_index;
+
+    if(index < sample_names_size)
+    {
+        snprintf(out, 16, "%s", sample_names[index]);
+    }
+}
+
 menu_t sample_load_menu = {};
 opt_interactions_t* sample_load_actions = NULL;
 
@@ -295,11 +306,17 @@ opt_interactions_t* sample_load_actions = NULL;
 //FSM implementation function
 void main_fsm(QueueSetHandle_t in_set) {
 
+    printf("starting main FSM");
+    fflush(stdout);
     sample_load_actions = (opt_interactions_t *)malloc(sample_names_size * sizeof(opt_interactions_t));
     //for every sample, create the menu options
     for(int i = 0; i < sample_names_size; i++){
-        sample_load_actions[i].js_right_action = sink;
-        sprintf(sample_load_actions[i].print,sample_names[i]);
+        char title[17] = "";
+        snprintf(title, sizeof(title), "%s", sample_names[i]);
+
+        sample_load_actions[i].js_right_action = sample_load;
+        sprintf(sample_load_actions[i].first_line,"Sample list:");
+        sample_load_actions[i].second_line = get_sample_load_second_line;
         sample_load_actions[i].pt_action = sink;
     }
     // create the menu for the samples in the SD card
@@ -423,8 +440,12 @@ void goto_distortion() {
 }
 
 void sample_load() {
+    ESP_LOGW(TAG_FSM, "pressed_button is %i", pressed_button);
+    int sample_idx = get_sample_bank_index(pressed_button);
     int index = menu_navigation[curr_menu] -> curr_index;
-    ld_sample(pressed_button, sample_names[index], &sample_bank[pressed_button]);
+    ld_sample(sample_idx, sample_names[index], &sample_bank[sample_idx]);
+
+    map_pad_to_sample(pressed_button, index);
 }
 
 // Function that calls the correct handler based on the current menu
