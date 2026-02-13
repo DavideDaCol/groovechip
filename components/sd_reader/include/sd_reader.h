@@ -71,6 +71,5 @@ esp_err_t ld_sample(int in_bank_index, char* sample_name, sample_t** out_sample_
 
 /* Function to transfer a sample from the internal memory to the SD card:
    - sample (IN): actual sample of which the transfer is requested */
-esp_err_t st_sample(sample_t *sample);
-
+esp_err_t st_sample(int in_bank_index, char *sample_name);
 #endif
