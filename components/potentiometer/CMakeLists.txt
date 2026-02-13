@@ -8,4 +8,5 @@ idf_component_register(
         esp_adc
         joystick
         adc1
+        fsm
 )

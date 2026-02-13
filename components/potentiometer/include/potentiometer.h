@@ -10,7 +10,6 @@
 #include "joystick.h"
 #include "adc1.h"
 
-extern QueueHandle_t pot_queue;
 extern int pot_value;
 
 void potentiometer_init();
