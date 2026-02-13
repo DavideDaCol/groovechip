@@ -54,6 +54,20 @@ int potentiometer_read_filtered() {
     return sum / valid_readings;
 }
 
+bool reaching_max(float voltage, int last_percent){
+    if (voltage >= 3.3f && last_percent < 100){
+        return true;
+    }
+    return false;
+}
+
+bool reaching_min(float voltage, int last_percent){
+    if (voltage <= 0.0f && last_percent > 0){
+        return true;
+    }
+    return false;
+}
+
 void potentiometer_task(void *args) {
     // initial value
     pot_value = potentiometer_read_filtered();
@@ -84,11 +98,12 @@ void potentiometer_task(void *args) {
         
         // compute percentage
         int percent = round((pot_value * 100) / 4095);
+        float voltage = (pot_value * 3.3f) / 4095.0f;
+
         int diff = abs(percent - last_percentage);
         
         // send message to the queue
-        if (diff >= THRESHOLD_PERCENT) {
-            float voltage = (pot_value * 3.3f) / 4095.0f;
+        if (diff >= THRESHOLD_PERCENT || reaching_max(voltage, last_percentage) || reaching_min(voltage, last_percentage)) {
             
             ESP_LOGI(TAG_POT, "Changed: %d%% (raw: %d, %.2fV, diff: %+d%%)", 
                      percent, pot_value, voltage, percent - last_percentage);

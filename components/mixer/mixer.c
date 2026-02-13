@@ -179,8 +179,8 @@ static inline void apply_distortion(uint8_t sample_id, int16_t *out_L, int16_t *
 } 
 #pragma region VOLUME
 
-void set_volume(uint8_t bank_index, float volume_to_add){
-    sample_bank[bank_index].volume += volume_to_add;
+void set_volume(uint8_t bank_index, float new_volume){
+    sample_bank[bank_index].volume = new_volume;
     if (sample_bank[bank_index].volume > VOLUME_THRESHOLD_UP) {
         sample_bank[bank_index].volume = VOLUME_THRESHOLD_UP;
     }

@@ -17,7 +17,7 @@
 #define SAMPLE_NUM 8
 
 // Max volume
-#define VOLUME_THRESHOLD_UP 0.2f
+#define VOLUME_THRESHOLD_UP 1.0f
 
 #pragma region TYPES
 

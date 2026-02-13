@@ -300,7 +300,7 @@ void get_second_line(char* out){
             {
             case MODE:
                 curr_mode = get_playback_mode(bank_index);
-                get_mode_stringify(curr_menu, out);
+                get_mode_stringify(curr_mode, out);
                 break;
             case VOLUME:
                 volume = get_volume(bank_index);
@@ -554,11 +554,18 @@ void potentiometer_handler(int diff_percent_pot_value){
 
 // Function that changes the volume
 void change_vol(int pot_value) {
+    float raw_vol = (float)pot_value * VOLUME_NORMALIZER_VALUE;
+
+    float stepped_vol = round(raw_vol / 0.05f) * 0.05f;
+
     if (pressed_button == NOT_DEFINED) {
-        for (uint8_t i = 0; i < SAMPLE_NUM; i++)
-            set_volume(i, (float)pot_value * VOLUME_NORMALIZER_VALUE);
-    } else
-        set_volume(get_sample_bank_index(pressed_button), (float)pot_value * VOLUME_NORMALIZER_VALUE);
+        for (uint8_t i = 0; i < SAMPLE_NUM; i++) {
+            set_volume(i, stepped_vol);
+        }
+    } else {
+        int idx = get_sample_bank_index(pressed_button);
+        set_volume(idx, stepped_vol);
+    }
 }
 
 // Function that changes the pitch
@@ -611,7 +618,7 @@ void rotate_mode(int pot_value){
 
 // Function that gets the next mode
 mode_t next_mode(int next, mode_t curr_mode){
-    return (mode_t)((curr_mode + next + MODE_NUM_OPT)%MODE_NUM_OPT);
+    return (mode_t)(((int)curr_mode + next + MODE_NUM_OPT)%MODE_NUM_OPT);
 }
 
 // Function that changes the bit depth
