@@ -71,73 +71,6 @@ opt_interactions_t btn_handlers[] = {
     }
 };
 
-// array to get the previous general menu when a js_left is triggered
-const menu_pair_t PREV_MENU_GENERAL[] = {
-    {
-        .menu = GEN_MENU,
-        .index = 0
-    },
-    {
-        .menu = GEN_MENU,
-        .index = 0
-    },
-    {
-        .menu = GEN_MENU,
-        .index = 0
-    },
-    {
-        .menu = GEN_MENU,
-        .index = 1
-    },
-    {
-        .menu = EFFECTS,
-        .index = 0
-    },
-    {
-        .menu = EFFECTS,
-        .index = 1
-    },
-    {
-        .menu = EFFECTS,
-        .index = 2
-    }
-};
-
-
-
-// array to get the previous btn menu when a js_left is triggered
-const menu_pair_t PREV_MENU_PAD[] = {
-    {
-        .menu = GEN_MENU,
-        .index = 0
-    },
-    {
-        .menu = GEN_MENU,
-        .index = 0
-    },
-    {
-        .menu = BTN_MENU,
-        .index = 0
-    },
-    {
-        .menu = BTN_MENU,
-        .index = 1
-    },
-    {
-        .menu = EFFECTS,
-        .index = 0
-    },
-    {
-        .menu = EFFECTS,
-        .index = 1
-    },
-    {
-        .menu = EFFECTS,
-        .index = 2
-    }
-};
-
-
 menu_t btn_menu = {
     .curr_index = -1,
     .max_size = BTN_MENU_NUM_OPT,
@@ -387,8 +320,37 @@ void get_second_line(char* out){
         }
         break;
     case DISTORTION:
+        if(bank_index == NOT_DEFINED) break;
+        int threshold;
+        float gain;
+
+        switch (menu_navigation[curr_menu]->curr_index)
+        {
+        case ENABLED_BC:
+            if(get_distortion_state(bank_index)){
+                sprintf(out, "On");
+            }
+            else sprintf(out, "Off");
+            break;
+
+        case GAIN:
+            gain = get_distortion_gain(bank_index);
+            sprintf(out, "%f", gain);
+            break;
+
+        case THRESHOLD:
+            threshold = get_distortion_threshold(bank_index);
+            sprintf(out, "%d", threshold);
+            break;
+
+        default:
+            break;
+        }
         break;
     case PITCH:
+        // only one parameter
+        float factor = get_pitch_factor(bank_index);
+        sprintf(out, "%f", factor);
         break;
     default:
         break;
