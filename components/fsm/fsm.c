@@ -5,7 +5,7 @@ menu_types curr_menu = GEN_MENU;
 
 int8_t pressed_button = -1;
 
-mode_t mode = ONESHOT;
+pb_mode_t mode = ONESHOT;
 
 #pragma region GENERAL MENU
 /***********************************
@@ -427,8 +427,8 @@ void rotate_mode(int pot_value){
 }
 
 // Function that gets the next mode
-mode_t next_mode(int next, mode_t curr_mode){
-    return (mode_t)((curr_mode + next + MODE_NUM_OPT)%MODE_NUM_OPT);
+pb_mode_t next_mode(int next, pb_mode_t curr_mode){
+    return (pb_mode_t)((curr_mode + next + MODE_NUM_OPT)%MODE_NUM_OPT);
 }
 
 // Function that changes the bit depth

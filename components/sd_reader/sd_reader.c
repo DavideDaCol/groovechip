@@ -1,4 +1,5 @@
 #include "include/sd_reader.h"
+#include <sys/stat.h>
 
 char** sample_names = NULL;
 int sample_names_size = 0;
@@ -7,6 +8,7 @@ static sdmmc_card_t sd_card;
 
 /* Function to explore the mount point and to fill the sample_names array*/
 static esp_err_t sd_exploration();
+static esp_err_t set_new_samples();
 
 esp_err_t sd_reader_init() {
     esp_err_t res;
@@ -44,6 +46,8 @@ esp_err_t sd_reader_init() {
         fprintf(stderr, "Error in mounting the SD card filesystem\n");
         return ESP_FAIL;
     }
+
+    set_new_samples();
 
     return sd_exploration();
 }
@@ -136,21 +140,22 @@ esp_err_t st_sample(sample_t* in_sample) {
 static esp_err_t sd_exploration() {
     struct dirent* dir_entry;
 
-    //Opening the SD filesystem via ANSI C functions 
+    //opening the SD filesystem via ANSI C functions 
     DIR* dir = opendir(GRVCHP_MNTPOINT);
 
     if (dir == NULL) {
         return ESP_FAIL;
     }
 
-    //Obtaining the number of files (=entries in the directory) 
+    //obtaining the number of files (=entries in the directory) 
     sample_names_size = 0;
     while ((dir_entry = readdir(dir)) != NULL) sample_names_size++;
     
-    //Allocating the array with the previously calculated size 
+    //allocating the array with the previously calculated size 
     sample_names = malloc(sample_names_size*sizeof(char *));
 
-    dir = opendir(GRVCHP_MNTPOINT);
+    //rewinding the directory stream
+    rewinddir(dir);
 
     //Filling the array with the names of the samples in the SD card
     for (int i = 0; i < sample_names_size; i++) {
@@ -159,7 +164,52 @@ static esp_err_t sd_exploration() {
             return ESP_FAIL;
         }
         sample_names[i] = malloc(MAX_SIZE * sizeof(char));
-        sscanf(dir_entry -> d_name, "%s.WAV", sample_names[i]);
+        sscanf(dir_entry -> d_name, "%s", sample_names[i]);
     }
     return ESP_OK;
 }  
+
+
+static esp_err_t set_new_samples() {
+    //generating a file path that brings to the directory with the samples to insert
+    char file_path[GRVCHP_MNTPOINT_SIZE + NEW_SAMPLES_DIR_SIZE + 2];
+    snprintf(file_path, sizeof(file_path), "%s/%s", GRVCHP_MNTPOINT, NEW_SAMPLES_DIR);
+    
+    //opening the directory
+    DIR *new_files_dir = opendir(file_path);
+    if (!new_files_dir) return ESP_FAIL;
+
+    struct dirent* dir_entry;
+
+    //buffers that will contain the file names
+    char temp_path1[MAX_BUFF_SIZE];
+    char temp_path2[MAX_BUFF_SIZE + GRVCHP_MNTPOINT_SIZE + NEW_SAMPLES_DIR_SIZE + 5];
+    char sample_name[MAX_SIZE + 1];
+
+    //
+    while ((dir_entry = readdir(new_files_dir)) != NULL) {
+        if (dir_entry->d_name[0] == '.') continue;
+
+        if (sscanf(dir_entry->d_name, RESOLVE(MAX_SIZE), sample_name) == 1) {
+            // Construct paths using snprintf for safety
+            snprintf(temp_path1, sizeof(temp_path1), "%s/%s", GRVCHP_MNTPOINT, sample_name);
+            
+            // Always check if directory creation was successful or if it already exists
+            mkdir(temp_path1, STD_ACCESS_MODE);
+
+            snprintf(temp_path2, sizeof(temp_path2), "%s/%s", file_path, dir_entry->d_name);
+            // Reuse temp_path1 carefully or use a third buffer
+            char destination[MAX_BUFF_SIZE];
+            snprintf(destination, sizeof(destination), "%s/%s/%s", GRVCHP_MNTPOINT, sample_name, SAMPLE_FL_NAME);
+            
+            if (rename(temp_path2, destination) != 0) {
+                return ESP_FAIL;
+            }
+        }
+    }
+
+    closedir(new_files_dir);
+    return ESP_OK;
+}
+
+esp_err_t 

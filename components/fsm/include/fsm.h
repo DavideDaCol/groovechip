@@ -53,7 +53,7 @@ void change_bit_depth(int pot_value);
 void change_downsample(int pot_value);
 void change_distortion_gain(int pot_value);
 void change_distortion_threshold(int pot_value);
-mode_t next_mode(int next, mode_t curr_mode);
+pb_mode_t next_mode(int next, pb_mode_t curr_mode);
 
 //Enum that describes every type of menu we have in our project
 typedef enum {
@@ -73,7 +73,7 @@ extern menu_types curr_menu;
 extern int8_t pressed_button;
 
 //Records the last mode set (or the default one if never changed)
-extern mode_t mode;
+extern pb_mode_t mode;
 
 //Actual functions to perform when an input is received through joystick or potentiometer
 typedef void (*action_t) (void); 

@@ -50,7 +50,7 @@ const playback_mode_t* PLAYBACK_MODES[] = {
 static const playback_mode_t* samples_config[SAMPLE_NUM];
 static int pad_to_sample_map[GPIO_NUM_MAX];
 
-mode_t get_playback_mode(uint8_t bank_index){
+pb_mode_t get_playback_mode(uint8_t bank_index){
 	if(bank_index < SAMPLE_NUM){
 		return samples_config[bank_index]->mode;
 	}
@@ -58,7 +58,7 @@ mode_t get_playback_mode(uint8_t bank_index){
 }
 
 // exposed function to set the mode
-void set_playback_mode(uint8_t bank_index, mode_t playback_mode){
+void set_playback_mode(uint8_t bank_index, pb_mode_t playback_mode){
 	if (bank_index < SAMPLE_NUM){
 		switch (playback_mode)
 		{

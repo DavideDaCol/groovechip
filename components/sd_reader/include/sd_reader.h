@@ -26,6 +26,7 @@ extern int sample_names_size;
 
 //Default mountpoint
 #define GRVCHP_MNTPOINT "/sdcard"
+#define GRVCHP_MNTPOINT_SIZE 7
 
 //FAT drive index (0 by default)
 #define GRVCHP_FAT_DRIVE_INDEX 0
@@ -34,8 +35,22 @@ extern int sample_names_size;
 //Maximum number of files that can be opened simultaneously
 #define GRVCHP_MAX_FILES 1
 
-//Maximum size of the file name
-#define MAX_SIZE 20
+//Maximum size of the name that will be printed in the screen 
+#define MAX_SIZE 17
+
+//Directory where the new samples are inserted to be added
+#define NEW_SAMPLES_DIR "new_samples_dir"
+#define NEW_SAMPLES_DIR_SIZE 16
+#define STD_ACCESS_MODE 0777
+
+#define MAX_BUFF_SIZE 256
+
+#define WAV_EXTENSION_SIZE 4
+
+#define FORMAT(S) "%" #S "[^.]"
+#define RESOLVE(S) FORMAT(S)
+
+#define SAMPLE_FL_NAME "sample.wav"
 
 /* Default initialization process:
    - Configure the physical connections and create the SD SPI bus 
