@@ -4,19 +4,19 @@
 #include "esp_adc/adc_oneshot.h"
 #include "esp_mac.h"
 #include "include/joystick.h"
+#include "fsm.h"
 
 
 #define ADC_CHANNEL_X ADC_CHANNEL_6
 #define ADC_CHANNEL_Y ADC_CHANNEL_7
 #define GPIO_SW GPIO_NUM_27
 
-#define THRESH_LOW 1200
-#define THRESH_UP 2800
+#define THRESH_LOW 800
+#define THRESH_UP 3200
 
 #define DEBOUNCE_MS  30
 
 Joystick my_joystick = { 0, 0, 1};
-QueueHandle_t joystick_queue;
 
 void joystick_init() {
 
@@ -38,11 +38,8 @@ void joystick_init() {
     };
     gpio_config(&io_conf);
 
-    // creating the queue
-    joystick_queue = xQueueCreate(10, sizeof(JoystickDir)); // don't know how many messages the queue should be able to contain at a time, i put 10 as a starting point (can be changed)
-
     // creating the task
-    xTaskCreate(joystick_task, "joystick_task", 2048, NULL, 5, NULL); // not sure about these parameters (expecially the stack depth), but for now should work
+    xTaskCreate(joystick_task, "joystick_task", 2048, NULL, 3, NULL); // not sure about these parameters (expecially the stack depth), but for now should work
 }
 
 void joystick_get_raw(){
@@ -85,7 +82,7 @@ void joystick_task(void *args){
 
         // ignore the repetitive events
         if (new_dir != last_dir){
-            xQueueSend(joystick_queue, &new_dir, 0); // parameters -> queue name, message, tick to wait to send the message
+            send_message_to_fsm_queue(JOYSTICK, new_dir); 
             last_dir = new_dir;
         }
 

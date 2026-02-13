@@ -7,6 +7,8 @@
 #include "driver/gpio.h"
 #include "esp_timer.h"
 
+const char* TAG_PM = "PlaybackMode";
+
 #pragma region PAYBACK MODES
 
 // init queue
@@ -140,7 +142,7 @@ void sample_task(void *pvParameter){
 
             if(bank_index == NOT_DEFINED){
                 // there is no associated sample to this pad
-                printf("sample id was NOT defined\n");
+                ESP_LOGW(TAG_PM,"sample id was NOT defined");
                 fflush(stdout);
                 continue;
             }

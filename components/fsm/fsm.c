@@ -3,6 +3,8 @@
 #include "esp_log.h"
 #include <math.h>
 
+static QueueHandle_t fsm_queue = NULL;
+
 menu_types curr_menu = GEN_MENU;
 
 uint8_t pressed_button = NOT_DEFINED;
@@ -244,10 +246,24 @@ menu_t* menu_navigation[] = {
 
 void get_second_line(char* out){
     uint8_t bank_index = get_sample_bank_index(pressed_button);
+    uint8_t pad_num = get_pad_num(pressed_button);
+
     printf("PressedButton: %u\n", pressed_button);
     printf("Bank index: %u\n", bank_index);
     switch (curr_menu)
     {
+    case GEN_MENU: //general case
+        sprintf(out, "General");
+        break;
+
+    // in the following cases only print the current pressed button
+    case SETTINGS:
+    case BTN_MENU:
+    case EFFECTS:
+        sprintf(out, "Pad %u", pad_num);
+        break;
+
+    // single effects cases
     case BITCRUSHER:
         if(bank_index == NOT_DEFINED) break; // if there is no associated sample_id, exit
         uint8_t value;
@@ -281,9 +297,6 @@ void get_second_line(char* out){
         break;
     case DISTORTION:
         break;
-    case SETTINGS:
-        break;
-    
     default:
         break;
     }
@@ -304,10 +317,8 @@ opt_interactions_t* sample_load_actions = NULL;
 
 #pragma region MAIN FSM
 //FSM implementation function
-void main_fsm(QueueSetHandle_t in_set) {
-
-    printf("starting main FSM");
-    fflush(stdout);
+void main_fsm_task(void *pvParameters) {
+    
     sample_load_actions = (opt_interactions_t *)malloc(sample_names_size * sizeof(opt_interactions_t));
     //for every sample, create the menu options
     for(int i = 0; i < sample_names_size; i++){
@@ -328,50 +339,32 @@ void main_fsm(QueueSetHandle_t in_set) {
     menu_navigation[7] = &sample_load_menu;
 
     while(1) {
-        QueueSetMemberHandle_t curr_io_queue = xQueueSelectFromSet(in_set, pdMS_TO_TICKS(50)); //TODO: determine the period
         bool is_changed = false;
-        if(curr_io_queue == NULL) continue;
-
-        if (curr_io_queue == joystick_queue) {
-            JoystickDir curr_js;
-            if(xQueueReceive(curr_io_queue, &curr_js, 0) == pdFALSE){
-                ESP_LOGE(TAG_FSM, "Error: unable to read the joystick_queue");
-                continue;
-            }
-            joystick_handler(curr_js);  
-            if(curr_js != CENTER){
+        fsm_queue_msg_t msg;
+        if (xQueueReceive(fsm_queue, &msg, portMAX_DELAY) == pdFALSE){
+            ESP_LOGE(TAG_FSM, "Error: unable to read the fsm_queue");
+            continue;
+        }
+        int payload = msg.payload;
+        switch (msg.source)
+        {
+        case JOYSTICK:
+            joystick_handler(payload);  
+            if(payload != CENTER){
                 is_changed = true;
             }
-
-        } else if (curr_io_queue == pad_queue) {
-            pad_queue_msg_t curr_pad;
-            if(xQueueReceive(curr_io_queue, &curr_pad, 0) == pdFALSE){
-                ESP_LOGE(TAG_FSM, "Error: unable to read the pad_queue");
-                continue;
-            }
-
-            set_button_pressed(curr_pad.pad_id);
-
-            printf("CurrPadId: %d\n", curr_pad.pad_id);
-            
-            // char* line1 = (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).first_line;
-            // char line2[17] = "";
-                
-            // (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).second_line(line2);
-            // print_double(line1, line2);
+            break;
+        case POTENTIOMETER:
+            potentiometer_handler(payload);
             is_changed = true;
-
-        } else if (curr_io_queue == pot_queue){
-            int diff_percent_pot_value;
-            if(xQueueReceive(curr_io_queue, &diff_percent_pot_value, 0) == pdFALSE){
-                ESP_LOGE(TAG_FSM, "Error: unable to read the pad_queue");
-                continue;
-            }
-            printf("diff_percent: %d\n", diff_percent_pot_value);
-            potentiometer_handler(diff_percent_pot_value);
+            break;
+        case PAD:
+            set_button_pressed(payload);
             is_changed = true;
-        } 
-
+            break;
+        default:
+            break;
+        }
         if(is_changed){
             char* line1 = (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).first_line;
             char line2[17] = "";
@@ -590,12 +583,12 @@ void change_bit_depth(int pot_value){
     if (pressed_button == NOT_DEFINED){
         for (uint8_t i = 0; i < SAMPLE_NUM; i++){
             uint8_t curr_bit_depth = get_bit_crusher_bit_depth(i);
-            uint8_t new_bit_depth = (curr_bit_depth + bit_depth_changing + BIT_DEPTH_MAX) % BIT_DEPTH_MAX;
+            uint8_t new_bit_depth = (curr_bit_depth + bit_depth_changing + BIT_DEPTH_MAX + 1) % (BIT_DEPTH_MAX + 1);
             set_bit_crusher_bit_depth(i, new_bit_depth);
         }
     } else {
         uint8_t curr_bit_depth = get_bit_crusher_bit_depth(get_sample_bank_index(pressed_button));
-        uint8_t new_bit_depth = (curr_bit_depth + bit_depth_changing + BIT_DEPTH_MAX) % BIT_DEPTH_MAX;
+        uint8_t new_bit_depth = (curr_bit_depth + bit_depth_changing + BIT_DEPTH_MAX + 1) % (BIT_DEPTH_MAX + 1);
             set_bit_crusher_bit_depth(get_sample_bank_index(pressed_button), new_bit_depth);
     }
 }
@@ -609,12 +602,12 @@ void change_downsample(int pot_value){
     if (pressed_button == NOT_DEFINED){
         for (uint8_t i = 0; i < SAMPLE_NUM; i++){
             uint8_t curr_downsample = get_bit_crusher_downsample(i);
-            uint8_t new_downsample = (curr_downsample + downsample_changing + DOWNSAMPLE_MAX) % DOWNSAMPLE_MAX;
+            uint8_t new_downsample = (curr_downsample + downsample_changing + DOWNSAMPLE_MAX + 1) % (DOWNSAMPLE_MAX + 1);
             set_bit_crusher_downsample(i, new_downsample);
         }
     } else {
         uint8_t curr_downsample = get_bit_crusher_downsample(get_sample_bank_index(pressed_button));
-        uint8_t new_downsample = (curr_downsample + downsample_changing + DOWNSAMPLE_MAX) % DOWNSAMPLE_MAX;
+        uint8_t new_downsample = (curr_downsample + downsample_changing + DOWNSAMPLE_MAX + 1) % (DOWNSAMPLE_MAX + 1);
         set_bit_crusher_downsample(get_sample_bank_index(pressed_button), new_downsample);
     }
 }
@@ -648,6 +641,36 @@ void change_distortion_threshold(int pot_value){
         int16_t curr_threshold = get_distortion_threshold(get_sample_bank_index(pressed_button));
         int16_t new_threshold = (curr_threshold + threshold_changing + DISTORTION_THRESHOLD_MAX) % DISTORTION_THRESHOLD_MAX;
         set_distortion_threshold(get_sample_bank_index(pressed_button), new_threshold);
+    }
+}
+
+#pragma endregion
+
+void fsm_init(){
+    fsm_queue = xQueueCreate(30, sizeof(fsm_queue_msg_t));
+
+    xTaskCreate(main_fsm_task, "fsm_task", 4096, NULL, 5, NULL);
+}
+
+#pragma region SINGLE QUEUE FUNCTIONS
+
+void send_message_to_fsm_queue(message_source_t source, int payload){
+    fsm_queue_msg_t msg = {
+        .source = source,
+        .payload = payload
+    };
+    if (xQueueSend(fsm_queue, &msg, 0) == pdFALSE){
+        ESP_LOGE(TAG_FSM, "Error: unable to send the message to the fsm_queue");
+    }
+}
+
+void IRAM_ATTR send_message_to_fsm_queue_from_ISR(message_source_t source, int payload){
+    fsm_queue_msg_t msg = {
+        .source = source,
+        .payload = payload
+    };
+    if (xQueueSendFromISR(fsm_queue, &msg, NULL) == pdFALSE){
+        ESP_LOGE(TAG_FSM, "Error: unable to send the message to the fsm_queue");
     }
 }
 
