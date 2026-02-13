@@ -439,7 +439,7 @@ void main_fsm_task(void *pvParameters) {
 
 #pragma region MENU NAVIGATION
 //Joystick handler implementation 
-void joystick_handler(JoystickDir in_dir) {
+void joystick_handler(joystick_dir_t in_dir) {
     switch (in_dir){
         case LEFT: js_left_handler(); break;
         case DOWN: js_down_handler(); break;

@@ -13,10 +13,12 @@
 
 #define THRESH_LOW 800
 #define THRESH_UP 3200
+#define DEAD_ZONE_UP 2800
+#define DEAD_ZONE_LOW 1200
 
 #define DEBOUNCE_MS  30
 
-Joystick my_joystick = { 0, 0, 1};
+joystick_t my_joystick = { 0, 0, 1};
 
 void joystick_init() {
 
@@ -56,10 +58,10 @@ joystick_dir_t joystick_get_direction(){
         return PRESS;
     }
     if (my_joystick.x > THRESH_UP){
-        return LEFT;
+        return RIGHT;
     }
     if (my_joystick.x < THRESH_LOW){
-        return RIGHT;
+        return LEFT;
     }
     if (my_joystick.y > THRESH_UP){
         return UP;
@@ -68,6 +70,13 @@ joystick_dir_t joystick_get_direction(){
         return DOWN;
     }
     return CENTER;
+}
+
+bool in_dead_zone(){
+    return (my_joystick.x < THRESH_UP
+        && my_joystick.x > DEAD_ZONE_UP)
+        || (my_joystick.y < DEAD_ZONE_LOW
+        && my_joystick.y > THRESH_LOW); 
 }
 
 // main task
@@ -81,7 +90,8 @@ void joystick_task(void *args){
         joystick_dir_t new_dir = joystick_get_direction();
 
         // ignore the repetitive events
-        if (new_dir != last_dir){
+        if (new_dir != last_dir && !in_dead_zone()){
+            printf("[JOYSTICK DEBUG] dir changed\n");
             send_message_to_fsm_queue(JOYSTICK, new_dir); 
             last_dir = new_dir;
         }
