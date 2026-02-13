@@ -23,7 +23,10 @@
 #define MODE_NUM_OPT 4
 #define BITCRUSHER_NUM_OPT 3
 #define PITCH_NUM_OPT 1
-#define DISTORTION_NUM_OPT 2
+#define DISTORTION_NUM_OPT 3
+#define PITCH_SCALE_VALUE 0.25f
+#define THRESHOLD_SCALE_VALUE 1000
+#define VOLUME_SCALE_VALUE 0.05f
 
 typedef enum {
     JOYSTICK,
@@ -63,7 +66,7 @@ void change_bit_depth(int pot_value);
 void change_downsample(int pot_value);
 void change_distortion_gain(int pot_value);
 void change_distortion_threshold(int pot_value);
-mode_t next_mode(int next, mode_t curr_mode);
+mode_t next_mode(int pot_value);
 void send_message_to_fsm_queue(message_source_t source, int payload);
 void send_message_to_fsm_queue_from_ISR(message_source_t source, int payload);
 void fsm_init();

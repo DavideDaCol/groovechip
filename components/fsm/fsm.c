@@ -497,16 +497,9 @@ void js_right_handler() {
 
 // Function that sets the current menu the the previoous one
 void js_left_handler() {
-    // if (pressed_button != NOT_DEFINED) {
-    //     // if (curr_menu == BTN_MENU) {
-    //     //     curr_menu = GEN_MENU;
-    //     //     pressed_button = NOT_DEFINED;
-    //     // } else 
-    //     //     curr_menu = BTN_MENU;
-    //     // menu_pair_t pair = PREV_MENU_PAD[curr_menu];
-    //     // curr_menu
-    // } else 
-    //     curr_menu = GEN_MENU;
+    if (curr_menu == BTN_MENU) {
+        pressed_button = NOT_DEFINED;
+    } 
     menu_pair_t state = menu_pop();
     curr_menu = state.menu;
     menu_navigation[curr_menu]->curr_index = state.index;
@@ -566,7 +559,7 @@ void potentiometer_handler(int diff_percent_pot_value){
 void change_vol(int pot_value) {
     float raw_vol = (float)pot_value * VOLUME_NORMALIZER_VALUE;
 
-    float stepped_vol = round(raw_vol / 0.05f) * 0.05f;
+    float stepped_vol = round(raw_vol / VOLUME_SCALE_VALUE) * VOLUME_SCALE_VALUE;
 
     if (pressed_button == NOT_DEFINED) {
         for (uint8_t i = 0; i < SAMPLE_NUM; i++) {
@@ -582,10 +575,10 @@ void change_vol(int pot_value) {
 void change_pitch(int pot_value){
     if (pressed_button == NOT_DEFINED) {
         for (uint8_t i = 0; i < SAMPLE_NUM; i++) {
-            set_pitch_factor(i, (float)pot_value * PITCH_NORMALIZER_VALUE);
+            set_pitch_factor(i, round(pot_value * PITCH_NORMALIZER_VALUE / PITCH_SCALE_VALUE) * PITCH_SCALE_VALUE);
         }
     } else {
-        set_pitch_factor(get_sample_bank_index(pressed_button), (float)pot_value * PITCH_NORMALIZER_VALUE);
+        set_pitch_factor(get_sample_bank_index(pressed_button), round(pot_value * PITCH_NORMALIZER_VALUE / PITCH_SCALE_VALUE) * PITCH_SCALE_VALUE);
     }
 }
 
@@ -593,10 +586,10 @@ void change_pitch(int pot_value){
 void toggle_bit_crusher_menu(int pot_value){
     if (pressed_button == NOT_DEFINED) {
         for (uint8_t i = 0; i < SAMPLE_NUM; i++){
-            toggle_bit_crusher(i, (pot_value - last_pot_value) > 0);
+            toggle_bit_crusher(i, pot_value > 50);
         }
     } else {
-        toggle_bit_crusher(get_sample_bank_index(pressed_button), (pot_value - last_pot_value) > 0);
+        toggle_bit_crusher(get_sample_bank_index(pressed_button), pot_value > 50);
     }
 }
 
@@ -604,31 +597,37 @@ void toggle_bit_crusher_menu(int pot_value){
 void toggle_distortion_menu(int pot_value){
     if (pressed_button == NOT_DEFINED) {
         for (uint8_t i = 0; i < SAMPLE_NUM; i++){
-            toggle_distortion(i, (pot_value - last_pot_value) > 0);
+            toggle_distortion(i, pot_value > 50);
         }
     } else {
-        toggle_distortion(get_sample_bank_index(pressed_button), (pot_value - last_pot_value) > 0);
+        toggle_distortion(get_sample_bank_index(pressed_button), pot_value > 50);
     }
 }
 
 // Function that rotates the mode based on the enum in playback_mode.h
 void rotate_mode(int pot_value){
-    int next = -1;
-    if ((pot_value - last_pot_value) > 0){
-        next = 1;
-    }
     if (pressed_button == NOT_DEFINED) {
         for (uint8_t i = 0; i < SAMPLE_NUM; i++){
-            set_playback_mode(i, next_mode(next, mode));
+            set_playback_mode(i, next_mode(pot_value));
         }
     } else {
-        set_playback_mode(get_sample_bank_index(pressed_button), next_mode(next, get_playback_mode(get_sample_bank_index(pressed_button))));
+        set_playback_mode(get_sample_bank_index(pressed_button), next_mode(pot_value));
     }
+
 }
 
 // Function that gets the next mode
-mode_t next_mode(int next, mode_t curr_mode){
-    return (mode_t)(((int)curr_mode + next + MODE_NUM_OPT)%MODE_NUM_OPT);
+mode_t next_mode(int pot_value){
+    // return (mode_t)(((int)curr_mode + next + MODE_NUM_OPT)%MODE_NUM_OPT);
+    if(pot_value <= 25)
+        return HOLD;
+    if(pot_value <= 50)
+        return ONESHOT;
+    if(pot_value <= 75)
+        return LOOP;
+    if(pot_value <= 100)
+        return ONESHOT_LOOP;
+    return HOLD;
 }
 
 // Function that changes the bit depth
@@ -657,7 +656,7 @@ void change_downsample(int pot_value){
 
 // Function that changes the distortion gain
 void change_distortion_gain(int pot_value){
-    float new_gain = (float)(pot_value * VOLUME_NORMALIZER_VALUE);
+    float new_gain = round(pot_value * VOLUME_NORMALIZER_VALUE / VOLUME_SCALE_VALUE) * VOLUME_SCALE_VALUE * 10;
     if (pressed_button == NOT_DEFINED){
         for (uint8_t i = 0; i < SAMPLE_NUM; i++){
             set_distortion_gain(i, new_gain);
@@ -669,7 +668,7 @@ void change_distortion_gain(int pot_value){
 
 // Function that changes the distortion threshold
 void change_distortion_threshold(int pot_value){
-    int16_t new_threshold = (int16_t)(pot_value * THRESHOLD_NORMALIZER_VALUE);
+    int16_t new_threshold = (int16_t)((pot_value * THRESHOLD_NORMALIZER_VALUE)/THRESHOLD_SCALE_VALUE)*THRESHOLD_SCALE_VALUE;
     if (pressed_button == NOT_DEFINED){
         for (uint8_t i = 0; i < SAMPLE_NUM; i++){
             set_distortion_threshold(i, new_threshold);
