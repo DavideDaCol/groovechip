@@ -21,7 +21,7 @@ static const char* TAG = "Mixer";
 sample_bitmask now_playing;
 
 // all samples that can be played
-sample_t sample_bank[SAMPLE_NUM];
+sample_t* sample_bank[SAMPLE_NUM];
 
 //metronome object
 static metronome mtrn;
@@ -30,39 +30,55 @@ static metronome mtrn;
 
 void action_start_or_stop_sample(int bank_index){
     printf("play/pause event was triggered from %i\n", bank_index);
-	//either stop or play the sample
-    now_playing ^= (1 << bank_index);
-    //reset the playback pointer if the sample was stopped
-    if (sample_bank[bank_index].playback_finished){
-        sample_bank[bank_index].playback_ptr = sample_bank[bank_index].start_ptr;
-        sample_bank[bank_index].playback_finished = false;
+    if(sample_bank[bank_index] != NULL){
+        //either stop or play the sample
+        now_playing ^= (1 << bank_index);
+        //reset the playback pointer if the sample was stopped
+        if (sample_bank[bank_index]->playback_finished){
+            sample_bank[bank_index]->playback_ptr = sample_bank[bank_index]->start_ptr;
+            sample_bank[bank_index]->playback_finished = false;
+        }
+    } else {
+        ESP_LOGW(TAG, "sample %i is set to NULL!", bank_index);
     }
 }
 
 void action_start_sample(int bank_index){
     printf("play event was triggered from %i\n", bank_index);
-	//add the sample from the nowplaying bitmask
-    now_playing |= (1 << bank_index);
+    if(sample_bank[bank_index] != NULL){
+	    //add the sample from the nowplaying bitmask
+        now_playing |= (1 << bank_index);
+    } else {
+        ESP_LOGW(TAG, "sample %i is set to NULL!", bank_index);
+    }
 }
 
 void action_stop_sample(int bank_index){
     printf("pause event was triggered from %i\n", bank_index);
-	//remove the sample from the nowplaying bitmask
-    now_playing &= ~(1 << bank_index);
-    //reset the playback pointer to the start value
-    sample_bank[bank_index].playback_ptr = sample_bank[bank_index].start_ptr;
-    //set the playing state to "not finished" (for future iterations)
-    sample_bank[bank_index].playback_finished = false;
+    if(sample_bank[bank_index] != NULL){
+        //remove the sample from the nowplaying bitmask
+        now_playing &= ~(1 << bank_index);
+        //reset the playback pointer to the start value
+        sample_bank[bank_index]->playback_ptr = sample_bank[bank_index]->start_ptr;
+        //set the playing state to "not finished" (for future iterations)
+        sample_bank[bank_index]->playback_finished = false;
+    } else {
+        ESP_LOGW(TAG, "sample %i is set to NULL!", bank_index);
+    }
 }
 
 void action_restart_sample(int bank_index){
     printf("restart event was triggered from %i\n", bank_index);
-    //add the sample to the nowplaying bitmask
-    now_playing |= (1 << bank_index);
-	//reset the playback pointer to the start value
-    sample_bank[bank_index].playback_ptr = sample_bank[bank_index].start_ptr;
-    //set the playing state to "not finished" (for future iterations)
-    sample_bank[bank_index].playback_finished = false;
+    if(sample_bank[bank_index] != NULL){
+        //add the sample to the nowplaying bitmask
+        now_playing |= (1 << bank_index);
+        //reset the playback pointer to the start value
+        sample_bank[bank_index]->playback_ptr = sample_bank[bank_index]->start_ptr;
+        //set the playing state to "not finished" (for future iterations)
+        sample_bank[bank_index]->playback_finished = false;
+    } else {
+        ESP_LOGW(TAG, "sample %i is set to NULL!", bank_index);
+    }
 }
 
 void action_ignore(int pad_id){
@@ -83,7 +99,7 @@ static inline void get_sample_interpolated(sample_t *smp, int16_t *out_L, int16_
     
     //loop handling
     if (frame_b >= total_frames) {
-        mode_t playback_mode = get_playback_mode(smp->bank_index);
+        pb_mode_t playback_mode = get_playback_mode(smp->bank_index);
         if (playback_mode == LOOP || playback_mode == ONESHOT_LOOP) {
             frame_b = 0; //return to first sample
         } else {
@@ -180,18 +196,18 @@ static inline void apply_distortion(uint8_t sample_id, int16_t *out_L, int16_t *
 #pragma region VOLUME
 
 void set_volume(uint8_t bank_index, float new_volume){
-    sample_bank[bank_index].volume = new_volume;
-    if (sample_bank[bank_index].volume > VOLUME_THRESHOLD_UP) {
-        sample_bank[bank_index].volume = VOLUME_THRESHOLD_UP;
+    sample_bank[bank_index]->volume = new_volume;
+    if (sample_bank[bank_index]->volume > VOLUME_THRESHOLD_UP) {
+        sample_bank[bank_index]->volume = VOLUME_THRESHOLD_UP;
     }
-    if (sample_bank[bank_index].volume < 0) {
-        sample_bank[bank_index].volume = 0;
+    if (sample_bank[bank_index]->volume < 0) {
+        sample_bank[bank_index]->volume = 0;
     }
 }
 
 float get_volume(uint8_t bank_index){
     if(bank_index < SAMPLE_NUM){
-        return sample_bank[bank_index].volume;
+        return sample_bank[bank_index]->volume;
     } 
     else return 0.0;
 }
@@ -237,13 +253,13 @@ void toggle_metronome_playback(bool new_state){
 
 #pragma region SAMPLE CHOPPING
 void set_sample_end_ptr(uint8_t bank_index, uint32_t new_end_ptr){
-    sample_t *smp = &sample_bank[bank_index];
+    sample_t *smp = sample_bank[bank_index];
     if(new_end_ptr > smp->start_ptr && new_end_ptr < smp->total_frames){
         smp->end_ptr = new_end_ptr; // TODO move this out of here. We before changing this parameter, the sample must be stopped.
     }
 }
 void set_sample_start_ptr(uint8_t bank_index, float new_start_ptr){
-    sample_t *smp = &sample_bank[bank_index];
+    sample_t *smp = sample_bank[bank_index];
     if(new_start_ptr >= 0.0 && new_start_ptr < smp->end_ptr){
         smp->start_ptr = new_start_ptr;
         smp->playback_ptr = new_start_ptr; // TODO move this out of here. We before changing this parameter, the sample must be stopped.
@@ -253,7 +269,7 @@ void set_sample_start_ptr(uint8_t bank_index, float new_start_ptr){
 
 void print_wav_header(const wav_header_t *h)
 {
-    if (!h) {
+    if (h == NULL) {
         printf("WAV header is NULL\n");
         return;
     }
@@ -281,57 +297,54 @@ void print_wav_header(const wav_header_t *h)
     printf("===================\n");
 }
 
+esp_err_t ld_internal_sample(int bank_index, const uint8_t* wav_data, const char* debug_name) {
+    // 1. Allocate the struct in PSRAM
+    //sample_bank[bank_index] = heap_caps_malloc(sizeof(sample_t), MALLOC_CAP_SPIRAM);
+    sample_bank[bank_index] = malloc(sizeof(sample_t));
+    if (sample_bank[bank_index] == NULL) return ESP_ERR_NO_MEM;
+
+    sample_t* smp = sample_bank[bank_index];
+
+    // 2. Copy the header from the static array
+    memcpy(&smp->header, wav_data, sizeof(wav_header_t));
+
+    // 3. Allocate memory for the raw data and copy it
+    //smp->raw_data = heap_caps_malloc(smp->header.data_size, MALLOC_CAP_SPIRAM);
+    smp->raw_data = malloc(smp->header.data_size);
+    if (smp->raw_data == NULL) {
+        heap_caps_free(smp);
+        sample_bank[bank_index] = NULL;
+        return ESP_ERR_NO_MEM;
+    }
+    
+    // Copy the audio part (skipping the header)
+    memcpy(smp->raw_data, wav_data + sizeof(wav_header_t), smp->header.data_size);
+
+    // 4. Set the metadata
+    smp->bank_index = bank_index;
+    smp->total_frames = smp->header.data_size / 4;
+    smp->start_ptr = 0.0f;
+    smp->end_ptr = (float)smp->total_frames - 1.0f;
+    smp->playback_ptr = 0.0f;
+    smp->playback_finished = false;
+    smp->volume = 0.1f;
+
+    ESP_LOGI("Mixer", "Loaded internal sample: %s into bank %d", debug_name, bank_index);
+    return ESP_OK;
+}
+
 static void mixer_task_wip(void *args)
 {
     i2s_chan_handle_t out_channel = (i2s_chan_handle_t)args;
     assert(out_channel);
 
     //initialize the sample bank
-    for (int j = 0; j < SAMPLE_NUM; j++){
-        sample_bank[j].bank_index = j;
-        sample_bank[j].volume = 0.1;
-        sample_bank[j].start_ptr = 0;
-        sample_bank[j].playback_ptr = 0;
-    }
-
+    
     //initialize the metronome
     init_metronome();
 
     //initialize the recording struct
     recorder_init();
-
-    //initialize the first sample for testing purposes
-    memcpy(&sample_bank[0].header, snare_clean_wav, WAV_HDR_SIZE);
-    sample_bank[0].raw_data = snare_clean_wav + WAV_HDR_SIZE;
-    sample_bank[0].total_frames = sample_bank[0].header.data_size / 4;
-    sample_bank[0].end_ptr = sample_bank[0].total_frames - 1;
-    sample_bank[0].playback_finished = false;
-    // sample 0 will be triggered by GPIO 21
-    map_pad_to_sample(GPIO_BUTTON_1, 0);
-    //need to set the handler to something to avoid crashes!
-    //it will actually be set correctly by the sample component
-    // sample_bank[0].playback_mode.on_finish = action_stop_sample;
-    set_playback_mode(0, ONESHOT);
-    //debug function
-    print_wav_header(&sample_bank[0].header);
-
-    //initialize the second sample for testing purposes
-    memcpy(&sample_bank[1].header, kick_clean_wav, WAV_HDR_SIZE);
-    sample_bank[1].raw_data = kick_clean_wav + WAV_HDR_SIZE;
-    sample_bank[1].total_frames = sample_bank[0].header.data_size / 4;
-    sample_bank[1].end_ptr = sample_bank[0].total_frames - 1;
-    sample_bank[1].playback_finished = false;
-    // sample 1 will be triggered by GPIO 19
-    map_pad_to_sample(GPIO_BUTTON_2, 1);
-    // sample_bank[1].playback_mode.on_finish = action_stop_sample;
-    set_playback_mode(1, ONESHOT);
-    //test bitcrush effect
-    toggle_bit_crusher(1, true);
-    set_bit_crusher_bit_depth(1, 8);
-    set_bit_crusher_downsample(1, 7);
-
-    
-    print_wav_header(&sample_bank[1].header);
 
     //test metronome functions (equivalent to 120bpm)
     set_metronome_bpm(60.0);
@@ -357,7 +370,6 @@ static void mixer_task_wip(void *args)
             if (sample_lookahead >= mtrn.samples_per_subdivision) {
                 // unlock_metronome
                 toggle_metronome_playback(true);
-                ESP_LOGI(TAG, "metronome click! count: %ld", sample_lookahead);
                 //reset the metronome audio, in case the sample is too long for each tick
                 mtrn.playback_ptr = 0;
                 sample_lookahead = 0;
@@ -371,17 +383,17 @@ static void mixer_task_wip(void *args)
             for (int j = 0; j < SAMPLE_NUM; j++){
 
                 //check play status via bit masking
-                if ((now_playing & (1 << j)) != 0  && !sample_bank[j].playback_finished){
+                if (sample_bank[j] != NULL && (now_playing & (1 << j)) != 0  && !sample_bank[j]->playback_finished){
 
                     // in WAV files, left and right samples are sequential
                     int16_t left, right;
                     
                     // stereo interpolated samples
-                    get_sample_interpolated(&sample_bank[j], &left, &right, sample_bank[j].total_frames);
+                    get_sample_interpolated(sample_bank[j], &left, &right, sample_bank[j]->total_frames);
                     
                     //volume adjustment
-                    left *= sample_bank[j].volume;
-                    right *= sample_bank[j].volume;
+                    left *= sample_bank[j]->volume;
+                    right *= sample_bank[j]->volume;
 
                     //apply distortion
                     apply_distortion(j, &left, &right);
@@ -394,13 +406,13 @@ static void mixer_task_wip(void *args)
                     master_buf[i * 2 + 1] += right;
 
                     // add the pitch factor to the pointer
-                    sample_bank[j].playback_ptr += get_pitch_factor(j);
+                    sample_bank[j]->playback_ptr += get_pitch_factor(j);
 
                     // case: playback pointer has reached EOF or the end_ptr
-                    if (sample_bank[j].playback_ptr > sample_bank[j].end_ptr || sample_bank[j].playback_ptr >= sample_bank[j].total_frames) {
-                        if (!sample_bank[j].playback_finished) {
+                    if (sample_bank[j]->playback_ptr > sample_bank[j]->end_ptr || sample_bank[j]->playback_ptr >= sample_bank[j]->total_frames) {
+                        if (!sample_bank[j]->playback_finished) {
                             //flag the sample as "done playing"
-                            sample_bank[j].playback_finished = true;
+                            sample_bank[j]->playback_finished = true;
                             //stop the sample
                             send_mixer_event(j, EVT_FINISH);
                         }
@@ -448,6 +460,11 @@ static void mixer_task_wip(void *args)
 }
 
 void create_mixer(i2s_chan_handle_t channel){
-    xTaskCreate(&mixer_task_wip, "Mixer task", 2048, (void*)channel, 5, NULL);
+
+    for (int i = 0; i < SAMPLE_NUM; i++) {
+        sample_bank[i] = NULL;
+    }
+
+    xTaskCreate(&mixer_task_wip, "Mixer task", 8192, (void*)channel, 5, NULL);
 }
 

@@ -1,4 +1,6 @@
 #include "fsm.h"
+#include "sd_reader.h"
+#include "esp_log.h"
 #include <math.h>
 
 static QueueHandle_t fsm_queue = NULL;
@@ -7,7 +9,7 @@ menu_types curr_menu = GEN_MENU;
 
 uint8_t pressed_button = NOT_DEFINED;
 
-mode_t mode = ONESHOT;
+pb_mode_t mode = ONESHOT;
 
 void get_second_line(char *);
 
@@ -62,7 +64,7 @@ opt_interactions_t btn_handlers[] = {
     {
         .first_line = "Select sample",
         .second_line = get_second_line,
-        .js_right_action = sink, //TODO
+        .js_right_action = goto_sample_load,
         .pt_action = sink
     }, 
     {
@@ -239,7 +241,8 @@ menu_t* menu_navigation[] = {
     &effects,
     &bit_crusher_menu,
     &pitch_menu,
-    &distortion_menu
+    &distortion_menu,
+    NULL
 };
 
 // menu state stack
@@ -378,9 +381,47 @@ void get_second_line(char* out){
     }
 }
 
+void get_sample_load_second_line(char* out)
+{
+    uint8_t index = menu_navigation[SAMPLE_LOAD]->curr_index;
+
+    if(index < sample_names_size)
+    {
+        snprintf(out, 16, "%s", sample_names[index]);
+    }
+}
+
+menu_t sample_load_menu = {};
+opt_interactions_t* sample_load_actions = NULL;
+
 #pragma region MAIN FSM
 //FSM implementation function
 void main_fsm_task(void *pvParameters) {
+
+    for (int i = 0; i < sample_names_size; i++){
+        ESP_LOGI(TAG_FSM, "sample name %i is %s", i, sample_names[i]);
+    }
+    
+    sample_load_actions = (opt_interactions_t *)malloc(sample_names_size * sizeof(opt_interactions_t));
+    //for every sample, create the menu options
+    for(int i = 0; i < sample_names_size; i++){
+        // char title[17] = "";
+        // snprintf(title, sizeof(sample_names[i]), "%s", sample_names[i]);
+
+        ESP_LOGI(TAG_FSM, "created menu entry for %s", sample_names[i]);
+        sample_load_actions[i].js_right_action = sample_load;
+        sprintf(sample_load_actions[i].first_line,"Sample list:");
+        sample_load_actions[i].second_line = get_sample_load_second_line;
+        sample_load_actions[i].pt_action = sink;
+    }
+    // create the menu for the samples in the SD card
+    sample_load_menu.curr_index = -1;
+    sample_load_menu.max_size = sample_names_size;
+    sample_load_menu.opt_handlers = sample_load_actions;
+
+    // TODO make this nicer
+    menu_navigation[SAMPLE_LOAD] = &sample_load_menu;
+
     while(1) {
         bool is_changed = false;
         fsm_queue_msg_t msg;
@@ -424,6 +465,7 @@ void main_fsm_task(void *pvParameters) {
 #pragma region MENU NAVIGATION
 //Joystick handler implementation 
 void joystick_handler(joystick_dir_t in_dir) {
+    printf("CURRENT STATE -> %d, %d\n", curr_menu, menu_navigation[curr_menu] -> curr_index);
     switch (in_dir){
         case LEFT: js_left_handler(); break;
         case DOWN: js_down_handler(); break;
@@ -445,6 +487,11 @@ void joystick_handler(joystick_dir_t in_dir) {
 void menu_move(int* index, int max_opt, int direction) {
     // direction: 1 for down, -1 for up
     *index = (*index + direction + max_opt) % max_opt;
+}
+
+void goto_sample_load() {
+    sample_load_menu.curr_index = 0;
+    curr_menu = SAMPLE_LOAD;
 }
 
 // Atomic function that sets the current menu and the current index
@@ -477,15 +524,19 @@ void goto_distortion() {
     curr_menu = DISTORTION;
 }
 
-// TODO
-void goto_selection() {
-    //TODO
-    return;
+void sample_load() {
+    int sample_idx = get_pad_num(pressed_button) - 1;
+    
+    int index = menu_navigation[curr_menu] -> curr_index;
+    ESP_LOGW(TAG_FSM, "pressed_button is %i, sample path is %s", pressed_button, sample_names[index]);
+    ld_sample(sample_idx, sample_names[index], &sample_bank[sample_idx]);
+
+    map_pad_to_sample(pressed_button, sample_idx);
 }
 
 // Function that calls the correct handler based on the current menu
 void js_right_handler() {
-    if(curr_menu == GEN_MENU || curr_menu == BTN_MENU || curr_menu == EFFECTS ){
+    if(curr_menu == GEN_MENU || curr_menu == BTN_MENU || curr_menu == EFFECTS || curr_menu == SAMPLE_LOAD ){
         // change the state only if the current menu can actually go in a submenu. This prevents to push the same state multiple times        
         int index = menu_navigation[curr_menu] -> curr_index;
         menu_push(curr_menu, index);
@@ -617,7 +668,7 @@ void rotate_mode(int pot_value){
 }
 
 // Function that gets the next mode
-mode_t next_mode(int pot_value){
+pb_mode_t next_mode(int pot_value){
     // return (mode_t)(((int)curr_mode + next + MODE_NUM_OPT)%MODE_NUM_OPT);
     if(pot_value <= 25)
         return HOLD;

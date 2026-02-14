@@ -8,5 +8,5 @@ idf_component_register(SRCS "fsm.c"
                     joystick 
                     adc1
                     lcd
-                    fsm
+                    sd_reader
                     INCLUDE_DIRS "include")

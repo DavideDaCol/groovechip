@@ -86,7 +86,7 @@ void recorder_stop_recording(void) {
     
     // Put the sample in sample_bank
     if (g_recorder.target_sample_id >= 0 && g_recorder.target_sample_id < SAMPLE_NUM) {
-        sample_t *target = &sample_bank[g_recorder.target_sample_id];
+        sample_t *target = sample_bank[g_recorder.target_sample_id];
 
         // If there is already a sample bound to that bank_index 
         // and if it's not in flash memory then free it

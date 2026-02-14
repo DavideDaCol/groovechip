@@ -14,11 +14,13 @@
 #include "adc1.h"
 #include "fsm.h"
 #include "lcd.h"
+#include "sd_reader.h"
 
 void app_main(void)
 {
     // xTaskCreate(&simpleTask, "simple task", 2048, NULL, 5, NULL);
     // printf("Aspetto...");
+    sd_reader_init();
     lcd_driver_init();
     adc1_init();
     fsm_init();

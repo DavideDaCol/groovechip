@@ -54,21 +54,22 @@ typedef enum{
 	LOOP,
 	ONESHOT_LOOP,
 	UNSET
-} mode_t;
+} pb_mode_t;
 
 typedef struct {
-	mode_t mode;
+	pb_mode_t mode;
     event_handler on_press;
     event_handler on_release;  
     event_handler on_finish;
 } playback_mode_t;
 
-void get_mode_stringify(mode_t, char*);
 
-mode_t get_playback_mode(uint8_t);
+void get_mode_stringify(pb_mode_t, char*);
+
+pb_mode_t get_playback_mode(uint8_t);
 
 // exposed function to select the pad mode
-void set_playback_mode(uint8_t, const mode_t);
+void set_playback_mode(uint8_t, const pb_mode_t);
 
 #pragma endregion
 

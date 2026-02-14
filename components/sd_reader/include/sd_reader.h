@@ -11,6 +11,7 @@
 
 
 #include <cJSON.h>
+#include <dirent.h>
 #include "spi_driver.h" 
 #include "sdmmc_cmd.h"
 #include "esp_vfs_fat.h"
@@ -18,9 +19,16 @@
 #include "mixer.h"
 #include "effects.h"
 #include "esp_psram.h"
+#include <sys/stat.h>
+
+
+extern char **sample_names;
+extern int sample_names_size;
+
 
 //Default mountpoint
 #define GRVCHP_MNTPOINT "/sdcard"
+#define GRVCHP_MNTPOINT_SIZE 7
 
 //FAT drive index (0 by default)
 #define GRVCHP_FAT_DRIVE_INDEX 0
@@ -29,8 +37,24 @@
 //Maximum number of files that can be opened simultaneously
 #define GRVCHP_MAX_FILES 1
 
-//Maximum size of the file name
-#define MAX_SIZE 20
+//Maximum size of the name that will be printed in the screen 
+#define MAX_SIZE 17
+
+//Directory where the new samples are inserted to be added
+#define WAV_FILES_DIR "wav_files"
+#define WAV_FILES_DIR_SIZE 10
+
+#define JSON_FILES_DIR "json_files"
+#define JSON_FILES_DIR_SIZE 11
+
+#define MAX_BUFF_SIZE 256
+
+#define WAV_EXTENSION_SIZE 4
+#define JSON_EXTENSION_SIZE 5
+
+#define FORMAT(S) "%" #S "[^.]"
+#define RESOLVE(S) FORMAT(S)
+
 
 /* Default initialization process:
    - Configure the physical connections and create the SD SPI bus 
@@ -47,6 +71,5 @@ esp_err_t ld_sample(int in_bank_index, char* sample_name, sample_t** out_sample_
 
 /* Function to transfer a sample from the internal memory to the SD card:
    - sample (IN): actual sample of which the transfer is requested */
-esp_err_t st_sample(sample_t *sample);
-
+esp_err_t st_sample(int in_bank_index, char *sample_name);
 #endif

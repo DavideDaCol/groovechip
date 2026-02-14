@@ -47,6 +47,7 @@ void goto_selection();
 void goto_bitcrusher();
 void goto_pitch();
 void goto_distortion();
+void goto_sample_load();
 void menu_move(int* index, int max_opt, int direction);
 void js_right_handler();
 void js_left_handler();
@@ -66,7 +67,8 @@ void change_bit_depth(int pot_value);
 void change_downsample(int pot_value);
 void change_distortion_gain(int pot_value);
 void change_distortion_threshold(int pot_value);
-mode_t next_mode(int pot_value);
+pb_mode_t next_mode(int pot_value);
+void sample_load();
 void send_message_to_fsm_queue(message_source_t source, int payload);
 void send_message_to_fsm_queue_from_ISR(message_source_t source, int payload);
 void fsm_init();
@@ -81,7 +83,8 @@ typedef enum {
     EFFECTS,
     BITCRUSHER,
     PITCH,
-    DISTORTION
+    DISTORTION,
+    SAMPLE_LOAD
 } menu_types;
 
 
@@ -109,7 +112,7 @@ extern menu_types curr_menu;
 extern uint8_t pressed_button;
 
 //Records the last mode set (or the default one if never changed)
-extern mode_t mode;
+extern pb_mode_t mode;
 
 //Actual functions to perform when an input is received through joystick or potentiometer
 typedef void (*action_t) (void); 

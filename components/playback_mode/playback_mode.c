@@ -7,6 +7,8 @@
 #include "driver/gpio.h"
 #include "esp_timer.h"
 
+const char* TAG_PM = "PlaybackMode";
+
 #pragma region PAYBACK MODES
 
 // init queue
@@ -50,7 +52,7 @@ const playback_mode_t* PLAYBACK_MODES[] = {
 static const playback_mode_t* samples_config[SAMPLE_NUM];
 static int pad_to_sample_map[GPIO_NUM_MAX];
 
-void get_mode_stringify(mode_t mode, char* out){
+void get_mode_stringify(pb_mode_t mode, char* out){
 	switch (mode)
 	{
 	case HOLD:
@@ -77,7 +79,7 @@ uint8_t get_sample_bank_index(uint8_t pad_id){
 	else return NOT_DEFINED;
 }
 
-mode_t get_playback_mode(uint8_t bank_index){
+pb_mode_t get_playback_mode(uint8_t bank_index){
 	if(bank_index < SAMPLE_NUM){
 		return samples_config[bank_index]->mode;
 	}
@@ -85,7 +87,7 @@ mode_t get_playback_mode(uint8_t bank_index){
 }
 
 // exposed function to set the mode
-void set_playback_mode(uint8_t bank_index, mode_t playback_mode){
+void set_playback_mode(uint8_t bank_index, pb_mode_t playback_mode){
 	if (bank_index < SAMPLE_NUM){
 		switch (playback_mode)
 		{
@@ -147,7 +149,7 @@ void sample_task(void *pvParameter){
 			case SRC_PAD_SECTION:
 				//the message came from PAD_SECTION, get the associated bank_index
 				if (queue_msg.payload.pad_id < GPIO_NUM_MAX) {
-                    bank_index = pad_to_sample_map[queue_msg.payload.pad_id];
+                    bank_index = get_sample_bank_index(queue_msg.payload.pad_id);
                 }
 				break;
 			case SRC_MIXER:
@@ -160,7 +162,7 @@ void sample_task(void *pvParameter){
 
             if(bank_index == NOT_DEFINED){
                 // there is no associated sample to this pad
-                printf("sample id was NOT defined\n");
+                ESP_LOGW(TAG_PM,"sample id was NOT defined");
                 fflush(stdout);
                 continue;
             }
@@ -186,6 +188,8 @@ void sample_task(void *pvParameter){
 }
 
 void playback_mode_init(){
+
+
     // set default sample mode (HOLD)
 	for(int i = 0; i < SAMPLE_NUM; i++){
 		set_playback_mode(i, HOLD);
@@ -193,7 +197,7 @@ void playback_mode_init(){
 
 	// init pad to sample to NOT_DEFINED
 	for(int i = 0; i  < GPIO_NUM_MAX; i++){
-		map_pad_to_sample(i, NOT_DEFINED);
+        pad_to_sample_map[i] = NOT_DEFINED;
 	}
 
 	// init queue
