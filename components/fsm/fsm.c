@@ -616,7 +616,6 @@ void goto_metronome(){
 }
 
 void sample_load() {
-    printf("SAMPLE LOAD\n");
     int sample_idx = get_pad_num(pressed_button) - 1;
     
     int index = menu_navigation[curr_menu] -> curr_index;
