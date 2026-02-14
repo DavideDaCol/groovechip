@@ -752,8 +752,16 @@ void change_pitch(int pot_value){
     }
 }
 
-// Function that changes the bit crusher enable
 void change_bit_crusher(int pot_value){
+    if (pressed_button == NOT_DEFINED){
+        change_master_bit_crusher(pot_value);
+    } else {
+        change_sample_bit_crusher(pot_value);
+    }
+}
+
+// Function that changes the bit crusher enable
+void change_sample_bit_crusher(int pot_value){
     set_bit_crusher(get_sample_bank_index(pressed_button), pot_value > 50);
 }
 
@@ -762,8 +770,16 @@ void change_master_bit_crusher(int pot_value){
     set_master_bit_crusher_enable(pot_value > 50);
 }
 
-// Function that changes the distortion enable
 void change_distortion(int pot_value){
+    if (pressed_button == NOT_DEFINED){
+        change_master_distortion(pot_value);
+    } else {
+        change_sample_distortion(pot_value);
+    }
+}
+
+// Function that changes the distortion enable
+void change_sample_distortion(int pot_value){
     set_distortion(get_sample_bank_index(pressed_button), pot_value > 50);
 }
 
@@ -791,8 +807,16 @@ pb_mode_t next_mode(int pot_value){
     return HOLD;
 }
 
-// Function that changes the bit depth
 void change_bit_depth(int pot_value){
+    if (pressed_button == NOT_DEFINED){
+        change_master_bit_depth(pot_value);
+    } else {
+        change_sample_bit_depth(pot_value);
+    }
+}
+
+// Function that changes the bit depth
+void change_sample_bit_depth(int pot_value){
     uint8_t new_bit_depth = 1 + round(((float)pot_value * 15.0) / 100.0);
     set_bit_crusher_bit_depth(get_sample_bank_index(pressed_button), new_bit_depth);
 }
@@ -803,8 +827,16 @@ void change_master_bit_depth(int pot_value){
     set_bit_crusher_bit_depth_master_buffer(new_bit_depth);
 }
 
-// Function that changes the downsample
 void change_downsample(int pot_value){
+    if (pressed_button == NOT_DEFINED){
+        change_master_downsample(pot_value);
+    } else {
+        change_sample_downsample(pot_value);
+    }
+}
+
+// Function that changes the downsample
+void change_sample_downsample(int pot_value){
     uint8_t new_downsample = 1 + round(((float)pot_value * 9.0) / 100.0);
     set_bit_crusher_downsample(get_sample_bank_index(pressed_button), new_downsample);
 }
@@ -815,8 +847,16 @@ void change_master_downsample(int pot_value){
     set_bit_crusher_downsample_master_buffer(new_downsample);
 }
 
-// Function that changes the distortion gain
 void change_distortion_gain(int pot_value){
+    if (pressed_button == NOT_DEFINED){
+        change_master_distortion_gain(pot_value);
+    } else {
+        change_sample_distortion_gain(pot_value);
+    }
+}
+
+// Function that changes the distortion gain
+void change_sample_distortion_gain(int pot_value){
     float new_gain = round(pot_value * VOLUME_NORMALIZER_VALUE / VOLUME_SCALE_VALUE) * VOLUME_SCALE_VALUE * 10;
     set_distortion_gain(get_sample_bank_index(pressed_button), new_gain);
 }
@@ -827,8 +867,16 @@ void change_master_distortion_gain(int pot_value){
     set_distortion_gain_master_buffer(new_gain);
 }
 
-// Function that changes the distortion threshold
 void change_distortion_threshold(int pot_value){
+    if (pressed_button == NOT_DEFINED){
+        change_master_distortion_threshold(pot_value);
+    } else {
+        change_sample_distortion_threshold(pot_value);
+    }
+}
+
+// Function that changes the distortion threshold
+void change_sample_distortion_threshold(int pot_value){
     int16_t new_threshold = (int16_t)((pot_value * THRESHOLD_NORMALIZER_VALUE)/THRESHOLD_SCALE_VALUE)*THRESHOLD_SCALE_VALUE;
     set_distortion_threshold(get_sample_bank_index(pressed_button), new_threshold);
 }
