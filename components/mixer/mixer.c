@@ -87,7 +87,8 @@ void action_ignore(int pad_id){
 
 #pragma endregion
 
-static inline void get_sample_interpolated(sample_t *smp, int16_t *out_L, int16_t *out_R, uint32_t total_frames) {
+
+static inline void get_sample_interpolated_mono(sample_t *smp, int16_t *out, uint32_t total_frames) {
     float pos = smp->playback_ptr;
 
     //first frame
@@ -112,19 +113,14 @@ static inline void get_sample_interpolated(sample_t *smp, int16_t *out_L, int16_
 
     //handle stereo audio
 
-    //left channel
-    float la = raw_data[frame_a * 2];
-    float lb = raw_data[frame_b * 2];
-    *out_L = la * (1.0f - frac) + lb * frac;
+    //interpolation
+    float la = raw_data[frame_a];
+    float lb = raw_data[frame_b];
+    *out = la * (1.0f - frac) + lb * frac;
 
-
-    //right channel
-    float ra = raw_data[frame_a * 2 + 1];
-    float rb = raw_data[frame_b * 2 + 1];
-    *out_R = ra * (1.0f - frac) + rb * frac;
 }
 
-static inline void apply_bitcrusher(bitcrusher_params_t* bc, int16_t *out_L, int16_t *out_R) {
+static inline void apply_bitcrusher_mono(bitcrusher_params_t* bc, int16_t *out) {
 
     if(!bc->enabled) return; //exit if the effect is not enabled
 
@@ -133,8 +129,7 @@ static inline void apply_bitcrusher(bitcrusher_params_t* bc, int16_t *out_L, int
 
     // if the counter is less than the downsample value, repeat the same value as before
     if (bc->counter < bc->downsample) {
-        *out_L = bc->last_L;
-        *out_R = bc->last_R;
+        *out = bc->last_frame;
         return;
     }
 
@@ -147,49 +142,44 @@ static inline void apply_bitcrusher(bitcrusher_params_t* bc, int16_t *out_L, int
         int shift_amount = 16 - bc->bit_depth;
 
         // left shift in order to set to zero least significant bits, and right shift to bring the other bits back
-        *out_L = (*out_L >> shift_amount) << shift_amount;
-        *out_R = (*out_R >> shift_amount) << shift_amount;
+        *out = (*out >> shift_amount) << shift_amount;
     }
 
     // update last sample
-    bc->last_L = *out_L;
-    bc->last_R = *out_R;
+    bc->last_frame = *out;
 }
 
-static inline void apply_distortion(distortion_params_t* dst_params, int16_t *out_L, int16_t *out_R){
+
+static inline void apply_distortion_mono(distortion_params_t* dst_params, int16_t *out){
 
     if(dst_params == NULL) return;
     if(!dst_params->enabled) return;
 
     //calculate gain
-    int32_t temp_L = *out_L * dst_params->gain;
-    int32_t temp_R = *out_R * dst_params->gain;
+    int32_t temp = *out * dst_params->gain;
 
-    temp_L = (int16_t)temp_L;
-    temp_R = (int16_t)temp_R;
+    temp = (int16_t)temp;
 
     //calculate threshold
     int16_t threshold = dst_params->threshold;
 
     //left channel
-    if(temp_L > threshold){
-        temp_L = threshold;
+    if(temp > threshold){
+        temp = threshold;
     }
-    else if(temp_L < -threshold){
-        temp_L = -threshold; // anche verso il basso? Da capire
+    else if(temp < -threshold){
+        temp = -threshold; // anche verso il basso? Da capire
     }
 
     //right channel
-    if(temp_R > threshold){
-        temp_R = threshold;
+    if(temp > threshold){
+        temp = threshold;
     }
-    else if(temp_R < -threshold){
-        temp_R = -threshold;
+    else if(temp < -threshold){
+        temp = -threshold;
     }   
 
-    *out_L = temp_L;
-    *out_R = temp_R;
-
+    *out = temp;
 } 
 #pragma region VOLUME
 
@@ -387,7 +377,7 @@ static void mixer_task_wip(void *args)
                     int16_t left, right;
                     
                     // stereo interpolated samples
-                    get_sample_interpolated(sample_bank[j], &left, &right, sample_bank[j]->total_frames);
+                    get_sample_interpolated(sample_bank[j], &left, &right, sample_bank[j]->total_frames); // TODO sostituire con get_sample_interpolated_mono
                     
                     //volume adjustment
                     left *= sample_bank[j]->volume;
@@ -395,11 +385,11 @@ static void mixer_task_wip(void *args)
 
                     //apply distortion
                     distortion_params_t *dst_params = &get_sample_effect(j)->distortion;
-                    apply_distortion(dst_params, &left, &right);
+                    apply_distortion(dst_params, &left, &right); // TODO sostituire con apply_distortion_mono
 
                     //apply bit crushing
                     bitcrusher_params_t *bc_params = &get_sample_effect(j)->bitcrusher;
-                    apply_bitcrusher(bc_params, &left, &right);
+                    apply_bitcrusher(bc_params, &left, &right); // TODO sostituire con apply_bitcruhser_mono
 
                     // writes the WAV data to the buffer post volume adjustment
                     master_buf[i * 2] += left;
