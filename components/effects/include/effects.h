@@ -11,7 +11,6 @@
 #define DISTORTION_THRESHOLD_MAX 32000
 
 #define VOLUME_NORMALIZER_VALUE 0.01f // TODO lo ho impostato a caso
-#define MASTER_VOLUME_NORMALIZER_VALUE 2.0f
 #define PITCH_NORMALIZER_VALUE 0.03f // TODO lo ho impostato a caso
 #define THRESHOLD_NORMALIZER_VALUE 320
 #define DOWNSAMPLE_NORMALIZER_VALUE 0.1f
@@ -68,7 +67,7 @@ float get_pitch_factor(uint8_t bank_index);
 
 void init_bit_crusher(uint8_t bank_index);
 
-void toggle_bit_crusher(uint8_t bank_index, bool state);
+void set_bit_crusher(uint8_t bank_index, bool state);
 
 void set_master_bit_crusher_enable(bool state);
 
@@ -98,7 +97,7 @@ uint8_t get_bit_crusher_downsample_master_buffer();
 //=========================DISTORTION=============================
 void init_distortion(uint8_t bank_index);
 
-void toggle_distortion(uint8_t bank_index, bool state);
+void set_distortion(uint8_t bank_index, bool state);
 
 void set_master_distortion_enable(bool state);
 

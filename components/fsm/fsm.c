@@ -100,8 +100,7 @@ opt_interactions_t gen_settings_handlers[] = {
         .first_line = "Volume",
         .second_line = get_second_line,
         .js_right_action = sink,
-        // .js_right_action = change_master_vol
-        .pt_action = sink
+        .pt_action = change_master_vol,
     },
     {
         .first_line = "Metronome",
@@ -184,7 +183,7 @@ opt_interactions_t bit_crusher_handlers[] = {
         .first_line = "Bitcrusher: ",
         .second_line = get_second_line,
         .js_right_action = sink,
-        .pt_action = toggle_bit_crusher_menu,
+        .pt_action = change_bit_crusher,
     },
     {
         .first_line = "Bit depth: ",
@@ -240,7 +239,7 @@ opt_interactions_t distortion_handlers[] = {
         .first_line = "Distortion: ",
         .second_line = get_second_line,
         .js_right_action = sink,
-        .pt_action = toggle_distortion_menu,
+        .pt_action = change_distortion,
     },
     {
         .first_line = "Gain: ",
@@ -352,30 +351,37 @@ void get_second_line(char* out){
         else sprintf(out, "General"); //general menu
         break;
 
-    case BTN_SETTINGS:
-        if(bank_index != NOT_DEFINED){
-            printf("Current index: %d\n", menu_navigation[curr_menu]->curr_index);
-            switch (menu_navigation[curr_menu]->curr_index)
-            {
-            case MODE:
-                mode_t curr_mode = get_playback_mode(bank_index);
-                get_mode_stringify(curr_mode, out);
-                break;
-            case VOLUME:
-                int volume = get_volume(bank_index) * 100;
-                sprintf(out, "%d", volume);
-                break;
-            default:
-                break;
-            }
+    case GEN_SETTINGS: 
+        switch (menu_navigation[curr_menu] -> curr_index)
+        {
+        case GEN_VOLUME:
+            int volume = get_master_volume() * 100;
+            sprintf(out, "%d", volume);
+            break;
+        case METRONOME:
+            // TODO
+            sprintf(out, "TODO");
+            break;        
+        default:
+            break;
         }
-        else{
-            if (menu_navigation[curr_menu]->curr_index == VOLUME){
-                int volume = get_master_volume();
-                sprintf(out, "%d", volume);
-            } else {
-                sprintf(out, "General");
-            }
+        break;
+    case BTN_SETTINGS:
+        if(bank_index == NOT_DEFINED) break;
+
+        printf("Current index: %d\n", menu_navigation[curr_menu]->curr_index);
+        switch (menu_navigation[curr_menu]->curr_index)
+        {
+        case MODE:
+            mode_t curr_mode = get_playback_mode(bank_index);
+            get_mode_stringify(curr_mode, out);
+            break;
+        case SAMPLE_VOLUME:
+            int volume = get_volume(bank_index) * 100;
+            sprintf(out, "%d", volume);
+            break;
+        default:
+            break;
         }
         break;
         
@@ -727,12 +733,16 @@ void change_vol(int pot_value) {
     float raw_vol = (float)pot_value * VOLUME_NORMALIZER_VALUE;
     float stepped_vol = round(raw_vol / VOLUME_SCALE_VALUE) * VOLUME_SCALE_VALUE;
 
-    if (pressed_button == NOT_DEFINED) {
-        set_master_buffer_volume(stepped_vol * MASTER_VOLUME_NORMALIZER_VALUE);
-    } else {
-        int idx = get_sample_bank_index(pressed_button);
-        set_volume(idx, stepped_vol);
-    }
+    int idx = get_sample_bank_index(pressed_button);
+    set_volume(idx, stepped_vol);
+}
+
+// Function that changes the master volume
+void change_master_vol(int pot_value){
+    float raw_vol = (float)pot_value * VOLUME_NORMALIZER_VALUE;
+    float stepped_vol = round(raw_vol / VOLUME_SCALE_VALUE) * VOLUME_SCALE_VALUE;
+
+    set_master_buffer_volume(stepped_vol);
 }
 
 // Function that changes the pitch
@@ -742,34 +752,29 @@ void change_pitch(int pot_value){
     }
 }
 
-// Function that toggles the bit crusher
-void toggle_bit_crusher_menu(int pot_value){
-    if (pressed_button == NOT_DEFINED) {
-        set_master_bit_crusher_enable(pot_value > 50);
-    } else {
-        toggle_bit_crusher(get_sample_bank_index(pressed_button), pot_value > 50);
-    }
+// Function that changes the bit crusher enable
+void change_bit_crusher(int pot_value){
+    set_bit_crusher(get_sample_bank_index(pressed_button), pot_value > 50);
 }
 
-// Function that toggles the distortion 
-void toggle_distortion_menu(int pot_value){
-    if (pressed_button == NOT_DEFINED) {
-        set_master_distortion_enable(pot_value > 50);
-    } else {
-        toggle_distortion(get_sample_bank_index(pressed_button), pot_value > 50);
-    }
+// Function that changes the master bit crusher enable
+void change_master_bit_crusher(int pot_value){
+    set_master_bit_crusher_enable(pot_value > 50);
+}
+
+// Function that changes the distortion enable
+void change_distortion(int pot_value){
+    set_distortion(get_sample_bank_index(pressed_button), pot_value > 50);
+}
+
+// Function that changes the master distortion enable
+void change_master_distortion(int pot_value){
+    set_master_distortion_enable(pot_value > 50);
 }
 
 // Function that rotates the mode based on the enum in playback_mode.h
 void rotate_mode(int pot_value){
-    if (pressed_button == NOT_DEFINED) {
-        for (uint8_t i = 0; i < SAMPLE_NUM; i++){ // TODO rimuovere
-            set_playback_mode(i, next_mode(pot_value));
-        }
-    } else {
-        set_playback_mode(get_sample_bank_index(pressed_button), next_mode(pot_value));
-    }
-
+    set_playback_mode(get_sample_bank_index(pressed_button), next_mode(pot_value));
 }
 
 // Function that gets the next mode
@@ -789,41 +794,49 @@ pb_mode_t next_mode(int pot_value){
 // Function that changes the bit depth
 void change_bit_depth(int pot_value){
     uint8_t new_bit_depth = 1 + round(((float)pot_value * 15.0) / 100.0);
-    if (pressed_button == NOT_DEFINED){
-        set_bit_crusher_bit_depth_master_buffer(new_bit_depth);
-    } else {
-        set_bit_crusher_bit_depth(get_sample_bank_index(pressed_button), new_bit_depth);
-    }
+    set_bit_crusher_bit_depth(get_sample_bank_index(pressed_button), new_bit_depth);
+}
+
+// Function that changes the master bit depth
+void change_master_bit_depth(int pot_value){
+    uint8_t new_bit_depth = 1 + round(((float)pot_value * 15.0) / 100.0);
+    set_bit_crusher_bit_depth_master_buffer(new_bit_depth);
 }
 
 // Function that changes the downsample
 void change_downsample(int pot_value){
     uint8_t new_downsample = 1 + round(((float)pot_value * 9.0) / 100.0);
-    if (pressed_button == NOT_DEFINED){
-        set_bit_crusher_downsample_master_buffer(new_downsample);
-    } else {
-        set_bit_crusher_downsample(get_sample_bank_index(pressed_button), new_downsample);
-    }
+    set_bit_crusher_downsample(get_sample_bank_index(pressed_button), new_downsample);
+}
+
+// Function that changes the master downsample
+void change_master_downsample(int pot_value){
+    uint8_t new_downsample = 1 + round(((float)pot_value * 9.0) / 100.0);
+    set_bit_crusher_downsample_master_buffer(new_downsample);
 }
 
 // Function that changes the distortion gain
 void change_distortion_gain(int pot_value){
     float new_gain = round(pot_value * VOLUME_NORMALIZER_VALUE / VOLUME_SCALE_VALUE) * VOLUME_SCALE_VALUE * 10;
-    if (pressed_button == NOT_DEFINED){
-        set_distortion_gain_master_buffer(new_gain);
-    } else {
-        set_distortion_gain(get_sample_bank_index(pressed_button), new_gain);
-    }
+    set_distortion_gain(get_sample_bank_index(pressed_button), new_gain);
+}
+
+// Function that changes the master distortion gain
+void change_master_distortion_gain(int pot_value){
+    float new_gain = round(pot_value * VOLUME_NORMALIZER_VALUE / VOLUME_SCALE_VALUE) * VOLUME_SCALE_VALUE * 10;
+    set_distortion_gain_master_buffer(new_gain);
 }
 
 // Function that changes the distortion threshold
 void change_distortion_threshold(int pot_value){
     int16_t new_threshold = (int16_t)((pot_value * THRESHOLD_NORMALIZER_VALUE)/THRESHOLD_SCALE_VALUE)*THRESHOLD_SCALE_VALUE;
-    if (pressed_button == NOT_DEFINED){
-        set_distortion_threshold_master_buffer(new_threshold);
-    } else {
-        set_distortion_threshold(get_sample_bank_index(pressed_button), new_threshold);
-    }
+    set_distortion_threshold(get_sample_bank_index(pressed_button), new_threshold);
+}
+
+// Function that changes the master distortion threshold
+void change_master_distortion_threshold(int pot_value){
+    int16_t new_threshold = (int16_t)((pot_value * THRESHOLD_NORMALIZER_VALUE)/THRESHOLD_SCALE_VALUE)*THRESHOLD_SCALE_VALUE;
+    set_distortion_threshold_master_buffer(new_threshold);
 }
 
 #pragma endregion

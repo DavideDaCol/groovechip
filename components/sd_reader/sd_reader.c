@@ -157,12 +157,12 @@ esp_err_t ld_sample(int in_bank_index, char* sample_name, sample_t** out_sample_
     out_sample -> total_frames = (out_sample -> header).data_size / 4; 
 
     //assigning bitcrusher values according to the infos in the json file
-    toggle_bit_crusher(in_bank_index, bitcrusher_enabled);
+    set_bit_crusher(in_bank_index, bitcrusher_enabled);
     set_bit_crusher_bit_depth(in_bank_index, bit_depth);
     set_bit_crusher_downsample(in_bank_index, downsample);
 
     //same for distortion
-    toggle_distortion(in_bank_index, distortion_enabled);
+    set_distortion(in_bank_index, distortion_enabled);
     set_distortion_gain(in_bank_index, gain);
     set_distortion_threshold(in_bank_index, threshold);
 

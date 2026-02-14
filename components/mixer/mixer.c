@@ -27,7 +27,7 @@ sample_t* sample_bank[SAMPLE_NUM];
 static metronome mtrn;
 
 // volume of master buffer
-float volume = 1.0f;
+float volume = 0.0f;
 
 #pragma region SAMPLE_ACTION
 
@@ -456,8 +456,8 @@ static void mixer_task_wip(void *args)
             apply_distortion(master_buf_d_params, &master_buf[i * 2], &master_buf[i * 2 + 1]);
 
             // apply volume to master buffer
-            master_buf[i * 2] *= volume;
-            master_buf[i * 2 + 1] *= volume; 
+            master_buf[i * 2] *= (volume + 1);
+            master_buf[i * 2 + 1] *= (volume + 1); 
 
             // capture the master frame for the recorded sample
             if (recorder_is_recording()){

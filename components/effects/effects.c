@@ -57,7 +57,7 @@ void init_bit_crusher(uint8_t bank_index){
     master_buffer_effects.bitcrusher.last_R = 0.0;
 }
 
-void toggle_bit_crusher(uint8_t bank_index, bool state){
+void set_bit_crusher(uint8_t bank_index, bool state){
     sample_effects[bank_index].bitcrusher.enabled = state;
 }
 
@@ -145,7 +145,7 @@ void init_distortion(uint8_t bank_index){
     master_buffer_effects.distortion.threshold = DISTORTION_THRESHOLD_MAX;
 }
 
-void toggle_distortion(uint8_t bank_index, bool state){
+void set_distortion(uint8_t bank_index, bool state){
     if(bank_index < SAMPLE_NUM){
         sample_effects[bank_index].distortion.enabled = state;
     }

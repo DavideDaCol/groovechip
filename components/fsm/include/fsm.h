@@ -46,7 +46,6 @@ void joystick_handler(joystick_dir_t in_dir);
 void goto_gen_settings();
 void goto_effects();
 void goto_btn_settings();
-void goto_selection();
 void goto_bitcrusher();
 void goto_pitch();
 void goto_distortion();
@@ -60,18 +59,24 @@ void js_up_handler();
 void js_down_handler();
 void sink();
 void set_button_pressed(int pad_id);
-void set_new_pot_value (int* old_val);
 void save();
 void potentiometer_handler(int diff_percent_pot_value);
 void change_vol(int pot_value);
-void toggle_distortion_menu(int pot_value);
-void toggle_bit_crusher_menu(int pot_value);
+void change_master_vol(int);
+void change_distortion(int pot_value);
+void change_master_distortion(int pot_value);
+void change_bit_crusher(int pot_value);
+void change_master_bit_crusher(int pot_value);
 void change_pitch(int pot_value);
 void rotate_mode(int pot_value);
 void change_bit_depth(int pot_value);
+void change_master_bit_depth(int pot_value);
 void change_downsample(int pot_value);
+void change_master_downsample(int pot_value);
 void change_distortion_gain(int pot_value);
+void change_master_distortion_gain(int pot_value);
 void change_distortion_threshold(int pot_value);
+void change_master_distortion_threshold(int pot_value);
 pb_mode_t next_mode(int pot_value);
 void sample_load();
 void send_message_to_fsm_queue(message_source_t source, int payload);
@@ -109,8 +114,13 @@ typedef enum{
 
 typedef enum{
     MODE,
-    VOLUME
-} settings_menu_t;
+    SAMPLE_VOLUME
+} btn_settings_menu_t;
+
+typedef enum{
+    GEN_VOLUME,
+    METRONOME
+} gen_settings_menu_t;
 
 typedef enum{
     START,
