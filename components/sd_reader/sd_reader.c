@@ -86,33 +86,47 @@ esp_err_t ld_sample(int in_bank_index, char* sample_name, sample_t** out_sample_
 
     //If the read doesn't succeed
     if (read_cnt != 1) {
-        fprintf(stderr, "Error while reading the file\n");
+        ESP_LOGE(TAG, "Error while reading the file\n");
 
         free(out_sample);
         out_sample_ptr = NULL;
         return ESP_FAIL;
     }
 
+    
     //Allocating the section of memory for the actual sample (wav buffer)
     //out_sample -> raw_data = heap_caps_malloc((out_sample -> header).data_size, MALLOC_CAP_SPIRAM);
-    out_sample -> raw_data = malloc((out_sample -> header).data_size);
-
+    out_sample->raw_data = heap_caps_malloc(out_sample -> header.data_size, MALLOC_CAP_SPIRAM);
+    if (out_sample->raw_data == NULL) {
+        ESP_LOGE(TAG, "Failed to allocate SPIRAM for WAV data");
+        free(out_sample);
+        *out_sample_ptr = NULL;
+        fclose(fp);
+        return ESP_ERR_NO_MEM;
+    }
+    
     //Reading the area of the file where the data is located
     read_cnt = fread(out_sample -> raw_data, 1, (out_sample -> header).data_size, fp);
+    printf("Available size: %d\n", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
 
+    
     if (read_cnt != (out_sample -> header).data_size) {
-        fprintf(stderr, "Error while reading the file\n");
-        fprintf(stderr, "Read data: %d\n", read_cnt);
-
+        ESP_LOGE(TAG, "Error while reading the file\n");
+        ESP_LOGE(TAG, "Read data: %d\n", read_cnt);
+        
         free(out_sample -> raw_data);
         free(out_sample);
         return ESP_FAIL;
     }
-
+    
     //getting the json filename
     char filename[MAX_BUFF_SIZE];
     snprintf(filename, sizeof(filename), "%s/%s/%s.json", GRVCHP_MNTPOINT, JSON_FILES_DIR, sample_name);
+    
+    //Closing the file
+    fclose(fp);
 
+    printf("CIAOOOOOOne\n");
     //declaring some useful variables for the json parsing
     bool bitcrusher_enabled;
     bool distortion_enabled;
@@ -155,8 +169,8 @@ esp_err_t ld_sample(int in_bank_index, char* sample_name, sample_t** out_sample_
     //same for the pitch
     set_pitch_factor(in_bank_index, pitch_factor);
 
-    //Closing the file
-    fclose(fp);
+    printf("Distortion enabled: %d\n", get_distortion_state(in_bank_index));
+    printf("Bit crusher enabled: %d\n", get_bit_crusher_state(in_bank_index));
 
     return ESP_OK;
 }
@@ -361,8 +375,8 @@ static esp_err_t set_json(char* filename, bool bitcrusher_enabled, uint8_t downs
     char* distortion_str = "distortion";
     char* threshold_str = "threshold";
     char* gain_str = "gain";
-    char* start_ptr_str = "start pointer";
-    char* end_ptr_str = "end pointer";
+    char* start_ptr_str = "start_pointer";
+    char* end_ptr_str = "end_pointer";
     char* enabled_str = "enabled";
 
     //JSON setup, according to the structure defined above
@@ -393,9 +407,6 @@ static esp_err_t set_json(char* filename, bool bitcrusher_enabled, uint8_t downs
 
     //Conversion of the JSON object into a string to copy into the file
     char* json_str = cJSON_Print(metadata_json);
-
-    printf("%s\n", filename);
-    printf("%s\n", json_str);
 
     FILE* fp = fopen(filename, "w");
     if (fp == NULL) return ESP_FAIL;
@@ -431,9 +442,11 @@ static esp_err_t get_json(char *filename, bool* bitcrusher_enabled, uint8_t* dow
     FILE* fp = fopen(filename, "r");
 
     //reading the content and store it in a buffer
-    char buffer[MAX_BUFF_SIZE];
+    char buffer[MAX_JSON_SIZE];
     if (fread(buffer, 1, sizeof(buffer), fp) == 0) return ESP_FAIL;
     fclose(fp);
+
+    printf("%s\n", buffer);
 
     //parsing the document
     cJSON* metadata_json = cJSON_Parse(buffer);
@@ -453,15 +466,17 @@ static esp_err_t get_json(char *filename, bool* bitcrusher_enabled, uint8_t* dow
         *start_ptr = (float) start_ptr_json -> valuedouble;
     } else {
         ESP_LOGE(TAG, "Wrong %s formatting", start_ptr_str);
+        cJSON_Delete(metadata_json);
         return ESP_FAIL;
     }
 
     //getting end_ptr
     cJSON* end_ptr_json = cJSON_GetObjectItemCaseSensitive(metadata_json, end_ptr_str); 
     if (cJSON_IsNumber(end_ptr_json)) {
-        *end_ptr = (float) end_ptr_json -> valuedouble;
+        *end_ptr = (uint32_t) end_ptr_json -> valuedouble;
     } else {
         ESP_LOGE(TAG, "Wrong %s formatting", end_ptr_str);
+        cJSON_Delete(metadata_json);
         return ESP_FAIL;
     }
 
@@ -479,6 +494,7 @@ static esp_err_t get_json(char *filename, bool* bitcrusher_enabled, uint8_t* dow
                 *pitch_factor = (float) pitch_factor_json -> valuedouble;
             } else {
                 ESP_LOGE(TAG, "Wrong %s formatting", pitch_factor_str);
+                cJSON_Delete(metadata_json);
                 return ESP_FAIL;
             }
         }
@@ -491,9 +507,10 @@ static esp_err_t get_json(char *filename, bool* bitcrusher_enabled, uint8_t* dow
             cJSON *enabled_json = cJSON_GetObjectItemCaseSensitive(distortion_json, enabled_str);
             //type checking
             if (cJSON_IsBool(enabled_json)) {
-                *distortion_enabled = cJSON_IsTrue(enabled_json);
+                *distortion_enabled = (bool) cJSON_IsTrue(enabled_json);
             } else {
                 ESP_LOGE(TAG, "Wrong distortion %s formatting", enabled_str);
+                cJSON_Delete(metadata_json);
                 return ESP_FAIL;
             }
 
@@ -504,6 +521,7 @@ static esp_err_t get_json(char *filename, bool* bitcrusher_enabled, uint8_t* dow
                 *gain = (float) gain_json -> valuedouble;
             } else {
                 ESP_LOGE(TAG, "Wrong %s formatting", gain_str);
+                cJSON_Delete(metadata_json);
                 return ESP_FAIL;
             }
 
@@ -514,6 +532,7 @@ static esp_err_t get_json(char *filename, bool* bitcrusher_enabled, uint8_t* dow
                 *threshold = (float) threshold_json -> valuedouble;
             } else {
                 ESP_LOGE(TAG, "Wrong %s formatting", threshold_str);
+                cJSON_Delete(metadata_json);
                 return ESP_FAIL;
             }
         }
@@ -526,9 +545,10 @@ static esp_err_t get_json(char *filename, bool* bitcrusher_enabled, uint8_t* dow
             cJSON *enabled_json = cJSON_GetObjectItemCaseSensitive(bitcrusher_json, enabled_str);
             //type checking
             if (cJSON_IsBool(enabled_json)) {
-                *distortion_enabled = cJSON_IsTrue(enabled_json);
+                *bitcrusher_enabled = cJSON_IsTrue(enabled_json);
             } else {
                 ESP_LOGE(TAG, "Wrong bitcrusher %s formatting", enabled_str);
+                cJSON_Delete(metadata_json);
                 return ESP_FAIL;
             }
 
@@ -539,6 +559,7 @@ static esp_err_t get_json(char *filename, bool* bitcrusher_enabled, uint8_t* dow
                 *downsample = (uint8_t) downsample_json -> valuedouble;
             } else {
                 ESP_LOGE(TAG, "Wrong %s formatting", downsample_str);
+                cJSON_Delete(metadata_json);
                 return ESP_FAIL;
             }
 
@@ -549,6 +570,7 @@ static esp_err_t get_json(char *filename, bool* bitcrusher_enabled, uint8_t* dow
                 *bit_depth = (uint8_t) bit_depth_json -> valuedouble;
             } else {
                 ESP_LOGE(TAG, "Wrong %s formatting", bit_depth_str);
+                cJSON_Delete(metadata_json);
                 return ESP_FAIL;
             }
         }

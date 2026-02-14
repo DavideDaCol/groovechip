@@ -48,6 +48,7 @@ extern int sample_names_size;
 #define JSON_FILES_DIR_SIZE 11
 
 #define MAX_BUFF_SIZE 256
+#define MAX_JSON_SIZE 512
 
 #define WAV_EXTENSION_SIZE 4
 #define JSON_EXTENSION_SIZE 5
