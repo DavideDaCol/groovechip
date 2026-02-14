@@ -124,8 +124,7 @@ static inline void get_sample_interpolated(sample_t *smp, int16_t *out_L, int16_
     *out_R = ra * (1.0f - frac) + rb * frac;
 }
 
-static inline void apply_bitcrusher(uint8_t bank_index, int16_t *out_L, int16_t *out_R) {
-    bitcrusher_params_t* bc = &get_sample_effect(bank_index)->bitcrusher;
+static inline void apply_bitcrusher(bitcrusher_params_t* bc, int16_t *out_L, int16_t *out_R) {
 
     if(!bc->enabled) return; //exit if the effect is not enabled
 
@@ -157,8 +156,7 @@ static inline void apply_bitcrusher(uint8_t bank_index, int16_t *out_L, int16_t 
     bc->last_R = *out_R;
 }
 
-static inline void apply_distortion(uint8_t sample_id, int16_t *out_L, int16_t *out_R){
-    distortion_params_t* dst_params = &get_sample_effect(sample_id)->distortion;
+static inline void apply_distortion(distortion_params_t* dst_params, int16_t *out_L, int16_t *out_R){
 
     if(dst_params == NULL) return;
     if(!dst_params->enabled) return;
@@ -396,10 +394,12 @@ static void mixer_task_wip(void *args)
                     right *= sample_bank[j]->volume;
 
                     //apply distortion
-                    apply_distortion(j, &left, &right);
+                    distortion_params_t *dst_params = &get_sample_effect(j)->distortion;
+                    apply_distortion(dst_params, &left, &right);
 
                     //apply bit crushing
-                    apply_bitcrusher(j, &left, &right);
+                    bitcrusher_params_t *bc_params = &get_sample_effect(j)->bitcrusher;
+                    apply_bitcrusher(bc_params, &left, &right);
 
                     // writes the WAV data to the buffer post volume adjustment
                     master_buf[i * 2] += left;
