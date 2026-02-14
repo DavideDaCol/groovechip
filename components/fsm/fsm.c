@@ -26,7 +26,7 @@ opt_interactions_t gen_handlers[] = {
     {
         .first_line = "Settings",
         .second_line = get_second_line,
-        .js_right_action = goto_settings,
+        .js_right_action = goto_gen_settings,
         .pt_action = sink
     }, 
     {
@@ -53,7 +53,7 @@ opt_interactions_t btn_handlers[] = {
     {
         .first_line = "Settings",
         .second_line = get_second_line,
-        .js_right_action = goto_settings,
+        .js_right_action = goto_btn_settings,
         .pt_action = sink
     },
     {
@@ -73,6 +73,12 @@ opt_interactions_t btn_handlers[] = {
         .second_line = get_second_line,
         .js_right_action = sink, //TODO
         .pt_action = sink
+    },
+    {
+        .first_line = "Chopping",
+        .second_line = get_second_line,
+        .js_right_action = goto_chopping,
+        .pt_action = sink
     }
 };
 
@@ -89,7 +95,30 @@ menu_t btn_menu = {
 /***********************************
 SETTINGS MENU (structure is the same whether it's related to a specific button or is general) 
 ***********************************/
-opt_interactions_t set_handlers[] = {
+opt_interactions_t gen_settings_handlers[] = {
+    {
+        .first_line = "Volume",
+        .second_line = get_second_line,
+        .js_right_action = sink,
+        // .js_right_action = change_master_vol
+        .pt_action = sink
+    },
+    {
+        .first_line = "Metronome",
+        .second_line = get_second_line,
+        .js_right_action = goto_metronome,
+        .pt_action = sink
+    }
+};
+
+menu_t gen_settings = {
+    .curr_index = 0,
+    .max_size = GEN_SETTINGS_NUM_OPT,
+    .opt_handlers = gen_settings_handlers
+};
+
+// Button settings
+opt_interactions_t btn_settings_handlers[] = {
     {
         .first_line = "Mode",
         .second_line = get_second_line,
@@ -104,10 +133,10 @@ opt_interactions_t set_handlers[] = {
     }
 };
 
-menu_t settings = {
-    .curr_index = -1,
-    .max_size = SETTINGS_NUM_OPT,
-    .opt_handlers = set_handlers
+menu_t btn_settings = {
+    .curr_index = 0,
+    .max_size = BTN_SETTINGS_NUM_OPT,
+    .opt_handlers = btn_settings_handlers
 };
 /***********************************/
 #pragma endregion
@@ -232,20 +261,48 @@ menu_t distortion_menu = {
     .max_size = DISTORTION_NUM_OPT,
     .opt_handlers = distortion_handlers
 };
-/***********************************/
+/**********************************************
+CHOPPING MENU
+***********************************************/
+opt_interactions_t chopping_handlers[] = {
+    {
+        .first_line = "Start: ",
+        .second_line = get_second_line,
+        .js_right_action = sink,
+        .pt_action = sink, //TODO
+    },
+    {
+        .first_line = "End: ",
+        .second_line = get_second_line,
+        .js_right_action = sink,
+        .pt_action = sink, //TODO
+    }
+};
+
+menu_t chopping_menu = {
+    .curr_index = 0,
+    .max_size = CHOPPING_NUM_OPT,
+    .opt_handlers = chopping_handlers
+};
+
+/************************************* */
+
 #pragma endregion
 
 //Menu collection, essential for the navigation
 menu_t* menu_navigation[] = {
     &gen_menu,
     &btn_menu,
-    &settings,
+    &gen_settings,
+    &btn_settings,
     &effects,
     &bit_crusher_menu,
     &pitch_menu,
     &distortion_menu,
-    NULL
+    NULL,
+    &chopping_menu,
 };
+
 
 // menu state stack
 static menu_pair_t menu_stack[10];
@@ -295,7 +352,7 @@ void get_second_line(char* out){
         else sprintf(out, "General"); //general menu
         break;
 
-    case SETTINGS:
+    case BTN_SETTINGS:
         if(bank_index != NOT_DEFINED){
             printf("Current index: %d\n", menu_navigation[curr_menu]->curr_index);
             switch (menu_navigation[curr_menu]->curr_index)
@@ -377,6 +434,22 @@ void get_second_line(char* out){
         // only one parameter
         float factor = get_pitch_factor(bank_index);
         sprintf(out, "%.2f", factor);
+        break;
+    case CHOPPING:
+        if(bank_index == NOT_DEFINED) break;
+        switch (menu_navigation[curr_menu]->curr_index)
+        {
+        case START:
+            uint32_t start_ptr = get_sample_start_ptr(bank_index);
+            sprintf(out, "%ld", start_ptr);
+            break;
+        case END:
+            uint32_t end_ptr = get_sample_end_ptr(bank_index);
+            sprintf(out, "%ld", end_ptr);
+            break;
+        default:
+            break;
+        }
         break;
     default:
         break;
@@ -497,9 +570,14 @@ void goto_sample_load() {
 }
 
 // Atomic function that sets the current menu and the current index
-void goto_settings() {
-    settings.curr_index = 0;
-    curr_menu = SETTINGS;
+void goto_gen_settings() {
+    gen_settings.curr_index = 0;
+    curr_menu = GEN_SETTINGS;
+}
+
+void goto_btn_settings(){
+    btn_settings.curr_index = 0;
+    curr_menu = BTN_SETTINGS;
 }
 
 // Atomic function that sets the current menu and the current index
@@ -524,6 +602,15 @@ void goto_pitch() {
 void goto_distortion() {
     distortion_menu.curr_index = 0;
     curr_menu = DISTORTION;
+}
+
+void goto_chopping(){
+    chopping_menu.curr_index = 0;
+    curr_menu = CHOPPING;
+}
+
+void goto_metronome(){
+    // TODO
 }
 
 void sample_load() {
