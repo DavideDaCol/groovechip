@@ -39,8 +39,7 @@ void init_bit_crusher(uint8_t bank_index){
         sample_effects[bank_index].bitcrusher.bit_depth = BIT_DEPTH_MAX;
         sample_effects[bank_index].bitcrusher.downsample = DOWNSAMPLE_MIN;
         sample_effects[bank_index].bitcrusher.counter = 0;
-        sample_effects[bank_index].bitcrusher.last_L = 0.0;
-        sample_effects[bank_index].bitcrusher.last_R = 0.0;
+        sample_effects[bank_index].bitcrusher.last_frame = 0.0;
     }
 }
 
@@ -58,8 +57,7 @@ void set_bit_crusher_bit_depth(uint8_t bank_index, uint8_t bit_depth){
         
         //reset counter values
         sample_effects[bank_index].bitcrusher.counter = 0;
-        sample_effects[bank_index].bitcrusher.last_L = 0.0;
-        sample_effects[bank_index].bitcrusher.last_R = 0.0;
+        sample_effects[bank_index].bitcrusher.last_frame = 0.0;
     }
 }
 
@@ -73,8 +71,7 @@ void set_bit_crusher_downsample(uint8_t bank_index, uint8_t downsample_value){
 
         //reset counter values
         sample_effects[bank_index].bitcrusher.counter = 0;
-        sample_effects[bank_index].bitcrusher.last_L = 0.0;
-        sample_effects[bank_index].bitcrusher.last_R = 0.0;
+        sample_effects[bank_index].bitcrusher.last_frame = 0.0;
     }
 }
 

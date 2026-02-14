@@ -17,7 +17,7 @@ void recorder_init(void) {
     g_recorder.target_sample_id = -1;
     
     printf("[DEBUG PRINT] Recorder initialized (buffer: %zu frames, %.1f sec max)\n",
-           RECORD_BUFFER_SIZE / 2,
+           RECORD_BUFFER_SIZE,
            (float)RECORD_MAX_DURATION_SEC);
 }
 
@@ -79,7 +79,7 @@ void recorder_stop_recording(void) {
     g_recorder.duration_ms = (xTaskGetTickCount() * portTICK_PERIOD_MS) - g_recorder.start_time_ms;
     g_recorder.state = REC_RECORDED;
     
-    uint32_t frames_recorded = g_recorder.buffer_used / 2;
+    uint32_t frames_recorded = g_recorder.buffer_used;
     float duration_sec = (float)frames_recorded / RECORD_SAMPLE_RATE;
     
     printf("[DEBUG PRINT] Recording stopped: %.2f seconds (%lu frames)\n", duration_sec, frames_recorded);
@@ -105,7 +105,7 @@ void recorder_stop_recording(void) {
 
         // Manually create the WAV header
         target->header.sample_rate = RECORD_SAMPLE_RATE;
-        target->header.num_channels = 2;
+        target->header.num_channels = 1;
         target->header.bits_per_sample = 16;
         target->header.data_size = g_recorder.buffer_used * sizeof(int16_t);
         
@@ -129,21 +129,20 @@ void recorder_cancel(void) {
     printf("[DEBUG PRINT] Recording canceled\n");
 }
 
-void recorder_capture_frame(int16_t left, int16_t right) {
+void recorder_capture_frame(int16_t sample) {
     if (g_recorder.state != REC_RECORDING) {
         return;
     }
     
     // Check free space
-    if (g_recorder.buffer_used + 2 > g_recorder.buffer_capacity) {
+    if (g_recorder.buffer_used + 1 > g_recorder.buffer_capacity) {
         printf("Error: Buffer full!\n");
         recorder_stop_recording();
         return;
     }
     
-    // Save the stereo frame
-    g_recorder.buffer[g_recorder.buffer_used++] = left;
-    g_recorder.buffer[g_recorder.buffer_used++] = right;
+    // Save the frame
+    g_recorder.buffer[g_recorder.buffer_used++] = sample;
 }
 
 // Getters

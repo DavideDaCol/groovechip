@@ -61,7 +61,7 @@ typedef struct sample_t
 {
     unsigned char *raw_data; /** raw sample bytes */
     wav_header_t header; /** contains sample metadata like size and bit rate */
-    uint32_t total_frames; /* frame number (data size / 4)*/
+    uint32_t total_frames; /* frame number (data size / 2)*/
     float playback_ptr; /** progress indicator for the sample */
     float start_ptr; /* the playback_ptr get initialized to this value every time the sample play */
     uint32_t end_ptr; /* limit the sample duration */
