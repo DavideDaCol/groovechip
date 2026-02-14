@@ -267,7 +267,10 @@ static esp_err_t sd_fs_init() {
     snprintf(json_path, sizeof(json_path), "%s/%s", GRVCHP_MNTPOINT, JSON_FILES_DIR);
 
     DIR *dir = opendir(wav_path);
-    if (!dir) return ESP_FAIL;
+    if (!dir) {
+        ESP_LOGE(TAG, "Error: directory not found");
+        return ESP_FAIL;
+    }
 
     struct dirent* entry;
     int count = 0;

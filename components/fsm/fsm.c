@@ -12,6 +12,7 @@ uint8_t pressed_button = NOT_DEFINED;
 pb_mode_t mode = ONESHOT;
 
 void get_second_line(char *);
+void get_sample_load_second_line(char*);
 
 const char* TAG_FSM = "FSM";
 
@@ -80,6 +81,7 @@ menu_t btn_menu = {
     .max_size = BTN_MENU_NUM_OPT,
     .opt_handlers = btn_handlers
 };
+
 /***********************************/
 #pragma endregion
 
@@ -525,35 +527,41 @@ void goto_distortion() {
 }
 
 void sample_load() {
+    printf("SAMPLE LOAD\n");
     int sample_idx = get_pad_num(pressed_button) - 1;
     
     int index = menu_navigation[curr_menu] -> curr_index;
     ESP_LOGW(TAG_FSM, "pressed_button is %i, sample path is %s", pressed_button, sample_names[index]);
-    ld_sample(sample_idx, sample_names[index], &sample_bank[sample_idx]);
-
-    map_pad_to_sample(pressed_button, sample_idx);
+    esp_err_t res = ld_sample(sample_idx, sample_names[index], &sample_bank[sample_idx]);
+    if(res == ESP_OK){
+        map_pad_to_sample(pressed_button, sample_idx);
+        // HACK: push btn_menu state, so if js_left is triggered, it go to btn menu
+        menu_pop();
+        menu_push(BTN_MENU, 0);
+    }
 }
 
 // Function that calls the correct handler based on the current menu
 void js_right_handler() {
-    if(curr_menu == GEN_MENU || curr_menu == BTN_MENU || curr_menu == EFFECTS || curr_menu == SAMPLE_LOAD ){
+    int index = menu_navigation[curr_menu] -> curr_index;
+    if(menu_navigation[curr_menu]->opt_handlers[index].js_right_action != sink 
+        && menu_navigation[curr_menu]->opt_handlers[index].js_right_action != sample_load
+    ){
         // change the state only if the current menu can actually go in a submenu. This prevents to push the same state multiple times        
-        int index = menu_navigation[curr_menu] -> curr_index;
         menu_push(curr_menu, index);
-        
-        menu_navigation[curr_menu] -> opt_handlers[index].js_right_action();
     }
+    menu_navigation[curr_menu] -> opt_handlers[index].js_right_action();
 
 }
 
 // Function that sets the current menu the the previoous one
 void js_left_handler() {
-    if (curr_menu == BTN_MENU) {
-        pressed_button = NOT_DEFINED;
-    } 
     menu_pair_t state = menu_pop();
     curr_menu = state.menu;
     menu_navigation[curr_menu]->curr_index = state.index;
+
+    if(curr_menu == GEN_MENU)
+        pressed_button = NOT_DEFINED;
 }
 
 // Function that lets the menu navigation up
@@ -581,7 +589,14 @@ void set_button_pressed(int pad_id) {
         clear_stack();
         pressed_button = pad_id;
         btn_menu.curr_index = 0;
-        curr_menu = BTN_MENU;
+
+        if(get_sample_bank_index(pad_id) != NOT_DEFINED)
+            curr_menu = BTN_MENU; // normal menu
+        else {
+            // curr_menu = BTN_MENU_NO_SAMPLE; //in this case the user can only laod a sample
+            sample_load_menu.curr_index = 0;
+            curr_menu = SAMPLE_LOAD;
+        }
     }
 }
 
@@ -590,12 +605,6 @@ void sink() {
     
     return;
 }
-
-// sink function, but it also free a stack position. This is needed when we don't want to save the previous state (if we go in the same menu multiple times)
-void sink_free_prev(){
-    menu_pop();
-}
-
 #pragma endregion
 
 #pragma region POTENTIOMETER HANDLING
