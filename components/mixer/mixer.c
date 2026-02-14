@@ -26,6 +26,9 @@ sample_t* sample_bank[SAMPLE_NUM];
 //metronome object
 static metronome mtrn;
 
+// volume of master buffer
+float volume = 1.0f;
+
 #pragma region SAMPLE_ACTION
 
 void action_start_or_stop_sample(int bank_index){
@@ -210,6 +213,20 @@ float get_volume(uint8_t bank_index){
     else return 0.0;
 }
 
+void set_master_buffer_volume(float new_volume){
+    volume = new_volume;
+    if (volume > MASTER_VOLUME_THRESHOLD_UP) {
+        volume = MASTER_VOLUME_THRESHOLD_UP;
+    }
+    if (volume < 0) {
+        volume = 0;
+    }
+}
+
+float get_master_volume(){
+    return volume;
+}
+
 #pragma endregion
 
 #pragma region METRONOME
@@ -360,7 +377,7 @@ static void mixer_task_wip(void *args)
     // for the metronome: counts how many samples have been played since the last tick
     int16_t sample_lookahead = 0;
 
-     while (1) {
+    while (1) {
         for (int i = 0; i < BUFF_SIZE; i++) {
 
             sample_lookahead += 1;
@@ -420,6 +437,18 @@ static void mixer_task_wip(void *args)
                     
                 }
             }
+
+            // apply bit crushing to master buffer
+            bitcrusher_params_t* master_buf_bc_params = &get_master_buffer_effects() -> bitcrusher;
+            apply_bitcrusher(master_buf_bc_params, &master_buf[i * 2], &master_buf[i * 2 + 1]);
+            
+            // apply distortion to master buffer
+            distortion_params_t* master_buf_d_params = &get_master_buffer_effects() -> distortion;
+            apply_distortion(master_buf_d_params, &master_buf[i * 2], &master_buf[i * 2 + 1]);
+
+            // apply volume to master buffer
+            master_buf[i * 2] *= volume;
+            master_buf[i * 2 + 1] *= volume; 
 
             // capture the master frame for the recorded sample
             if (recorder_is_recording()){

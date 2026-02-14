@@ -18,6 +18,7 @@
 
 // Max volume
 #define VOLUME_THRESHOLD_UP 1.0f
+#define MASTER_VOLUME_THRESHOLD_UP 2.0f
 
 #pragma region TYPES
 
@@ -101,6 +102,11 @@ void set_sample_start_ptr(uint8_t, float);
 // volume
 void set_volume(uint8_t, float);
 float get_volume(uint8_t);
+
+extern float volume_master_buffer;
+void set_master_buffer_volume(float);
+float get_master_volume();
+
 //metronome actions
 void init_metronome();
 void toggle_metronome_state(bool);
