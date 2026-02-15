@@ -410,7 +410,7 @@ static void mixer_task_wip(void *args)
                 recorder_capture_frame(master_buf[i]);
             }
 
-            if (mtrn.playback_enabled) {
+            if (mtrn.playback_enabled && mtrn.state) {
                 // if the metronome is playing, but the sound has finished
                 if (mtrn.playback_ptr >= mtrn.header.data_size) {
                     //lock the metronome again
