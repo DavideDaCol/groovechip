@@ -15,15 +15,17 @@
 #include "adc1.h"
 #include "lcd.h"
 
-#define MENU_NUM 7
+#define MENU_NUM 8
 #define GEN_MENU_NUM_OPT 2
-#define BTN_MENU_NUM_OPT 4
-#define SETTINGS_NUM_OPT 2
+#define BTN_MENU_NUM_OPT 5
+#define GEN_SETTINGS_NUM_OPT 2
+#define BTN_SETTINGS_NUM_OPT 2
 #define EFFECTS_NUM_OPT 3
 #define MODE_NUM_OPT 4
 #define BITCRUSHER_NUM_OPT 3
 #define PITCH_NUM_OPT 1
 #define DISTORTION_NUM_OPT 3
+#define CHOPPING_NUM_OPT 2
 #define PITCH_SCALE_VALUE 0.25f
 #define THRESHOLD_SCALE_VALUE 1000
 #define VOLUME_SCALE_VALUE 0.05f
@@ -41,13 +43,16 @@ typedef struct {
 
 void main_fsm_task(void *pvParameters);
 void joystick_handler(joystick_dir_t in_dir);
-void goto_settings();
+void goto_gen_settings();
 void goto_effects();
+void goto_btn_settings();
 void goto_selection();
 void goto_bitcrusher();
 void goto_pitch();
 void goto_distortion();
 void goto_sample_load();
+void goto_chopping();
+void goto_metronome();
 void menu_move(int* index, int max_opt, int direction);
 void js_right_handler();
 void js_left_handler();
@@ -79,12 +84,14 @@ void set_last_pot_value(int pot_value);
 typedef enum {
     GEN_MENU,
     BTN_MENU,
-    SETTINGS,
+    GEN_SETTINGS,
+    BTN_SETTINGS,
     EFFECTS,
     BITCRUSHER,
     PITCH,
     DISTORTION,
-    SAMPLE_LOAD
+    SAMPLE_LOAD,
+    CHOPPING
 } menu_types;
 
 
@@ -104,6 +111,11 @@ typedef enum{
     MODE,
     VOLUME
 } settings_menu_t;
+
+typedef enum{
+    START,
+    END
+} chopping_menu_t;
 
 //Menu that we are currently navigating
 extern menu_types curr_menu;
