@@ -7,8 +7,6 @@
 #include "driver/gpio.h"
 #include "esp_check.h"
 #include "sdkconfig.h"
-#include "kick.h"
-#include "snare.h"
 #include "metronome.h"
 #include "playback_mode.h"
 #include "effects.h"
@@ -27,7 +25,7 @@ sample_t* sample_bank[SAMPLE_NUM];
 static metronome mtrn;
 
 // volume of master buffer
-float volume = 0.0f;
+float volume = 0.5f;
 
 #pragma region SAMPLE_ACTION
 
@@ -90,7 +88,8 @@ void action_ignore(int pad_id){
 
 #pragma endregion
 
-static inline void get_sample_interpolated(sample_t *smp, int16_t *out_L, int16_t *out_R, uint32_t total_frames) {
+
+static inline void get_sample_interpolated_mono(sample_t *smp, int16_t *out, uint32_t total_frames) {
     float pos = smp->playback_ptr;
 
     //first frame
@@ -113,21 +112,14 @@ static inline void get_sample_interpolated(sample_t *smp, int16_t *out_L, int16_
     // raw data
     int16_t *raw_data = (int16_t*)smp->raw_data;
 
-    //handle stereo audio
+    //interpolation
+    float la = raw_data[frame_a];
+    float lb = raw_data[frame_b];
+    *out = la * (1.0f - frac) + lb * frac;
 
-    //left channel
-    float la = raw_data[frame_a * 2];
-    float lb = raw_data[frame_b * 2];
-    *out_L = la * (1.0f - frac) + lb * frac;
-
-
-    //right channel
-    float ra = raw_data[frame_a * 2 + 1];
-    float rb = raw_data[frame_b * 2 + 1];
-    *out_R = ra * (1.0f - frac) + rb * frac;
 }
 
-static inline void apply_bitcrusher(bitcrusher_params_t* bc, int16_t *out_L, int16_t *out_R) {
+static inline void apply_bitcrusher_mono(bitcrusher_params_t* bc, int16_t *out) {
 
     if(!bc->enabled) return; //exit if the effect is not enabled
 
@@ -136,8 +128,7 @@ static inline void apply_bitcrusher(bitcrusher_params_t* bc, int16_t *out_L, int
 
     // if the counter is less than the downsample value, repeat the same value as before
     if (bc->counter < bc->downsample) {
-        *out_L = bc->last_L;
-        *out_R = bc->last_R;
+        *out = bc->last_frame;
         return;
     }
 
@@ -150,49 +141,35 @@ static inline void apply_bitcrusher(bitcrusher_params_t* bc, int16_t *out_L, int
         int shift_amount = 16 - bc->bit_depth;
 
         // left shift in order to set to zero least significant bits, and right shift to bring the other bits back
-        *out_L = (*out_L >> shift_amount) << shift_amount;
-        *out_R = (*out_R >> shift_amount) << shift_amount;
+        *out = (*out >> shift_amount) << shift_amount;
     }
 
     // update last sample
-    bc->last_L = *out_L;
-    bc->last_R = *out_R;
+    bc->last_frame = *out;
 }
 
-static inline void apply_distortion(distortion_params_t* dst_params, int16_t *out_L, int16_t *out_R){
+
+static inline void apply_distortion_mono(distortion_params_t* dst_params, int16_t *out){
 
     if(dst_params == NULL) return;
     if(!dst_params->enabled) return;
 
     //calculate gain
-    int32_t temp_L = *out_L * dst_params->gain;
-    int32_t temp_R = *out_R * dst_params->gain;
+    int32_t temp = *out * dst_params->gain;
 
-    temp_L = (int16_t)temp_L;
-    temp_R = (int16_t)temp_R;
+    temp = (int16_t)temp;
 
     //calculate threshold
     int16_t threshold = dst_params->threshold;
 
-    //left channel
-    if(temp_L > threshold){
-        temp_L = threshold;
+    if(temp > threshold){
+        temp = threshold;
     }
-    else if(temp_L < -threshold){
-        temp_L = -threshold; // anche verso il basso? Da capire
+    else if(temp < -threshold){
+        temp = -threshold; // anche verso il basso? Da capire
     }
 
-    //right channel
-    if(temp_R > threshold){
-        temp_R = threshold;
-    }
-    else if(temp_R < -threshold){
-        temp_R = -threshold;
-    }   
-
-    *out_L = temp_L;
-    *out_R = temp_R;
-
+    *out = temp;
 } 
 #pragma region VOLUME
 
@@ -347,9 +324,8 @@ void print_wav_header(const wav_header_t *h)
     printf("===================\n");
 }
 
-esp_err_t ld_internal_sample(int bank_index, const uint8_t* wav_data, const char* debug_name) {
+esp_err_t ld_sample_debug(int bank_index, const uint8_t* wav_data, const char* debug_name) {
     // 1. Allocate the struct in PSRAM
-    //sample_bank[bank_index] = heap_caps_malloc(sizeof(sample_t), MALLOC_CAP_SPIRAM);
     sample_bank[bank_index] = malloc(sizeof(sample_t));
     if (sample_bank[bank_index] == NULL) return ESP_ERR_NO_MEM;
 
@@ -359,7 +335,6 @@ esp_err_t ld_internal_sample(int bank_index, const uint8_t* wav_data, const char
     memcpy(&smp->header, wav_data, sizeof(wav_header_t));
 
     // 3. Allocate memory for the raw data and copy it
-    //smp->raw_data = heap_caps_malloc(smp->header.data_size, MALLOC_CAP_SPIRAM);
     smp->raw_data = malloc(smp->header.data_size);
     if (smp->raw_data == NULL) {
         heap_caps_free(smp);
@@ -372,7 +347,7 @@ esp_err_t ld_internal_sample(int bank_index, const uint8_t* wav_data, const char
 
     // 4. Set the metadata
     smp->bank_index = bank_index;
-    smp->total_frames = smp->header.data_size / 4;
+    smp->total_frames = smp->header.data_size / 2;
     smp->start_ptr = 0.0f;
     smp->end_ptr = (float)smp->total_frames - 1.0f;
     smp->playback_ptr = 0.0f;
@@ -403,8 +378,7 @@ static void mixer_task_wip(void *args)
     size_t w_bytes = BUFF_SIZE;
 
     // create a i2s DMA buffer to write samples without stressing the CPU.
-    // Has to be double the chosen size to allow stereo playback
-    int16_t *master_buf = malloc(BUFF_SIZE * 2 * sizeof(int16_t));
+    int16_t *master_buf = malloc(BUFF_SIZE * sizeof(int16_t));
     assert(master_buf);
 
     ESP_ERROR_CHECK(i2s_channel_enable(out_channel));
@@ -426,8 +400,7 @@ static void mixer_task_wip(void *args)
             }
 
             //fill the buffer with 0 in case no samples are playing
-            master_buf[i * 2] = 0x00;
-            master_buf[i * 2 + 1] = 0x00;
+            master_buf[i] = 0x00;
 
             //look at all playing samples
             for (int j = 0; j < SAMPLE_NUM; j++){
@@ -435,30 +408,28 @@ static void mixer_task_wip(void *args)
                 //check play status via bit masking
                 if (sample_bank[j] != NULL && (now_playing & (1 << j)) != 0  && !sample_bank[j]->playback_finished){
 
-                    // in WAV files, left and right samples are sequential
-                    int16_t left, right;
+                    //single audio sample as contained in the WAV file
+                    int16_t sample_to_play;
                     
-                    // stereo interpolated samples
-                    get_sample_interpolated(sample_bank[j], &left, &right, sample_bank[j]->total_frames);
+                    get_sample_interpolated_mono(sample_bank[j], &sample_to_play, sample_bank[j]->total_frames);
                     
                     //volume adjustment
-                    left *= sample_bank[j]->volume;
-                    right *= sample_bank[j]->volume;
+                    sample_to_play *= sample_bank[j]->volume;
 
                     //apply distortion
                     distortion_params_t *dst_params = &get_sample_effect(j)->distortion;
-                    apply_distortion(dst_params, &left, &right);
+                    apply_distortion_mono(dst_params, &sample_to_play);
 
                     //apply bit crushing
                     bitcrusher_params_t *bc_params = &get_sample_effect(j)->bitcrusher;
-                    apply_bitcrusher(bc_params, &left, &right);
+                    apply_bitcrusher_mono(bc_params, &sample_to_play);
 
-                    // writes the WAV data to the buffer post volume adjustment
-                    master_buf[i * 2] += left;
-                    master_buf[i * 2 + 1] += right;
+                    // writes the WAV data to the buffer post volume adjustment and effects pipeline
+                    master_buf[i] += sample_to_play;
 
                     // add the pitch factor to the pointer
                     sample_bank[j]->playback_ptr += get_pitch_factor(j);
+                    //printf("PLAYBACK PTR: %f\nEND_PTR: %ld\n", sample_bank[j]->playback_ptr, sample_bank[j]->end_ptr);
 
                     // case: playback pointer has reached EOF or the end_ptr
                     if (sample_bank[j]->playback_ptr > sample_bank[j]->end_ptr || sample_bank[j]->playback_ptr >= sample_bank[j]->total_frames) {
@@ -473,24 +444,19 @@ static void mixer_task_wip(void *args)
                 }
             }
 
-            // apply bit crushing to master buffer
-            bitcrusher_params_t* master_buf_bc_params = &get_master_buffer_effects() -> bitcrusher;
-            apply_bitcrusher(master_buf_bc_params, &master_buf[i * 2], &master_buf[i * 2 + 1]);
-            
-            // apply distortion to master buffer
-            distortion_params_t* master_buf_d_params = &get_master_buffer_effects() -> distortion;
-            apply_distortion(master_buf_d_params, &master_buf[i * 2], &master_buf[i * 2 + 1]);
-
             // apply volume to master buffer
-            master_buf[i * 2] *= (volume * 2);
-            master_buf[i * 2 + 1] *= (volume * 2);
+            master_buf[i] *= (volume * 2);
+
+            //limiter
+            if (master_buf[i] > MAX_CLIPPING) master_buf[i] = MAX_CLIPPING;
+            if (master_buf[i] < MIN_CLIPPING) master_buf[i] = MIN_CLIPPING;
 
             // capture the master frame for the recorded sample
             if (recorder_is_recording()){
-                recorder_capture_frame(master_buf[i * 2], master_buf[i * 2 + 1]);
+                recorder_capture_frame(master_buf[i]);
             }
 
-            if (mtrn.playback_enabled) {
+            if (mtrn.playback_enabled && mtrn.state) {
                 // if the metronome is playing, but the sound has finished
                 if (mtrn.playback_ptr >= mtrn.header.data_size) {
                     //lock the metronome again
@@ -498,13 +464,11 @@ static void mixer_task_wip(void *args)
                     mtrn.playback_ptr = 0;
                 } else {
                     // otherwise, keep on playing!
-                    int16_t left_mtrn  = *(int16_t*)(mtrn.raw_data + mtrn.playback_ptr);
-                    int16_t right_mtrn = *(int16_t*)(mtrn.raw_data + mtrn.playback_ptr + 2);
+                    int16_t mtrn_audio  = *(int16_t*)(mtrn.raw_data + mtrn.playback_ptr);
 
-                    master_buf[i * 2] += left_mtrn * 0.1;
-                    master_buf[i * 2 + 1] += right_mtrn * 0.1;
+                    master_buf[i] += mtrn_audio * 0.1;
 
-                    mtrn.playback_ptr += 4;
+                    mtrn.playback_ptr += 2;
                 }
                 
             }
@@ -514,7 +478,7 @@ static void mixer_task_wip(void *args)
 
         // Write full buffer (1024 bytes)
         ESP_ERROR_CHECK(i2s_channel_write(out_channel, master_buf,
-                                          BUFF_SIZE * 2 * sizeof(int16_t),
+                                          BUFF_SIZE * sizeof(int16_t),
                                           &w_bytes,
                                           portMAX_DELAY));
         vTaskDelay(pdMS_TO_TICKS(10));

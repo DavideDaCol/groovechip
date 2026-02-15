@@ -30,8 +30,7 @@ typedef struct {
     int counter;
 
     //internal state
-    int16_t last_L;
-    int16_t last_R; 
+    int16_t last_frame;
 } bitcrusher_params_t;
 
 //distortion

@@ -3,7 +3,7 @@
 GrooveChip is an ESP-32 based sampler, an electronic musical instrument that can play back portions of sound recordings (_samples_). 
 
 Groovechip features:
-- simultaneous playback of up to 8 stereo samples (6 seconds per sample)
+- simultaneous playback of up to 8 samples (10 seconds per sample)
 - high fidelity audio output via dedicated I2S peripherals
 - 4 different playback modes: hold, oneshot, oneshot-loop, loop
 - (WIP) custom sample playback via SD

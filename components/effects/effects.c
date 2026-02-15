@@ -46,15 +46,13 @@ void init_bit_crusher(uint8_t bank_index){
         sample_effects[bank_index].bitcrusher.bit_depth = BIT_DEPTH_MAX;
         sample_effects[bank_index].bitcrusher.downsample = DOWNSAMPLE_MIN;
         sample_effects[bank_index].bitcrusher.counter = 0;
-        sample_effects[bank_index].bitcrusher.last_L = 0.0;
-        sample_effects[bank_index].bitcrusher.last_R = 0.0;
+        sample_effects[bank_index].bitcrusher.last_frame = 0.0;
     }
     master_buffer_effects.bitcrusher.enabled = false;
     master_buffer_effects.bitcrusher.bit_depth = BIT_DEPTH_MAX;
     master_buffer_effects.bitcrusher.downsample = DOWNSAMPLE_MIN;
     master_buffer_effects.bitcrusher.counter = 0;
-    master_buffer_effects.bitcrusher.last_L = 0.0;
-    master_buffer_effects.bitcrusher.last_R = 0.0;
+    master_buffer_effects.bitcrusher.last_frame = 0.0;
 }
 
 void set_bit_crusher(uint8_t bank_index, bool state){
@@ -79,8 +77,7 @@ void set_bit_crusher_bit_depth(uint8_t bank_index, uint8_t bit_depth){
         
         //reset counter values
         sample_effects[bank_index].bitcrusher.counter = 0;
-        sample_effects[bank_index].bitcrusher.last_L = 0.0;
-        sample_effects[bank_index].bitcrusher.last_R = 0.0;
+        sample_effects[bank_index].bitcrusher.last_frame = 0.0;
     }
 }
 
@@ -89,8 +86,7 @@ void set_bit_crusher_bit_depth_master_buffer(uint8_t bit_depth){
     
     //reset counter values
     master_buffer_effects.bitcrusher.counter = 0;
-    master_buffer_effects.bitcrusher.last_L = 0.0;
-    master_buffer_effects.bitcrusher.last_R = 0.0;
+    master_buffer_effects.bitcrusher.last_frame = 0.0;
 }
 
 uint8_t get_bit_crusher_bit_depth(uint8_t bank_index){
@@ -107,8 +103,7 @@ void set_bit_crusher_downsample(uint8_t bank_index, uint8_t downsample_value){
 
         //reset counter values
         sample_effects[bank_index].bitcrusher.counter = 0;
-        sample_effects[bank_index].bitcrusher.last_L = 0.0;
-        sample_effects[bank_index].bitcrusher.last_R = 0.0;
+        sample_effects[bank_index].bitcrusher.last_frame = 0.0;
     }
 }
 
@@ -117,8 +112,7 @@ void set_bit_crusher_downsample_master_buffer(uint8_t downsample_value){
 
         //reset counter values
         master_buffer_effects.bitcrusher.counter = 0;
-        master_buffer_effects.bitcrusher.last_L = 0.0;
-        master_buffer_effects.bitcrusher.last_R = 0.0;
+        master_buffer_effects.bitcrusher.last_frame = 0.0;
 }
 
 uint8_t get_bit_crusher_downsample(uint8_t bank_index){

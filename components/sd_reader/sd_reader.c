@@ -163,7 +163,7 @@ esp_err_t ld_sample(int in_bank_index, char* sample_name, sample_t** out_sample_
     //setting default values
     out_sample -> volume = 0.1f;
     out_sample -> playback_ptr = out_sample -> start_ptr;
-    out_sample -> total_frames = (out_sample -> header).data_size / 4; 
+    out_sample -> total_frames = (out_sample -> header).data_size / 2; 
 
     //assigning bitcrusher values according to the infos in the json file
     set_bit_crusher(in_bank_index, bitcrusher_enabled);

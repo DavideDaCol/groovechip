@@ -8,7 +8,7 @@
 #define RECORD_SAMPLE_RATE 16000
 #define RECORD_MAX_DURATION_SEC 10  // TODO establish the max record duration (10 sec at the moment)
 #define RECORD_MAX_FRAMES (RECORD_SAMPLE_RATE * RECORD_MAX_DURATION_SEC)
-#define RECORD_BUFFER_SIZE (RECORD_MAX_FRAMES * 2)  // Stereo
+#define RECORD_BUFFER_SIZE (RECORD_MAX_FRAMES) 
 
 // Recorder states // TODO replace with the real fsm or not?
 typedef enum {
@@ -48,7 +48,7 @@ void recorder_cancel(void);
 bool is_flash_ptr(void *p);
 // bool recorder_save_to_sd(const char *filename); // TODO use the SD defined function
 
-void recorder_capture_frame(int16_t left, int16_t right);
+void recorder_capture_frame(int16_t sample);
 
 recorder_state_t recorder_get_state(void);
 bool recorder_is_recording(void);
