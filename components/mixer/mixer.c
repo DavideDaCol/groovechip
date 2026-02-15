@@ -401,6 +401,10 @@ static void mixer_task_wip(void *args)
                 }
             }
 
+            //limiter
+            if (master_buf[i] > MAX_CLIPPING) master_buf[i] = MAX_CLIPPING;
+            if (master_buf[i] < MIN_CLIPPING) master_buf[i] = MIN_CLIPPING;
+
             // capture the master frame for the recorded sample
             if (recorder_is_recording()){
                 recorder_capture_frame(master_buf[i]);

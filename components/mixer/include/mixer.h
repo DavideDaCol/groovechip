@@ -19,6 +19,9 @@
 // Max volume
 #define VOLUME_THRESHOLD_UP 1.0f
 
+#define MAX_CLIPPING 32767
+#define MIN_CLIPPING -32768
+
 #pragma region TYPES
 
 // Type used to store the metadata of a WAV file
