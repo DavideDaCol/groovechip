@@ -94,7 +94,7 @@ void recorder_stop_recording(void) {
 
         if (target == NULL){
             ESP_LOGI(TAG_REC, "Creating new sample_t for bank %d", g_recorder.target_bank_index);
-            target = heap_caps_malloc(sizeof(sample_t), MALLOC_CAP_SPIRAM);
+            target = heap_caps_calloc(1, sizeof(sample_t), MALLOC_CAP_SPIRAM);
             if (target == NULL) {
                 ESP_LOGE(TAG_REC, "Cannot allocate sample_t structure");
                 if (g_recorder.buffer) {
@@ -113,7 +113,7 @@ void recorder_stop_recording(void) {
         // If there is already a sample bound to that bank_index 
         // and if it's not in flash memory then free it
         if (target->raw_data != NULL) {
-            printf("%hhn\n", target -> raw_data);
+            ESP_LOGE(TAG_REC, "Raw data is not NULL");
             heap_caps_free((void *)(target->raw_data));
         }
         
@@ -226,7 +226,7 @@ void recorder_fsm(){
 
     // wait for signal by the recording button to stop recording
 
-    while(xQueueReceive(fsm_queue, &msg, portMAX_DELAY) && msg.source != PAD && msg.payload != PRESS);
+    while(xQueueReceive(fsm_queue, &msg, portMAX_DELAY) && msg.source != JOYSTICK && msg.payload != PRESS);
     if (g_recorder.state != REC_RECORDING){
         ESP_LOGE(TAG_REC, "Trying to stop recording while not in REC_RECORDING state.");
         return;
