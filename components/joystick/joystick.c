@@ -92,7 +92,9 @@ void joystick_task(void *args){
         // ignore the repetitive events
         if (new_dir != last_dir && !in_dead_zone()){
             printf("[JOYSTICK DEBUG] dir changed: %d\n", new_dir);
-            send_message_to_fsm_queue(JOYSTICK, new_dir); 
+            if (new_dir != CENTER){
+                send_message_to_fsm_queue(JOYSTICK, new_dir);
+            } 
             last_dir = new_dir;
         }
 

@@ -18,6 +18,15 @@
 
 // Max volume
 #define VOLUME_THRESHOLD_UP 1.0f
+#define MASTER_VOLUME_THRESHOLD_UP 2.0f
+
+// Max metronome bpm
+#define MAX_METRONOME_BPM 210.0f
+#define MIN_MOTRONOME_BPM 40.0f
+#define BASE_METRONOME_VALUE 40.0f
+
+#define METRONOME_NORMALIZER 1.7f
+#define METRONOME_SCALE_VALUE 5.0f
 
 #define MAX_CLIPPING 32767
 #define MIN_CLIPPING -32768
@@ -98,21 +107,30 @@ void action_stop_sample(int);
 void action_restart_sample(int);
 void action_ignore(int);
 //chopping
-void set_sample_end_ptr(uint8_t, uint32_t);
-void set_sample_start_ptr(uint8_t, float);
+bool set_sample_end_ptr(uint8_t, uint32_t);
+bool set_sample_start_ptr(uint8_t, float);
 uint32_t get_sample_end_ptr(uint8_t bank_index);
 uint32_t get_sample_start_ptr(uint8_t bank_index);
+uint32_t get_sample_total_frames(uint8_t bank_index);
 
 // volume
 void set_volume(uint8_t, float);
 float get_volume(uint8_t);
+
+extern float volume_master_buffer;
+void set_master_buffer_volume(float);
+float get_master_volume();
+
 //metronome actions
 void init_metronome();
-void toggle_metronome_state(bool);
+void set_metronome_state(bool);
 void set_metronome_bpm(float);
 void set_metronome_subdiv(int);
 void set_metronome_tick();
-void toggle_metronome_playback(bool);
+void set_metronome_playback(bool);
+bool get_metronome_playback();
+bool get_metronome_state();
+float get_metronome_bpm();
 
 void create_mixer(i2s_chan_handle_t channel);
 

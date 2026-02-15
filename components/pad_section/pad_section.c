@@ -26,7 +26,7 @@ static void IRAM_ATTR gpio_isr_handler(void *arg){
 	// debounce
 	uint64_t current_time = esp_timer_get_time();
 
-	if (current_time - last_isr_time[pad_id] < 50000)
+	if (current_time - last_isr_time[pad_id] < DEBOUNCE_MS)
 	{
 		// ignore
 		return;

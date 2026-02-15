@@ -7,16 +7,65 @@
 #include "rom/ets_sys.h"
 #include <esp_log.h>
 
+char* LCD_TAG = "LCD tag";
+
 static void i2c_init();
 static void LCD_writeNibble(uint8_t nibble, uint8_t mode);
 static void LCD_writeByte(uint8_t data, uint8_t mode);
 static void LCD_pulseEnable(uint8_t nibble);
+static void LCD_setStrays();
+
 i2c_master_dev_handle_t lcd_handle;
 static QueueHandle_t lcd_queue;
+
+static char strays[4][8] = {
+    {
+        0b00010000,
+        0b00010000,
+        0b00010000,
+        0b00010000,
+        0b00010000,
+        0b00010000,
+        0b00010000,
+        0b00010000,
+    }, 
+    {
+        0b00011000,
+        0b00011000,
+        0b00011000,
+        0b00011000,
+        0b00011000,
+        0b00011000,
+        0b00011000,
+        0b00011000,
+    }, 
+    {
+        0b00011100,
+        0b00011100,
+        0b00011100,
+        0b00011100,
+        0b00011100,
+        0b00011100,
+        0b00011100,
+        0b00011100,
+    }, 
+    {
+        0b00011110,
+        0b00011110,
+        0b00011110,
+        0b00011110,
+        0b00011110,
+        0b00011110,
+        0b00011110,
+        0b00011110,
+    }
+};
 
 typedef struct {
     char first_row[17];
     char sec_row[17];
+    int full_boxes;
+    int strays_num;
 } lcd_msg_t;
 
 static void i2c_init() {
@@ -76,6 +125,10 @@ void lcd_driver_init() {
     // turning LCD display on 
     LCD_writeByte(LCD_DISPLAY_ON, LCD_COMMAND);
 
+    LCD_setStrays();
+    
+    LCD_home();
+    
     lcd_queue = xQueueCreate(10, sizeof(lcd_msg_t));
 
     BaseType_t res = xTaskCreate(lcd_task, "LCD Task", 4096, NULL, 5, NULL);
@@ -90,6 +143,7 @@ void LCD_setCursor(uint8_t col, uint8_t row) {
     uint8_t row_offsets[] = {LCD_LINEONE, LCD_LINETWO};
     LCD_writeByte(LCD_SET_DDRAM_ADDR | (col + row_offsets[row]), LCD_COMMAND);
 }
+
 
 void LCD_writeChar(char c) {
     LCD_writeByte(c, LCD_WRITE);                                        // Write data to DDRAM
@@ -131,32 +185,37 @@ static void LCD_pulseEnable(uint8_t data) {
     ets_delay_us(500);
 }
 
+static void LCD_setStrays () {
+    for (int loc = 0; loc < 4; loc++) {
+        
+        // Command to set CGRAM address. 
+        // We multiply location by 8 (using << 3) because each char takes 8 bytes.
+        LCD_writeByte(LCD_SET_CGRAM_ADDR | (loc << 3), LCD_COMMAND);
+        
+        // Write the 8 rows of the character pattern as data
+        for (int i = 0; i < 8; i++) {
+            LCD_writeByte(strays[loc][i], LCD_WRITE);
+        }
+    }
+}
 
 void lcd_task(void *args) {
-    lcd_msg_t msg_ptr; // This will hold the pointer received from queue
+    lcd_msg_t lcd_msg; // This will hold the pointer received from queue
 
     while(1) {
-        // Pass the ADDRESS of the pointer variable (&msg_ptr)
-        // FreeRTOS copies the pointer from the queue into msg_ptr
-        if (xQueueReceive(lcd_queue, &msg_ptr, portMAX_DELAY) == pdPASS) {
-            
-            // Now msg_ptr points to the malloc'd struct
-            printf("Recv msg: \n--------------\n%s\n%s\n---------------\n", msg_ptr.first_row, msg_ptr.sec_row);
-            LCD_clearScreen(); // Good practice to clear before writing new frame
-            
-            // msg_ptr.first_row[7] = '\0';
+        // Pass the ADDRESS of the pointer variable (&lcd_msg)
+        // FreeRTOS copies the pointer from the queue into lcd_msg
+        if (xQueueReceive(lcd_queue, &lcd_msg, portMAX_DELAY) == pdPASS) {
+            ESP_LOGI(LCD_TAG, "Received content to print");
+
+            LCD_clearScreen(); 
 
             LCD_setCursor(0, 0); 
-            LCD_writeStr(msg_ptr.first_row);
+            LCD_writeStr(lcd_msg.first_row);
 
             LCD_setCursor(0, 1);
-            LCD_writeStr(msg_ptr.sec_row);
-
-            
-            // IMPORTANT: Free the memory allocated in the sender
-            // free(msg_ptr);
+            LCD_writeStr(lcd_msg.sec_row);
         }
-        // vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
 
@@ -165,16 +224,35 @@ void print_single(char* in_row) {
 }
 
 void print_double (char* first_in_row, char* sec_in_row) {
+    
     // lcd_msg_t* new_msg = malloc(sizeof(lcd_msg_t));
     lcd_msg_t new_msg = {};
     
     // if (new_msg == NULL) return;
 
     // Copy the string content, not just the pointer address
-    snprintf(new_msg.first_row, 17, "%s", first_in_row);
-    snprintf(new_msg.sec_row, 17, "%s", sec_in_row); // Blank line
+    snprintf(new_msg.first_row, MAX_SIZE, "%s", first_in_row);
+    snprintf(new_msg.sec_row, MAX_SIZE, "%s", sec_in_row); // Blank line
+    new_msg.full_boxes = -1;
+    new_msg.strays_num = -1;
 
     if (xQueueSend(lcd_queue, &new_msg, 0) != pdPASS){
         // free(new_msg);
+        ESP_LOGE(LCD_TAG, "Error in sending the message to the queue");
     }
 }
+
+// void print_line (char* in_first_row, int in_full_boxes, int in_box_size) {
+//     ESP_LOGI(LCD_TAG, "Printing line");
+
+//     lcd_msg_t new_msg = {};
+
+//     snprintf(new_msg.first_row, MAX_SIZE, "%s", in_first_row);
+//     new_msg.full_boxes = in_full_boxes;
+//     new_msg.strays_num = in_box_size;
+
+//     if (xQueueSend(lcd_queue, &new_msg, 0) != pdPASS){
+//         // free(new_msg);
+//         ESP_LOGE(LCD_TAG, "Error in sending the message to the queue");
+//     }
+// }

@@ -21,6 +21,8 @@
 #include "driver/gpio.h"
 #include "esp_timer.h"
 
+#define DEBOUNCE_MS 30000
+
 // pins
 #define GPIO_BUTTON_1     4
 #define GPIO_BUTTON_2     12

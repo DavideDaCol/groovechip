@@ -24,6 +24,9 @@ sample_t* sample_bank[SAMPLE_NUM];
 //metronome object
 static metronome mtrn;
 
+// volume of master buffer
+float volume = 0.5f;
+
 #pragma region SAMPLE_ACTION
 
 void action_start_or_stop_sample(int bank_index){
@@ -187,6 +190,20 @@ float get_volume(uint8_t bank_index){
     else return 0.0;
 }
 
+void set_master_buffer_volume(float new_volume){
+    volume = new_volume;
+    if (volume > MASTER_VOLUME_THRESHOLD_UP) {
+        volume = MASTER_VOLUME_THRESHOLD_UP;
+    }
+    if (volume < 0) {
+        volume = 0;
+    }
+}
+
+float get_master_volume(){
+    return volume;
+}
+
 #pragma endregion
 
 #pragma region METRONOME
@@ -203,13 +220,29 @@ void init_metronome(){
     mtrn.raw_data = metronome_clean_wav + WAV_HDR_SIZE;
 }
 
-void toggle_metronome_state(bool new_state){
+void set_metronome_state(bool new_state){
     mtrn.state = new_state;
 }
+
+bool get_metronome_state(){
+    return mtrn.state;
+}
+
 void set_metronome_bpm(float new_bpm){
     mtrn.bpm = new_bpm;
+    if (mtrn.bpm > MAX_METRONOME_BPM){
+        mtrn.bpm = MAX_METRONOME_BPM;
+    }
+    if (mtrn.bpm <= MIN_MOTRONOME_BPM){
+        mtrn.bpm = MIN_MOTRONOME_BPM;
+    }
     set_metronome_tick();
 }
+
+float get_metronome_bpm(){
+    return mtrn.bpm;
+}
+
 void set_metronome_subdiv(int new_subdiv){
     mtrn.subdivisions = new_subdiv;
     set_metronome_tick();
@@ -220,8 +253,12 @@ void set_metronome_tick(){
     mtrn.samples_per_subdivision = new_sample_per_subdiv;
 }
 
-void toggle_metronome_playback(bool new_state){
+void set_metronome_playback(bool new_state){
     mtrn.playback_enabled = new_state;
+}
+
+bool get_metronome_playback(){
+    return mtrn.playback_enabled;
 }
 
 #pragma endregion
@@ -236,18 +273,24 @@ uint32_t get_sample_start_ptr(uint8_t bank_index){
     return sample_bank[bank_index]->start_ptr;
 }
 
-void set_sample_end_ptr(uint8_t bank_index, uint32_t new_end_ptr){
+bool set_sample_end_ptr(uint8_t bank_index, uint32_t new_end_ptr){
     sample_t *smp = sample_bank[bank_index];
     if(new_end_ptr > smp->start_ptr && new_end_ptr < smp->total_frames){
-        smp->end_ptr = new_end_ptr; // TODO move this out of here. We before changing this parameter, the sample must be stopped.
+        smp->end_ptr = new_end_ptr; 
+        return true;
     }
+    else return false;
 }
-void set_sample_start_ptr(uint8_t bank_index, float new_start_ptr){
+bool set_sample_start_ptr(uint8_t bank_index, float new_start_ptr){
     sample_t *smp = sample_bank[bank_index];
     if(new_start_ptr >= 0.0 && new_start_ptr < smp->end_ptr){
         smp->start_ptr = new_start_ptr;
-        smp->playback_ptr = new_start_ptr; // TODO move this out of here. We before changing this parameter, the sample must be stopped.
+        return true;
     }
+    else return false;
+}
+uint32_t get_sample_total_frames(uint8_t bank_index){
+    return sample_bank[bank_index]->total_frames;
 }
 #pragma endregion
 
@@ -343,14 +386,14 @@ static void mixer_task_wip(void *args)
     // for the metronome: counts how many samples have been played since the last tick
     int16_t sample_lookahead = 0;
 
-     while (1) {
+    while (1) {
         for (int i = 0; i < BUFF_SIZE; i++) {
 
             sample_lookahead += 1;
 
             if (sample_lookahead >= mtrn.samples_per_subdivision) {
                 // unlock_metronome
-                toggle_metronome_playback(true);
+                set_metronome_playback(true);
                 //reset the metronome audio, in case the sample is too long for each tick
                 mtrn.playback_ptr = 0;
                 sample_lookahead = 0;
@@ -401,6 +444,9 @@ static void mixer_task_wip(void *args)
                 }
             }
 
+            // apply volume to master buffer
+            master_buf[i] *= (volume * 2);
+
             //limiter
             if (master_buf[i] > MAX_CLIPPING) master_buf[i] = MAX_CLIPPING;
             if (master_buf[i] < MIN_CLIPPING) master_buf[i] = MIN_CLIPPING;
@@ -414,7 +460,7 @@ static void mixer_task_wip(void *args)
                 // if the metronome is playing, but the sound has finished
                 if (mtrn.playback_ptr >= mtrn.header.data_size) {
                     //lock the metronome again
-                    toggle_metronome_playback(false);
+                    set_metronome_playback(false);
                     mtrn.playback_ptr = 0;
                 } else {
                     // otherwise, keep on playing!
