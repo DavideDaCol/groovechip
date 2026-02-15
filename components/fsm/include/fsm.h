@@ -211,4 +211,6 @@ extern menu_t* menu_navigation[];
 // extern const menu_pair_t PREV_MENU_GENERAL[];
 // extern const menu_pair_t PREV_MENU_PAD[];
 
+extern char* sample_names_bank[SAMPLE_NUM];
+
 #endif
