@@ -253,6 +253,12 @@ bool get_metronome_state(){
 
 void set_metronome_bpm(float new_bpm){
     mtrn.bpm = new_bpm;
+    if (mtrn.bpm > MAX_METRONOME_BPM){
+        mtrn.bpm = MAX_METRONOME_BPM;
+    }
+    if (mtrn.bpm <= MIN_MOTRONOME_BPM){
+        mtrn.bpm = MIN_MOTRONOME_BPM;
+    }
     set_metronome_tick();
 }
 
@@ -470,8 +476,8 @@ static void mixer_task_wip(void *args)
             apply_distortion(master_buf_d_params, &master_buf[i * 2], &master_buf[i * 2 + 1]);
 
             // apply volume to master buffer
-            master_buf[i * 2] *= (volume + 1);
-            master_buf[i * 2 + 1] *= (volume + 1); 
+            master_buf[i * 2] *= (volume * 2);
+            master_buf[i * 2 + 1] *= (volume * 2);
 
             // capture the master frame for the recorded sample
             if (recorder_is_recording()){

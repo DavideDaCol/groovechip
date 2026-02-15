@@ -21,7 +21,12 @@
 #define MASTER_VOLUME_THRESHOLD_UP 2.0f
 
 // Max metronome bpm
-#define MAX_METRONOME_BPM 240.0f
+#define MAX_METRONOME_BPM 210.0f
+#define MIN_MOTRONOME_BPM 40.0f
+#define BASE_METRONOME_VALUE 40.0f
+
+#define METRONOME_NORMALIZER 1.7f
+#define METRONOME_SCALE_VALUE 5.0f
 
 #pragma region TYPES
 

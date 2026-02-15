@@ -456,8 +456,8 @@ void get_second_line(char* out){
                 else sprintf(out, "Off");
                 break;
             case BPM:
-                float mtrn_bpm = get_metronome_bpm();
-                sprintf(out, "%f", mtrn_bpm);
+                int mtrn_bpm = get_metronome_bpm();
+                sprintf(out, "%d", mtrn_bpm);
                 break;
             default:
                 break;
@@ -841,7 +841,7 @@ void change_master_vol(int pot_value){
 void change_pitch(int pot_value){
     if (pressed_button == NOT_DEFINED) return;
 
-    int new_pitch_factor = round(pot_value * PITCH_NORMALIZER_VALUE / PITCH_SCALE_VALUE) * PITCH_SCALE_VALUE;
+    float new_pitch_factor = round(pot_value * PITCH_NORMALIZER_VALUE / PITCH_SCALE_VALUE) * PITCH_SCALE_VALUE;
 
     uint8_t idx = get_sample_bank_index(pressed_button);
     screen_has_to_change = (new_pitch_factor != get_pitch_factor(idx));
@@ -1057,7 +1057,7 @@ void change_metronome_mute(int pot_value){
 
 // Function that changes the metronome bpm value
 void change_metronome_bpm(int pot_value){
-    float new_bpm = fmod((float)pot_value * 2.4 + MAX_METRONOME_BPM, MAX_METRONOME_BPM);
+    float new_bpm = (round((float)pot_value * METRONOME_NORMALIZER / METRONOME_SCALE_VALUE) * METRONOME_SCALE_VALUE) + BASE_METRONOME_VALUE;
     screen_has_to_change = get_metronome_bpm() != new_bpm;
 
     set_metronome_bpm(new_bpm);
