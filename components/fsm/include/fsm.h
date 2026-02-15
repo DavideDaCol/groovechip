@@ -89,6 +89,8 @@ void change_master_distortion_threshold(int pot_value);
 void change_metronome(int pot_value);
 void change_metronome_mute(int pot_value);
 void change_metronome_bpm(int pot_value);
+void change_chopping_start(int pot_value);
+void change_chopping_end(int pot_value);
 pb_mode_t next_mode(int pot_value);
 void sample_load();
 void send_message_to_fsm_queue(message_source_t source, int payload);

@@ -309,6 +309,9 @@ void set_sample_start_ptr(uint8_t bank_index, float new_start_ptr){
         smp->playback_ptr = new_start_ptr; // TODO move this out of here. We before changing this parameter, the sample must be stopped.
     }
 }
+uint32_t get_sample_total_frames(uint8_t bank_index){
+    return sample_bank[bank_index]->total_frames;
+}
 #pragma endregion
 
 void print_wav_header(const wav_header_t *h)
