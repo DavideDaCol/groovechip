@@ -437,8 +437,8 @@ static esp_err_t get_json(char *filename, bool* bitcrusher_enabled, uint8_t* dow
     char* distortion_str = "distortion";
     char* threshold_str = "threshold";
     char* gain_str = "gain";
-    char* start_ptr_str = "start pointer";
-    char* end_ptr_str = "end pointer";
+    char* start_ptr_str = "start_pointer";
+    char* end_ptr_str = "end_pointer";
     char* enabled_str = "enabled";
 
     //opening the json file
