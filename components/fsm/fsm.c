@@ -13,8 +13,17 @@ pb_mode_t mode = ONESHOT;
 
 static bool screen_has_to_change = false;
 
-void get_second_line(char *);
 void get_sample_load_second_line(char*);
+void get_volume_second_line(char*);
+void get_gen_menu_second_line(char* out);
+void get_btn_menu_or_btn_effects_second_line(char* out);
+void get_gen_settings_second_line(char* out);
+void get_btn_settings_second_line(char* out);
+void get_metronome_second_line(char* out);
+void get_bitcrusher_second_line(char* out);
+void get_distortion_second_line(char* out);
+void get_pitch_second_line(char* out);
+void get_chopping_second_line(char* out);
 
 const char* TAG_FSM = "FSM";
 
@@ -29,13 +38,13 @@ GENERAL MENU
 opt_interactions_t gen_handlers[] = {
     {
         .first_line = "Settings",
-        .second_line = get_second_line,
+        .second_line = get_gen_menu_second_line,
         .js_right_action = goto_gen_settings,
         .pt_action = sink
     }, 
     {
         .first_line = "Effects",
-        .second_line = get_second_line,
+        .second_line = get_gen_menu_second_line,
         .js_right_action = goto_gen_effects,
         .pt_action = sink
     }
@@ -56,31 +65,31 @@ BUTTON SPECIFIC MENU
 opt_interactions_t btn_handlers[] = {
     {
         .first_line = "Settings",
-        .second_line = get_second_line,
+        .second_line = get_btn_menu_or_btn_effects_second_line,
         .js_right_action = goto_btn_settings,
         .pt_action = sink
     },
     {
         .first_line = "Effects",
-        .second_line = get_second_line,
+        .second_line = get_btn_menu_or_btn_effects_second_line,
         .js_right_action = goto_btn_effects,
         .pt_action = sink
     }, 
     {
         .first_line = "Select sample",
-        .second_line = get_second_line,
+        .second_line = get_btn_menu_or_btn_effects_second_line,
         .js_right_action = goto_sample_load,
         .pt_action = sink
     }, 
     {
         .first_line = "Save changes",
-        .second_line = get_second_line,
+        .second_line = get_btn_menu_or_btn_effects_second_line,
         .js_right_action = save, //TODO
         .pt_action = sink
     },
     {
         .first_line = "Chopping",
-        .second_line = get_second_line,
+        .second_line = get_btn_menu_or_btn_effects_second_line,
         .js_right_action = goto_chopping,
         .pt_action = sink
     }
@@ -102,13 +111,13 @@ SETTINGS MENU (structure is the same whether it's related to a specific button o
 opt_interactions_t gen_settings_handlers[] = {
     {
         .first_line = "Volume",
-        .second_line = get_second_line,
+        .second_line = get_volume_second_line,
         .js_right_action = sink,
         .pt_action = change_master_vol,
     },
     {
         .first_line = "Metronome",
-        .second_line = get_second_line,
+        .second_line = get_gen_settings_second_line,
         .js_right_action = goto_metronome,
         .pt_action = sink
     }
@@ -124,13 +133,13 @@ menu_t gen_settings = {
 opt_interactions_t btn_settings_handlers[] = {
     {
         .first_line = "Mode",
-        .second_line = get_second_line,
+        .second_line = get_btn_settings_second_line,
         .js_right_action = sink,
         .pt_action = rotate_mode,
     },
     {
         .first_line = "Volume",
-        .second_line = get_second_line,
+        .second_line = get_volume_second_line,
         .js_right_action = sink, 
         .pt_action = change_vol,
     }
@@ -151,19 +160,19 @@ GEN EFFECTS MENU (structure is the same whether it's related to a specific butto
 opt_interactions_t btn_eff_handlers[] = {
     {
         .first_line = "Bitcrusher",
-        .second_line = get_second_line,
+        .second_line = get_btn_menu_or_btn_effects_second_line,
         .js_right_action = goto_bitcrusher,
         .pt_action = sink,
     },
     {
         .first_line = "Pitch",
-        .second_line = get_second_line,
+        .second_line = get_btn_menu_or_btn_effects_second_line,
         .js_right_action = goto_pitch,
         .pt_action = sink,
     },
     {
         .first_line = "Distortion",
-        .second_line = get_second_line,
+        .second_line = get_btn_menu_or_btn_effects_second_line,
         .js_right_action = goto_distortion,
         .pt_action = sink,
     }
@@ -178,13 +187,13 @@ menu_t btn_effects = {
 opt_interactions_t gen_eff_handlers[] = {
     {
         .first_line = "Bitcrusher",
-        .second_line = get_second_line,
+        .second_line = get_gen_menu_second_line,
         .js_right_action = goto_bitcrusher,
         .pt_action = sink,
     },
     {
         .first_line = "Distortion",
-        .second_line = get_second_line,
+        .second_line = get_gen_menu_second_line,
         .js_right_action = goto_distortion,
         .pt_action = sink,
     }
@@ -206,19 +215,19 @@ BITCRUSHER MENU (structure is the same whether it's related to a specific button
 opt_interactions_t bit_crusher_handlers[] = {
     {
         .first_line = "Bitcrusher: ",
-        .second_line = get_second_line,
+        .second_line = get_bitcrusher_second_line,
         .js_right_action = sink,
         .pt_action = change_bit_crusher,
     },
     {
         .first_line = "Bit depth: ",
-        .second_line = get_second_line,
+        .second_line = get_bitcrusher_second_line,
         .js_right_action = sink, 
         .pt_action = change_bit_depth,
     },
     {
         .first_line = "Downsample: ",
-        .second_line = get_second_line,
+        .second_line = get_bitcrusher_second_line,
         .js_right_action = sink,
         .pt_action = change_downsample,
     }
@@ -240,7 +249,7 @@ PITCH MENU (structure is the same whether it's related to a specific button or i
 opt_interactions_t pitch_handlers[] = {
     {
         .first_line = "Pitch: ",
-        .second_line = get_second_line,
+        .second_line = get_pitch_second_line,
         .js_right_action = sink,
         .pt_action = change_pitch,
     }
@@ -262,19 +271,19 @@ DISTORTION MENU (structure is the same whether it's related to a specific button
 opt_interactions_t distortion_handlers[] = {
     {
         .first_line = "Distortion: ",
-        .second_line = get_second_line,
+        .second_line = get_distortion_second_line,
         .js_right_action = sink,
         .pt_action = change_distortion,
     },
     {
         .first_line = "Gain: ",
-        .second_line = get_second_line,
+        .second_line = get_distortion_second_line,
         .js_right_action = sink, 
         .pt_action = change_distortion_gain,
     },
     {
         .first_line = "Threshold: ",
-        .second_line = get_second_line,
+        .second_line = get_distortion_second_line,
         .js_right_action = sink,
         .pt_action = change_distortion_threshold,
     }
@@ -291,13 +300,13 @@ CHOPPING MENU
 opt_interactions_t chopping_handlers[] = {
     {
         .first_line = "Start: ",
-        .second_line = get_second_line,
+        .second_line = get_chopping_second_line,
         .js_right_action = sink,
         .pt_action = change_chopping_start,
     },
     {
         .first_line = "End: ",
-        .second_line = get_second_line,
+        .second_line = get_chopping_second_line,
         .js_right_action = sink,
         .pt_action = change_chopping_end, //TODO
     }
@@ -318,19 +327,13 @@ METRONOME MENU
 opt_interactions_t metronome_handlers[] = {
     {
         .first_line = "Metronome: ",
-        .second_line = get_second_line,
+        .second_line = get_metronome_second_line,
         .js_right_action = sink,
         .pt_action = change_metronome,
     },
     {
-        .first_line = "Mute: ",
-        .second_line = get_second_line,
-        .js_right_action = sink,
-        .pt_action = change_metronome_mute,
-    },
-    {
         .first_line = "Bpm: ",
-        .second_line = get_second_line,
+        .second_line = get_metronome_second_line,
         .js_right_action = sink,
         .pt_action = change_metronome_bpm,
     },
@@ -391,170 +394,136 @@ void clear_stack(){
     stack_index = 0;
 }
 
-void get_second_line(char* out){
-    sprintf(out, " "); //reset string
+void get_gen_menu_second_line(char* out){
+    sprintf(out, "General");
+}
+void get_btn_menu_or_btn_effects_second_line(char* out){
     uint8_t bank_index = get_sample_bank_index(pressed_button);
     uint8_t pad_num = get_pad_num(pressed_button);
 
-    printf("PressedButton: %u\n", pressed_button);
-    printf("Bank index: %u\n", bank_index);
-    switch (curr_menu)
-    {
-    case GEN_MENU: //general case
-        sprintf(out, "General");
-        break;
-    case BTN_MENU:
-    case BTN_EFFECTS:
-        if(pad_num != PAD_NUM_NOT_DEFINED){
-            sprintf(out, "Pad %u", pad_num); //button is presset
-        }
-        else sprintf(out, "General"); //general menu
-        break;
+    sprintf(out, "Pad %u", pad_num); //button is presset
+}
+void get_gen_settings_second_line(char* out){
+    sprintf(out, "General");
+}
+void get_btn_settings_second_line(char* out){
+    sprintf(out, " "); //reset string
+    uint8_t bank_index = get_sample_bank_index(pressed_button);
+    if(bank_index == NOT_DEFINED) return;
 
-    case GEN_SETTINGS: 
-        switch (menu_navigation[curr_menu] -> curr_index)
-        {
-        case GEN_VOLUME:
-            int volume = get_master_volume() * 100;
-            sprintf(out, "%d", volume);
-            break;        
-        default:
-            sprintf(out, "General");
-            break;
-        }
-        break;
-    case BTN_SETTINGS:
-        if(bank_index == NOT_DEFINED) break;
-
-        printf("Current index: %d\n", menu_navigation[curr_menu]->curr_index);
-        switch (menu_navigation[curr_menu]->curr_index)
-        {
-        case MODE:
-            mode_t curr_mode = get_playback_mode(bank_index);
-            get_mode_stringify(curr_mode, out);
-            break;
-        case SAMPLE_VOLUME:
-            int volume = get_volume(bank_index) * 100;
-            sprintf(out, "%d", volume);
-            break;
-        default:
-            break;
-        }
-        break;
-    case METRONOME:
-            switch (menu_navigation[curr_menu] -> curr_index)
-            {
-            case ENABLE_MTRN:
-                if(get_metronome_state()){
-                    sprintf(out, "On");
-                }
-                else sprintf(out, "Off");
-                break;
-            case MUTE_MTRN:
-                if(!get_metronome_playback()){
-                    sprintf(out, "On");
-                }
-                else sprintf(out, "Off");
-                break;
-            case BPM:
-                int mtrn_bpm = get_metronome_bpm();
-                sprintf(out, "%d", mtrn_bpm);
-                break;
-            default:
-                break;
-            }
-            break;  
-    // single effects cases
-    case BITCRUSHER:
-        uint8_t value;
-        switch (menu_navigation[curr_menu]->curr_index)
-        {
-        // retrieve current value set res
-        case ENABLED_BC:
-            if((pressed_button != NOT_DEFINED && get_bit_crusher_state(bank_index))
-            || (pressed_button == NOT_DEFINED && get_master_bit_crusher_enable())){
+    mode_t curr_mode = get_playback_mode(bank_index);
+    get_mode_stringify(curr_mode, out);
+}
+void get_metronome_second_line(char* out){
+    switch (menu_navigation[curr_menu] -> curr_index){
+        case ENABLE_MTRN:
+            if(get_metronome_state()){
                 sprintf(out, "On");
             }
-            else sprintf(out, "Off");
-            break;
-
-        case BIT_DEPTH:
-            if (pressed_button != NOT_DEFINED){
-                value = get_bit_crusher_bit_depth(bank_index);
-            } else {
-                value = get_bit_crusher_bit_depth_master_buffer();
+            else {
+                sprintf(out, "Off");
             }
-            printf("BD: %u", value);
-            sprintf(out, "%u", value);
             break;
-
-        case DOWNSAMPLE:
-            if (pressed_button != NOT_DEFINED){
-                value = get_bit_crusher_downsample(bank_index);
-            } else {
-                value = get_bit_crusher_downsample_master_buffer();
-            }
-            printf("DS: %u", value);
-            sprintf(out, "%u", value);
-            break;
-            
-        default:
-            break;
-        }
-        break;
-    case DISTORTION:
-        if(bank_index == NOT_DEFINED) break;
-
-        switch (menu_navigation[curr_menu]->curr_index)
-        {
-        case ENABLED_D:
-            if((pressed_button != NOT_DEFINED && get_distortion_state(bank_index))
-            || (pressed_button == NOT_DEFINED && get_master_distortion_enable())){
-                sprintf(out, "On");
-            }
-            else sprintf(out, "Off");
-            break;
-
-        case GAIN:
-            float gain = get_distortion_gain_master_buffer();
-            if (pressed_button != NOT_DEFINED){
-                gain = get_distortion_gain(bank_index);
-            }
-            sprintf(out, "%.2f", gain);
-            break;
-
-        case THRESHOLD:
-            int16_t threshold = get_distortion_threshold_master_buffer();
-            if (pressed_button != NOT_DEFINED){
-                get_distortion_threshold(bank_index);
-            }
-            sprintf(out, "%d", threshold);
-            break;
-
-        default:
-            break;
-        }
-        break;
-    case PITCH:
-        // only one parameter
-        float factor = get_pitch_factor(bank_index);
-        sprintf(out, "%.2f", factor);
-        break;
-    case CHOPPING:
-        if(bank_index == NOT_DEFINED) break;
-        switch (menu_navigation[curr_menu]->curr_index)
-        {
-        case START:
-            uint32_t start_ptr = get_sample_start_ptr(bank_index);
-            sprintf(out, "%ld", start_ptr);
-            break;
-        case END:
-            uint32_t end_ptr = get_sample_end_ptr(bank_index);
-            sprintf(out, "%ld", end_ptr);
+        case BPM:
+            int mtrn_bpm = get_metronome_bpm();
+            sprintf(out, "%d", mtrn_bpm);
             break;
         default:
             break;
         }
+}
+void get_bitcrusher_second_line(char* out){
+    sprintf(out, " "); //reset string
+    uint8_t bank_index = get_sample_bank_index(pressed_button);
+    uint8_t value;
+    switch (menu_navigation[curr_menu]->curr_index){
+    // retrieve current value set res
+    case ENABLED_BC:
+        if((pressed_button != NOT_DEFINED && get_bit_crusher_state(bank_index))
+        || (pressed_button == NOT_DEFINED && get_master_bit_crusher_enable())){
+            sprintf(out, "On");
+        }
+        else {
+            sprintf(out, "Off");
+        }
+        break;
+    case BIT_DEPTH:
+        if (pressed_button != NOT_DEFINED){
+            value = get_bit_crusher_bit_depth(bank_index);
+        } else {
+            value = get_bit_crusher_bit_depth_master_buffer();
+        }
+        printf("BD: %u", value);
+        sprintf(out, "%u", value);
+        break;
+    case DOWNSAMPLE:
+        if (pressed_button != NOT_DEFINED){
+            value = get_bit_crusher_downsample(bank_index);
+        } else {
+            value = get_bit_crusher_downsample_master_buffer();
+        }
+        printf("DS: %u", value);
+        sprintf(out, "%u", value);
+        break;
+    default:
+        break;
+    }
+}
+void get_distortion_second_line(char* out){
+    sprintf(out, " "); //reset string
+    uint8_t bank_index = get_sample_bank_index(pressed_button);
+
+    if(bank_index == NOT_DEFINED) return;
+
+    switch (menu_navigation[curr_menu]->curr_index){
+    case ENABLED_D:
+        if((pressed_button != NOT_DEFINED && get_distortion_state(bank_index))
+        || (pressed_button == NOT_DEFINED && get_master_distortion_enable())){
+            sprintf(out, "On");
+        }
+        else {
+            sprintf(out, "Off");
+        }
+        break;
+
+    case GAIN:
+        float gain = get_distortion_gain_master_buffer();
+        if (pressed_button != NOT_DEFINED){
+            gain = get_distortion_gain(bank_index);
+        }
+        sprintf(out, "%.2f", gain);
+        break;
+    case THRESHOLD:
+        int16_t threshold = get_distortion_threshold_master_buffer();
+        if (pressed_button != NOT_DEFINED){
+            get_distortion_threshold(bank_index);
+        }
+        sprintf(out, "%d", threshold);
+        break;
+    default:
+        break;
+    }
+}
+void get_pitch_second_line(char* out){
+    uint8_t bank_index = get_sample_bank_index(pressed_button);
+
+    float factor = get_pitch_factor(bank_index);
+    sprintf(out, "%.2f", factor);
+}
+
+void get_chopping_second_line(char* out){
+    sprintf(out, " "); //reset string
+    uint8_t bank_index = get_sample_bank_index(pressed_button);
+
+    if(bank_index == NOT_DEFINED) return;
+    switch (menu_navigation[curr_menu]->curr_index){
+    case START:
+        uint32_t start_ptr = get_sample_start_ptr(bank_index);
+        sprintf(out, "%ld", start_ptr);
+        break;
+    case END:
+        uint32_t end_ptr = get_sample_end_ptr(bank_index);
+        sprintf(out, "%ld", end_ptr);
         break;
     default:
         break;
@@ -570,6 +539,27 @@ void get_sample_load_second_line(char* out)
         snprintf(out, 16, "%s", sample_names[index]);
     }
 }
+
+void get_volume_second_line(char* out) {
+    float volume = get_master_volume();
+    if (pressed_button != NOT_DEFINED){
+        volume = get_volume(get_sample_bank_index(pressed_button));
+    }
+
+    //float volume = get_volume(get_sample_bank_index(pressed_button));
+    //5 units of volume = 4 strays
+    volume *= 80;
+
+    int i = 0;
+    while (volume >= 5) {
+        out[i] = BLACK_BOX;
+        volume -=5;
+        i++;
+    }
+    out[i] = round(volume) - 1;
+    out[i + 1] = '\0';
+}
+
 
 menu_t sample_load_menu = {};
 opt_interactions_t* sample_load_actions = NULL;
@@ -1045,15 +1035,6 @@ void change_metronome(int pot_value){
     screen_has_to_change = get_metronome_state() != new_state;
 
     set_metronome_state(new_state);
-}
-
-// Function that changes the metronome mute value
-void change_metronome_mute(int pot_value){
-
-    bool new_playback_satate = pot_value > 50;
-    screen_has_to_change = get_metronome_playback() != new_playback_satate;
-
-    set_metronome_playback(new_playback_satate);
 }
 
 // Function that changes the metronome bpm value

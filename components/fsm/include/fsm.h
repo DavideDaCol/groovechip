@@ -27,7 +27,7 @@
 #define PITCH_NUM_OPT 1
 #define DISTORTION_NUM_OPT 3
 #define CHOPPING_NUM_OPT 2
-#define METRONOME_NUM_OPT 3
+#define METRONOME_NUM_OPT 2
 #define PITCH_SCALE_VALUE 0.25f
 #define THRESHOLD_SCALE_VALUE 1000
 #define VOLUME_SCALE_VALUE 0.05f
@@ -140,7 +140,6 @@ typedef enum{
 
 typedef enum {
     ENABLE_MTRN,
-    MUTE_MTRN,
     BPM,
 } metronome_menu_t;
 
