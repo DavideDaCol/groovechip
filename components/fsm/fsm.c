@@ -13,6 +13,7 @@ pb_mode_t mode = ONESHOT;
 
 void get_second_line(char *);
 void get_sample_load_second_line(char*);
+void get_volume_second_line(char*);
 
 const char* TAG_FSM = "FSM";
 
@@ -100,7 +101,7 @@ SETTINGS MENU (structure is the same whether it's related to a specific button o
 opt_interactions_t gen_settings_handlers[] = {
     {
         .first_line = "Volume",
-        .second_line = get_second_line,
+        .second_line = get_volume_second_line,
         .js_right_action = sink,
         // .js_right_action = change_master_vol
         .pt_action = sink
@@ -129,7 +130,7 @@ opt_interactions_t btn_settings_handlers[] = {
     },
     {
         .first_line = "Volume",
-        .second_line = get_second_line,
+        .second_line = get_volume_second_line,
         .js_right_action = sink, 
         .pt_action = change_vol,
     }
@@ -467,6 +468,24 @@ void get_sample_load_second_line(char* out)
         snprintf(out, 16, "%s", sample_names[index]);
     }
 }
+
+void get_volume_second_line(char* out) {
+    // float volume = (pressed_button != NOT_DEFINED)? get_volume(get_sample_bank_index(pressed_button)): ();
+
+    float volume = get_volume(get_sample_bank_index(pressed_button));
+    //5 units of volume = 4 strays
+    volume *= 80;
+
+    int i = 0;
+    while (volume >= 5) {
+        out[i] = BLACK_BOX;
+        volume -=5;
+        i++;
+    }
+    out[i] = round(volume) - 1;
+    out[i + 1] = '\0';
+}
+
 
 menu_t sample_load_menu = {};
 opt_interactions_t* sample_load_actions = NULL;

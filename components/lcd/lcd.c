@@ -214,21 +214,7 @@ void lcd_task(void *args) {
             LCD_writeStr(lcd_msg.first_row);
 
             LCD_setCursor(0, 1);
-            if (lcd_msg.full_boxes < 0) {
-
-                LCD_writeStr(lcd_msg.sec_row);
-
-            } else if (lcd_msg.full_boxes >= 0 && lcd_msg.full_boxes <= 16 
-                    && lcd_msg.strays_num >= 1 && lcd_msg.strays_num <= 4){
-
-                LCD_setCursor(0, 1);
-                for (int i = 0; i < lcd_msg.full_boxes; i++) {
-                    LCD_writeByte(BLACK_BOX, LCD_WRITE);
-                }
-
-                LCD_writeChar(lcd_msg.strays_num - 1);
-                
-            }
+            LCD_writeStr(lcd_msg.sec_row);
         }
     }
 }
