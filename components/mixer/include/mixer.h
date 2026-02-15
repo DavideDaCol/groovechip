@@ -108,6 +108,7 @@ void set_sample_end_ptr(uint8_t, uint32_t);
 void set_sample_start_ptr(uint8_t, float);
 uint32_t get_sample_end_ptr(uint8_t bank_index);
 uint32_t get_sample_start_ptr(uint8_t bank_index);
+uint32_t get_sample_total_frames(uint8_t bank_index);
 
 // volume
 void set_volume(uint8_t, float);

@@ -294,16 +294,17 @@ opt_interactions_t chopping_handlers[] = {
         .first_line = "Start: ",
         .second_line = get_second_line,
         .js_right_action = sink,
-        .pt_action = sink, //TODO
+        .pt_action = change_chopping_start,
     },
     {
         .first_line = "End: ",
         .second_line = get_second_line,
         .js_right_action = sink,
-        .pt_action = sink, //TODO
+        .pt_action = change_chopping_end, //TODO
     }
 };
-
+void change_chopping_start();
+void change_chopping_end();
 menu_t chopping_menu = {
     .curr_index = 0,
     .max_size = CHOPPING_NUM_OPT,
@@ -1080,6 +1081,22 @@ void change_metronome_bpm(int pot_value){
     screen_has_to_change = get_metronome_bpm() != new_bpm;
 
     set_metronome_bpm(new_bpm);
+}
+
+void change_chopping_start(int pot_value){
+    const uint8_t idx = get_sample_bank_index(pressed_button);
+    int16_t new_start = pot_value * (((float)get_sample_total_frames(idx)/GRVCHP_SAMPLE_FREQ) / 100.0) * 1000.0;
+    screen_has_to_change = get_sample_start_ptr(idx) != new_start;
+
+    set_sample_start_ptr(idx, (float)new_start);
+
+}
+void change_chopping_end(int pot_value){
+    const uint8_t idx = get_sample_bank_index(pressed_button);
+    int16_t new_end = pot_value * (((float)get_sample_total_frames(idx)/GRVCHP_SAMPLE_FREQ) / 100.0) * 1000.0;
+    screen_has_to_change = get_sample_end_ptr(idx) != new_end;
+
+    set_sample_end_ptr(idx, (float)new_end);
 }
 
 #pragma endregion
