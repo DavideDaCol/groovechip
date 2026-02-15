@@ -299,7 +299,7 @@ uint32_t get_sample_start_ptr(uint8_t bank_index){
 void set_sample_end_ptr(uint8_t bank_index, uint32_t new_end_ptr){
     sample_t *smp = sample_bank[bank_index];
     if(new_end_ptr > smp->start_ptr && new_end_ptr < smp->total_frames){
-        smp->end_ptr = new_end_ptr; // TODO move this out of here. We before changing this parameter, the sample must be stopped.
+        smp->end_ptr = new_end_ptr; 
     }
 }
 void set_sample_start_ptr(uint8_t bank_index, float new_start_ptr){
