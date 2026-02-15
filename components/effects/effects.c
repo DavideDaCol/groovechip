@@ -2,18 +2,25 @@
 #include "mixer.h"
 
 static effects_t sample_effects[SAMPLE_NUM];
+effects_t master_buffer_effects;
 
 effects_t* get_sample_effect(uint8_t bank_index){
     if(bank_index < SAMPLE_NUM)
         return &sample_effects[bank_index];
     else return NULL;
 }
+
+effects_t* get_master_buffer_effects(){
+    return &master_buffer_effects;
+}
+
 #pragma region PITCH
 //=========================PITCH============================
 void init_pitch(uint8_t bank_index){
     if(bank_index < SAMPLE_NUM){
         sample_effects[bank_index].pitch.pitch_factor = 1.0;
     }
+    master_buffer_effects.pitch.pitch_factor = 1.0;
 }
 
 void set_pitch_factor(uint8_t bank_index, float pitch_factor){
@@ -42,14 +49,28 @@ void init_bit_crusher(uint8_t bank_index){
         sample_effects[bank_index].bitcrusher.last_L = 0.0;
         sample_effects[bank_index].bitcrusher.last_R = 0.0;
     }
+    master_buffer_effects.bitcrusher.enabled = false;
+    master_buffer_effects.bitcrusher.bit_depth = BIT_DEPTH_MAX;
+    master_buffer_effects.bitcrusher.downsample = DOWNSAMPLE_MIN;
+    master_buffer_effects.bitcrusher.counter = 0;
+    master_buffer_effects.bitcrusher.last_L = 0.0;
+    master_buffer_effects.bitcrusher.last_R = 0.0;
 }
 
-void toggle_bit_crusher(uint8_t bank_index, bool state){
+void set_bit_crusher(uint8_t bank_index, bool state){
     sample_effects[bank_index].bitcrusher.enabled = state;
+}
+
+void set_master_bit_crusher_enable(bool state){
+    master_buffer_effects.bitcrusher.enabled = state;
 }
 
 bool get_bit_crusher_state(uint8_t bank_index){
     return sample_effects[bank_index].bitcrusher.enabled;
+}
+
+bool get_master_bit_crusher_enable(){
+    return master_buffer_effects.bitcrusher.enabled;
 }
 
 void set_bit_crusher_bit_depth(uint8_t bank_index, uint8_t bit_depth){
@@ -63,8 +84,21 @@ void set_bit_crusher_bit_depth(uint8_t bank_index, uint8_t bit_depth){
     }
 }
 
+void set_bit_crusher_bit_depth_master_buffer(uint8_t bit_depth){
+    master_buffer_effects.bitcrusher.bit_depth = bit_depth;
+    
+    //reset counter values
+    master_buffer_effects.bitcrusher.counter = 0;
+    master_buffer_effects.bitcrusher.last_L = 0.0;
+    master_buffer_effects.bitcrusher.last_R = 0.0;
+}
+
 uint8_t get_bit_crusher_bit_depth(uint8_t bank_index){
     return sample_effects[bank_index].bitcrusher.bit_depth;
+}
+
+uint8_t get_bit_crusher_bit_depth_master_buffer(){
+    return master_buffer_effects.bitcrusher.bit_depth;
 }
 
 void set_bit_crusher_downsample(uint8_t bank_index, uint8_t downsample_value){
@@ -78,8 +112,21 @@ void set_bit_crusher_downsample(uint8_t bank_index, uint8_t downsample_value){
     }
 }
 
+void set_bit_crusher_downsample_master_buffer(uint8_t downsample_value){
+        master_buffer_effects.bitcrusher.downsample = downsample_value;
+
+        //reset counter values
+        master_buffer_effects.bitcrusher.counter = 0;
+        master_buffer_effects.bitcrusher.last_L = 0.0;
+        master_buffer_effects.bitcrusher.last_R = 0.0;
+}
+
 uint8_t get_bit_crusher_downsample(uint8_t bank_index){
     return sample_effects[bank_index].bitcrusher.downsample;
+}
+
+uint8_t get_bit_crusher_downsample_master_buffer(){
+    return master_buffer_effects.bitcrusher.downsample;
 }
 
 //================================================================
@@ -93,16 +140,27 @@ void init_distortion(uint8_t bank_index){
         sample_effects[bank_index].distortion.gain = DISTORTION_GAIN_MAX;
         sample_effects[bank_index].distortion.threshold = DISTORTION_THRESHOLD_MAX;
     }
+    master_buffer_effects.distortion.enabled = false;
+    master_buffer_effects.distortion.gain = DISTORTION_GAIN_MAX;
+    master_buffer_effects.distortion.threshold = DISTORTION_THRESHOLD_MAX;
 }
 
-void toggle_distortion(uint8_t bank_index, bool state){
+void set_distortion(uint8_t bank_index, bool state){
     if(bank_index < SAMPLE_NUM){
         sample_effects[bank_index].distortion.enabled = state;
     }
 }
 
+void set_master_distortion_enable(bool state){
+    master_buffer_effects.distortion.enabled = state;
+}
+
 bool get_distortion_state(uint8_t bank_index){
     return sample_effects[bank_index].distortion.enabled;
+}
+
+bool get_master_distortion_enable(){
+    return master_buffer_effects.distortion.enabled;
 }
 
 void set_distortion_gain(uint8_t bank_index, float gain){
@@ -111,8 +169,16 @@ void set_distortion_gain(uint8_t bank_index, float gain){
     }
 }
 
+void set_distortion_gain_master_buffer(float gain){
+    master_buffer_effects.distortion.gain = gain;
+}
+
 float get_distortion_gain(uint8_t bank_index){
     return sample_effects[bank_index].distortion.gain;
+}
+
+float get_distortion_gain_master_buffer(){
+    return master_buffer_effects.distortion.gain;
 }
 
 void set_distortion_threshold(uint8_t bank_index, int16_t threshold_value){
@@ -121,8 +187,16 @@ void set_distortion_threshold(uint8_t bank_index, int16_t threshold_value){
     }
 }
 
+void set_distortion_threshold_master_buffer(int16_t threshold_value){
+    master_buffer_effects.distortion.threshold = threshold_value;
+}
+
 int16_t get_distortion_threshold(uint8_t bank_index){
     return sample_effects[bank_index].distortion.threshold;
+}
+
+int16_t get_distortion_threshold_master_buffer(){
+    return master_buffer_effects.distortion.threshold;
 }
 
 //================================================================
@@ -136,4 +210,3 @@ void effects_init(){
         init_distortion(i);
     }
 }
-

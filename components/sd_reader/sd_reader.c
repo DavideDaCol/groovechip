@@ -81,11 +81,15 @@ esp_err_t ld_sample(int in_bank_index, char* sample_name, sample_t** out_sample_
         return ESP_ERR_NOT_FOUND;
     }
     
-    printf("Available size: %d", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+    printf("Available size: %d\n", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
     //Allocating in the PSRAM the section of memory for the sample infos
     // *out_sample_ptr = heap_caps_malloc(sizeof(sample_t), MALLOC_CAP_SPIRAM);
     *out_sample_ptr = heap_caps_malloc(sizeof(sample_t), MALLOC_CAP_SPIRAM);
     sample_t* out_sample = *out_sample_ptr;
+    if (out_sample_ptr == NULL) {
+        ESP_LOGE(TAG, "Error in allocating the sample");
+        return ESP_ERR_NO_MEM;
+    }
 
     //Assigning the file's content to the pointer out_sample_ptr
     size_t read_cnt = fread(&(out_sample -> header), sizeof(wav_header_t), 1, fp);
@@ -162,12 +166,12 @@ esp_err_t ld_sample(int in_bank_index, char* sample_name, sample_t** out_sample_
     out_sample -> total_frames = (out_sample -> header).data_size / 4; 
 
     //assigning bitcrusher values according to the infos in the json file
-    toggle_bit_crusher(in_bank_index, bitcrusher_enabled);
+    set_bit_crusher(in_bank_index, bitcrusher_enabled);
     set_bit_crusher_bit_depth(in_bank_index, bit_depth);
     set_bit_crusher_downsample(in_bank_index, downsample);
 
     //same for distortion
-    toggle_distortion(in_bank_index, distortion_enabled);
+    set_distortion(in_bank_index, distortion_enabled);
     set_distortion_gain(in_bank_index, gain);
     set_distortion_threshold(in_bank_index, threshold);
 

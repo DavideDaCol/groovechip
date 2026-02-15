@@ -48,8 +48,10 @@ typedef struct{
     distortion_params_t distortion;
 } effects_t;
 
+ extern effects_t master_buffer_effects;
 
 effects_t* get_sample_effect(uint8_t bank_index);
+effects_t* get_master_buffer_effects();
 
 #pragma region PITCH
 //=========================PITCH============================
@@ -65,17 +67,29 @@ float get_pitch_factor(uint8_t bank_index);
 
 void init_bit_crusher(uint8_t bank_index);
 
-void toggle_bit_crusher(uint8_t bank_index, bool state);
+void set_bit_crusher(uint8_t bank_index, bool state);
+
+void set_master_bit_crusher_enable(bool state);
 
 bool get_bit_crusher_state(uint8_t bank_index);
 
+bool get_master_bit_crusher_enable();
+
 void set_bit_crusher_bit_depth(uint8_t bank_index, uint8_t bit_depth);
+
+void set_bit_crusher_bit_depth_master_buffer(uint8_t bit_depth);
 
 uint8_t get_bit_crusher_bit_depth(uint8_t bank_index);
 
+uint8_t get_bit_crusher_bit_depth_master_buffer();
+
 void set_bit_crusher_downsample(uint8_t bank_index, uint8_t downsample_value);
 
+void set_bit_crusher_downsample_master_buffer(uint8_t downsample_value);
+
 uint8_t get_bit_crusher_downsample(uint8_t bank_index);
+
+uint8_t get_bit_crusher_downsample_master_buffer();
 
 //================================================================
 #pragma endregion
@@ -83,17 +97,29 @@ uint8_t get_bit_crusher_downsample(uint8_t bank_index);
 //=========================DISTORTION=============================
 void init_distortion(uint8_t bank_index);
 
-void toggle_distortion(uint8_t bank_index, bool state);
+void set_distortion(uint8_t bank_index, bool state);
+
+void set_master_distortion_enable(bool state);
 
 bool get_distortion_state(uint8_t bank_index);
 
+bool get_master_distortion_enable();
+
 void set_distortion_gain(uint8_t bank_index, float gain);
+
+void set_distortion_gain_master_buffer(float gain);
 
 float get_distortion_gain(uint8_t bank_index);
 
+float get_distortion_gain_master_buffer();
+
 void set_distortion_threshold(uint8_t bank_index, int16_t threshold_value);
 
+void set_distortion_threshold_master_buffer(int16_t threshold_value);
+
 int16_t get_distortion_threshold(uint8_t bank_index);
+
+int16_t get_distortion_threshold_master_buffer();
 
 //================================================================
 void effects_init();
