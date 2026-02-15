@@ -296,18 +296,21 @@ uint32_t get_sample_start_ptr(uint8_t bank_index){
     return sample_bank[bank_index]->start_ptr;
 }
 
-void set_sample_end_ptr(uint8_t bank_index, uint32_t new_end_ptr){
+bool set_sample_end_ptr(uint8_t bank_index, uint32_t new_end_ptr){
     sample_t *smp = sample_bank[bank_index];
     if(new_end_ptr > smp->start_ptr && new_end_ptr < smp->total_frames){
         smp->end_ptr = new_end_ptr; 
+        return true;
     }
+    else return false;
 }
-void set_sample_start_ptr(uint8_t bank_index, float new_start_ptr){
+bool set_sample_start_ptr(uint8_t bank_index, float new_start_ptr){
     sample_t *smp = sample_bank[bank_index];
     if(new_start_ptr >= 0.0 && new_start_ptr < smp->end_ptr){
         smp->start_ptr = new_start_ptr;
-        smp->playback_ptr = new_start_ptr; // TODO move this out of here. We before changing this parameter, the sample must be stopped.
+        return true;
     }
+    else return false;
 }
 uint32_t get_sample_total_frames(uint8_t bank_index){
     return sample_bank[bank_index]->total_frames;

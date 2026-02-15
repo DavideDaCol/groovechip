@@ -96,7 +96,7 @@ opt_interactions_t btn_handlers[] = {
 };
 
 menu_t btn_menu = {
-    .curr_index = -1,
+    .curr_index = 0,
     .max_size = BTN_MENU_NUM_OPT,
     .opt_handlers = btn_handlers
 };
@@ -179,7 +179,7 @@ opt_interactions_t btn_eff_handlers[] = {
 };
 
 menu_t btn_effects = {
-    .curr_index = -1,
+    .curr_index = 0,
     .max_size = BTN_EFFECTS_NUM_OPT,
     .opt_handlers = btn_eff_handlers
 };
@@ -200,7 +200,7 @@ opt_interactions_t gen_eff_handlers[] = {
 };
 
 menu_t gen_effects = {
-    .curr_index = -1,
+    .curr_index = 0,
     .max_size = GEN_EFFECTS_NUM_OPT,
     .opt_handlers = gen_eff_handlers
 };
@@ -234,7 +234,7 @@ opt_interactions_t bit_crusher_handlers[] = {
 };
 
 menu_t bit_crusher_menu = {
-    .curr_index = -1,
+    .curr_index = 0,
     .max_size = BITCRUSHER_NUM_OPT,
     .opt_handlers = bit_crusher_handlers
 };
@@ -256,7 +256,7 @@ opt_interactions_t pitch_handlers[] = {
 };
 
 menu_t pitch_menu = {
-    .curr_index = -1,
+    .curr_index = 0,
     .max_size = PITCH_NUM_OPT,
     .opt_handlers = pitch_handlers
 };
@@ -290,7 +290,7 @@ opt_interactions_t distortion_handlers[] = {
 };
 
 menu_t distortion_menu = {
-    .curr_index = -1,
+    .curr_index = 0,
     .max_size = DISTORTION_NUM_OPT,
     .opt_handlers = distortion_handlers
 };
@@ -518,11 +518,11 @@ void get_chopping_second_line(char* out){
     if(bank_index == NOT_DEFINED) return;
     switch (menu_navigation[curr_menu]->curr_index){
     case START:
-        uint32_t start_ptr = get_sample_start_ptr(bank_index);
+        uint32_t start_ptr = (float)get_sample_start_ptr(bank_index) / GRVCHP_SAMPLE_FREQ * 1000;
         sprintf(out, "%ld", start_ptr);
         break;
     case END:
-        uint32_t end_ptr = get_sample_end_ptr(bank_index);
+        uint32_t end_ptr = (float)get_sample_end_ptr(bank_index) / GRVCHP_SAMPLE_FREQ * 1000;
         sprintf(out, "%ld", end_ptr);
         break;
     default:
@@ -1047,18 +1047,22 @@ void change_metronome_bpm(int pot_value){
 
 void change_chopping_start(int pot_value){
     const uint8_t idx = get_sample_bank_index(pressed_button);
-    int16_t new_start = pot_value * (((float)get_sample_total_frames(idx)/GRVCHP_SAMPLE_FREQ) / 100.0) * 1000.0;
-    screen_has_to_change = get_sample_start_ptr(idx) != new_start;
+    uint32_t new_start = pot_value * (((float)get_sample_total_frames(idx)) / 100.0);
+    printf("New start: %ld\nPot value: %d\n", new_start, pot_value);
 
-    set_sample_start_ptr(idx, (float)new_start);
-
+    if(get_sample_start_ptr(idx) != new_start){
+        screen_has_to_change = set_sample_start_ptr(idx, (float)new_start);
+    }
 }
 void change_chopping_end(int pot_value){
     const uint8_t idx = get_sample_bank_index(pressed_button);
-    int16_t new_end = pot_value * (((float)get_sample_total_frames(idx)/GRVCHP_SAMPLE_FREQ) / 100.0) * 1000.0;
-    screen_has_to_change = get_sample_end_ptr(idx) != new_end;
+    uint32_t new_end = pot_value * (((float)get_sample_total_frames(idx)) / 100.0);
+    printf("New end: %ld\nPot value: %d\n", new_end, pot_value);
 
-    set_sample_end_ptr(idx, (float)new_end);
+    if(get_sample_end_ptr(idx) != new_end){
+        screen_has_to_change = set_sample_end_ptr(idx, (float)new_end);
+    }
+
 }
 
 #pragma endregion
