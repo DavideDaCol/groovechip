@@ -3,7 +3,7 @@
 #include "esp_log.h"
 #include <math.h>
 
-static QueueHandle_t fsm_queue = NULL;
+QueueHandle_t fsm_queue = NULL;
 
 menu_types curr_menu = GEN_MENU;
 
@@ -635,6 +635,7 @@ void joystick_handler(joystick_dir_t in_dir) {
         case DOWN: js_down_handler(); break;
         case RIGHT: js_right_handler(); break;
         case UP: js_up_handler(); break;
+        case PRESS: recorder_fsm(); break;
         default: sink(); return;
     }
     printf("%s\n", (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).first_line);
@@ -765,6 +766,7 @@ void js_down_handler() {
 
 //Function to call when a button bound to a sample is pressed
 void set_button_pressed(int pad_id) {
+
     if(pad_id != pressed_button){
         clear_stack();
         pressed_button = pad_id;
