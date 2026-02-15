@@ -243,13 +243,23 @@ void init_metronome(){
     mtrn.raw_data = metronome_clean_wav + WAV_HDR_SIZE;
 }
 
-void toggle_metronome_state(bool new_state){
+void set_metronome_state(bool new_state){
     mtrn.state = new_state;
 }
+
+bool get_metronome_state(){
+    return mtrn.state;
+}
+
 void set_metronome_bpm(float new_bpm){
     mtrn.bpm = new_bpm;
     set_metronome_tick();
 }
+
+float get_metronome_bpm(){
+    return mtrn.bpm;
+}
+
 void set_metronome_subdiv(int new_subdiv){
     mtrn.subdivisions = new_subdiv;
     set_metronome_tick();
@@ -260,8 +270,12 @@ void set_metronome_tick(){
     mtrn.samples_per_subdivision = new_sample_per_subdiv;
 }
 
-void toggle_metronome_playback(bool new_state){
+void set_metronome_playback(bool new_state){
     mtrn.playback_enabled = new_state;
+}
+
+bool get_metronome_playback(){
+    return mtrn.playback_enabled;
 }
 
 #pragma endregion
@@ -393,7 +407,7 @@ static void mixer_task_wip(void *args)
 
             if (sample_lookahead >= mtrn.samples_per_subdivision) {
                 // unlock_metronome
-                toggle_metronome_playback(true);
+                set_metronome_playback(true);
                 //reset the metronome audio, in case the sample is too long for each tick
                 mtrn.playback_ptr = 0;
                 sample_lookahead = 0;
@@ -468,7 +482,7 @@ static void mixer_task_wip(void *args)
                 // if the metronome is playing, but the sound has finished
                 if (mtrn.playback_ptr >= mtrn.header.data_size) {
                     //lock the metronome again
-                    toggle_metronome_playback(false);
+                    set_metronome_playback(false);
                     mtrn.playback_ptr = 0;
                 } else {
                     // otherwise, keep on playing!

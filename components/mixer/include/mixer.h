@@ -20,6 +20,9 @@
 #define VOLUME_THRESHOLD_UP 1.0f
 #define MASTER_VOLUME_THRESHOLD_UP 2.0f
 
+// Max metronome bpm
+#define MAX_METRONOME_BPM 240.0f
+
 #pragma region TYPES
 
 // Type used to store the metadata of a WAV file
@@ -111,11 +114,14 @@ float get_master_volume();
 
 //metronome actions
 void init_metronome();
-void toggle_metronome_state(bool);
+void set_metronome_state(bool);
 void set_metronome_bpm(float);
 void set_metronome_subdiv(int);
 void set_metronome_tick();
-void toggle_metronome_playback(bool);
+void set_metronome_playback(bool);
+bool get_metronome_playback();
+bool get_metronome_state();
+float get_metronome_bpm();
 
 void create_mixer(i2s_chan_handle_t channel);
 

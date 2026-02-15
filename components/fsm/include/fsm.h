@@ -20,12 +20,14 @@
 #define BTN_MENU_NUM_OPT 5
 #define GEN_SETTINGS_NUM_OPT 2
 #define BTN_SETTINGS_NUM_OPT 2
-#define EFFECTS_NUM_OPT 3
+#define BTN_EFFECTS_NUM_OPT 3
+#define GEN_EFFECTS_NUM_OPT 2
 #define MODE_NUM_OPT 4
 #define BITCRUSHER_NUM_OPT 3
 #define PITCH_NUM_OPT 1
 #define DISTORTION_NUM_OPT 3
 #define CHOPPING_NUM_OPT 2
+#define METRONOME_NUM_OPT 3
 #define PITCH_SCALE_VALUE 0.25f
 #define THRESHOLD_SCALE_VALUE 1000
 #define VOLUME_SCALE_VALUE 0.05f
@@ -43,9 +45,10 @@ typedef struct {
 
 void main_fsm_task(void *pvParameters);
 void joystick_handler(joystick_dir_t in_dir);
-void goto_gen_settings();
-void goto_effects();
 void goto_btn_settings();
+void goto_gen_settings();
+void goto_btn_effects();
+void goto_gen_effects();
 void goto_bitcrusher();
 void goto_pitch();
 void goto_distortion();
@@ -83,6 +86,9 @@ void change_master_distortion_gain(int pot_value);
 void change_distortion_threshold(int pot_value);
 void change_sample_distortion_threshold(int pot_value);
 void change_master_distortion_threshold(int pot_value);
+void change_metronome(int pot_value);
+void change_metronome_mute(int pot_value);
+void change_metronome_bpm(int pot_value);
 pb_mode_t next_mode(int pot_value);
 void sample_load();
 void send_message_to_fsm_queue(message_source_t source, int payload);
@@ -97,7 +103,9 @@ typedef enum {
     BTN_MENU,
     GEN_SETTINGS,
     BTN_SETTINGS,
-    EFFECTS,
+    GEN_EFFECTS,
+    BTN_EFFECTS,
+    METRONOME,
     BITCRUSHER,
     PITCH,
     DISTORTION,
@@ -125,8 +133,14 @@ typedef enum{
 
 typedef enum{
     GEN_VOLUME,
-    METRONOME
+    METRONOME_MENU
 } gen_settings_menu_t;
+
+typedef enum {
+    ENABLE_MTRN,
+    MUTE_MTRN,
+    BPM,
+} metronome_menu_t;
 
 typedef enum{
     START,
@@ -181,8 +195,8 @@ extern menu_t btn_menu;
 extern opt_interactions_t set_handlers[];
 extern menu_t settings;
 
-extern opt_interactions_t eff_handlers[];
-extern menu_t effects;
+extern opt_interactions_t btn_eff_handlers[];
+extern menu_t btn_effects;
 
 extern opt_interactions_t bit_crusher_handlers[];
 extern menu_t bit_crusher_menu;
