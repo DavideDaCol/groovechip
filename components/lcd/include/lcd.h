@@ -20,6 +20,7 @@
 #define LCD_WRITE               0x01
 
 #define LCD_SET_DDRAM_ADDR      0x80
+#define LCD_SET_CGRAM_ADDR      0x40
 
 // LCD instructions (based on the 1602A datasheet)
 #define LCD_CLEAR               0x01        // replace all characters with ASCII 'space'
@@ -32,6 +33,9 @@
 #define LCD_DISPLAY_OFF         0x08        // set the display off
 #define LCD_DISPLAY_ON          0x0C        // display ON: Display(D=1), Cursor(C=0), Blink(B=0)
 
+#define BLACK_BOX 0b11111111
+#define MAX_SIZE                17
+
 void lcd_driver_init();
 void LCD_setCursor(uint8_t col, uint8_t row);
 void LCD_writeChar(char c);
@@ -40,3 +44,5 @@ void LCD_clearScreen(void);
 void lcd_task(void *args);
 void print_single (char* in_row);
 void print_double (char* first_in_row, char* sec_in_row);
+void LCD_home(void);
+// void print_line (char* in_first_row, int in_full_boxes, int in_box_size);
