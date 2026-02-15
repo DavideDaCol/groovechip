@@ -18,6 +18,8 @@ const char* TAG_FSM = "FSM";
 
 static int last_pot_value = 2000;
 
+char *sample_names_bank[SAMPLE_NUM];
+
 #pragma region GENERAL MENU
 /***********************************
 GENERAL MENU 
@@ -71,7 +73,7 @@ opt_interactions_t btn_handlers[] = {
     {
         .first_line = "Save changes",
         .second_line = get_second_line,
-        .js_right_action = sink, //TODO
+        .js_right_action = save, //TODO
         .pt_action = sink
     },
     {
@@ -614,7 +616,6 @@ void goto_metronome(){
 }
 
 void sample_load() {
-    printf("SAMPLE LOAD\n");
     int sample_idx = get_pad_num(pressed_button) - 1;
     
     int index = menu_navigation[curr_menu] -> curr_index;
@@ -622,6 +623,8 @@ void sample_load() {
     esp_err_t res = ld_sample(sample_idx, sample_names[index], &sample_bank[sample_idx]);
     if(res == ESP_OK){
         map_pad_to_sample(pressed_button, sample_idx);
+        sample_names_bank[sample_idx] = sample_names[index];
+
         // HACK: push btn_menu state, so if js_left is triggered, it go to btn menu
         menu_pop();
         menu_push(BTN_MENU, 0);
@@ -692,6 +695,16 @@ void sink() {
     
     return;
 }
+
+// sink function, but it also free a stack position. This is needed when we don't want to save the previous state (if we go in the same menu multiple times)
+void sink_free_prev(){
+    menu_pop();
+}
+
+void save() {
+    st_sample(get_sample_bank_index(pressed_button), sample_names_bank[get_sample_bank_index(pressed_button)]);
+}
+
 #pragma endregion
 
 #pragma region POTENTIOMETER HANDLING

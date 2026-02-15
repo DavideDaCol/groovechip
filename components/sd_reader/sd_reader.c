@@ -2,6 +2,7 @@
 #include <cJSON.h>
 #include <stdbool.h>
 #include <string.h>
+#include <errno.h>
 
 const char* TAG = "SdReader";
 
@@ -64,11 +65,15 @@ esp_err_t ld_sample(int in_bank_index, char* sample_name, sample_t** out_sample_
     if (out_sample_ptr == NULL)
         return ESP_ERR_INVALID_ARG;
 
+    if (*out_sample_ptr != NULL) {
+        heap_caps_free((*out_sample_ptr) -> raw_data);
+        heap_caps_free((*out_sample_ptr));
+    }
     //Defining the file path to read from
     char file_path[MAX_BUFF_SIZE];
     snprintf(file_path, sizeof(file_path),"%s/%s/%s.wav", GRVCHP_MNTPOINT, WAV_FILES_DIR, sample_name);
     ESP_LOGI(TAG, "requested file path is %s", file_path);
-
+    
     //Opening the file in read mode
     FILE* fp = fopen(file_path, "rb");
     if (fp == NULL) {
@@ -76,9 +81,10 @@ esp_err_t ld_sample(int in_bank_index, char* sample_name, sample_t** out_sample_
         return ESP_ERR_NOT_FOUND;
     }
     
+    printf("Available size: %d", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
     //Allocating in the PSRAM the section of memory for the sample infos
     // *out_sample_ptr = heap_caps_malloc(sizeof(sample_t), MALLOC_CAP_SPIRAM);
-    *out_sample_ptr = malloc(sizeof(sample_t));
+    *out_sample_ptr = heap_caps_malloc(sizeof(sample_t), MALLOC_CAP_SPIRAM);
     sample_t* out_sample = *out_sample_ptr;
 
     //Assigning the file's content to the pointer out_sample_ptr
@@ -99,7 +105,7 @@ esp_err_t ld_sample(int in_bank_index, char* sample_name, sample_t** out_sample_
     out_sample->raw_data = heap_caps_malloc(out_sample -> header.data_size, MALLOC_CAP_SPIRAM);
     if (out_sample->raw_data == NULL) {
         ESP_LOGE(TAG, "Failed to allocate SPIRAM for WAV data");
-        free(out_sample);
+        heap_caps_free(out_sample);
         *out_sample_ptr = NULL;
         fclose(fp);
         return ESP_ERR_NO_MEM;
@@ -107,15 +113,14 @@ esp_err_t ld_sample(int in_bank_index, char* sample_name, sample_t** out_sample_
     
     //Reading the area of the file where the data is located
     read_cnt = fread(out_sample -> raw_data, 1, (out_sample -> header).data_size, fp);
-    printf("Available size: %d\n", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
 
     
     if (read_cnt != (out_sample -> header).data_size) {
         ESP_LOGE(TAG, "Error while reading the file\n");
         ESP_LOGE(TAG, "Read data: %d\n", read_cnt);
         
-        free(out_sample -> raw_data);
-        free(out_sample);
+        heap_caps_free(out_sample -> raw_data);
+        heap_caps_free(out_sample);
         return ESP_FAIL;
     }
     
@@ -126,7 +131,6 @@ esp_err_t ld_sample(int in_bank_index, char* sample_name, sample_t** out_sample_
     //Closing the file
     fclose(fp);
 
-    printf("CIAOOOOOOne\n");
     //declaring some useful variables for the json parsing
     bool bitcrusher_enabled;
     bool distortion_enabled;
@@ -137,6 +141,7 @@ esp_err_t ld_sample(int in_bank_index, char* sample_name, sample_t** out_sample_
     float pitch_factor;
 
     out_sample -> bank_index = in_bank_index;
+
     //json parsing 
     get_json(
         filename,
@@ -169,14 +174,11 @@ esp_err_t ld_sample(int in_bank_index, char* sample_name, sample_t** out_sample_
     //same for the pitch
     set_pitch_factor(in_bank_index, pitch_factor);
 
-    printf("Distortion enabled: %d\n", get_distortion_state(in_bank_index));
-    printf("Bit crusher enabled: %d\n", get_bit_crusher_state(in_bank_index));
-
     return ESP_OK;
 }
 
 esp_err_t st_sample(int in_bank_index, char *sample_name) {
-    sample_t* curr_sample = sample_bank[in_bank_index]; 
+    sample_t* curr_sample = sample_bank[in_bank_index];
 
     //Defining the sample's file name, based on the id 
     char wav_file_path[MAX_BUFF_SIZE];
@@ -185,24 +187,35 @@ esp_err_t st_sample(int in_bank_index, char *sample_name) {
     char json_file_path[MAX_BUFF_SIZE];
     snprintf(json_file_path, sizeof(json_file_path), "%s/%s/%s.json", GRVCHP_MNTPOINT, JSON_FILES_DIR, sample_name);
 
+    printf("%s, %s\n", wav_file_path, json_file_path);
+
     //Opening the file in write-or-create mode
     //If there's no file containing that sample, it will create one 
     FILE* wav_fp;
-    if (!(wav_fp = fopen(wav_file_path, "r"))) {
+    if ((wav_fp = fopen(wav_file_path, "r")) != NULL) {
         fclose(wav_fp);
-        wav_fp = fopen(wav_file_path, "wb");
+        if ((wav_fp = fopen(wav_file_path, "wb")) == NULL) {
+            ESP_LOGE(TAG, "Error in creating the new wav file");
+            return ESP_FAIL;
+        }
 
         //Writing the sample inside the file
-        size_t write_cnt = fwrite(curr_sample -> raw_data, curr_sample -> header.data_size, 1, wav_fp);
-    
-        //Closing the file
-        fclose(wav_fp);
-    
+        size_t write_cnt = fwrite(&(curr_sample -> header), sizeof(wav_header_t), 1, wav_fp);
         if (write_cnt != 1) {
-            fprintf(stderr, "Error while writing the file\n");
+            ESP_LOGE(TAG, "Error while writing the wav file's header");
+            fclose(wav_fp);
+            return ESP_FAIL;
+        }
+
+        write_cnt = fwrite(curr_sample -> raw_data, curr_sample -> header.data_size, 1, wav_fp);
+        if (write_cnt != 1) {
+            ESP_LOGE(TAG, "Error while writing the wav file");
+            fclose(wav_fp);
             return ESP_FAIL;
         }
     }
+    
+    fclose(wav_fp);
 
     set_json(
         json_file_path,
@@ -217,59 +230,18 @@ esp_err_t st_sample(int in_bank_index, char *sample_name) {
         curr_sample -> end_ptr
     );
 
-
     return ESP_OK;
 }
 
-// static esp_err_t sd_exploration() {
-//     struct dirent* dir_entry;
-
-//     ESP_LOGI(TAG, "begin SD exploration");
-
-//     char inner_mnt[MAX_BUFF_SIZE];
-//     if (snprintf(inner_mnt, sizeof(inner_mnt), "%s/%s", GRVCHP_MNTPOINT, WAV_FILES_DIR) < 0) return ESP_FAIL;
-    
-//     ESP_EARLY_LOGI(TAG, "trying to open path %s", inner_mnt);
-
-//     //opening the SD filesystem via ANSI C functions 
-//     DIR* dir = opendir(inner_mnt);
-
-//     if (dir == NULL) {
-//         return ESP_FAIL;
-//     }
-
-//     //obtaining the number of files (=entries in the directory) 
-//     sample_names_size = 0;
-//     while ((dir_entry = readdir(dir)) != NULL) sample_names_size++;
-    
-//     //allocating the array with the previously calculated size 
-//     sample_names = malloc(sample_names_size*sizeof(char *));
-
-//     //rewinding the directory stream
-//     rewinddir(dir);
-
-//     //Filling the array with the names of the samples in the SD card
-//     for (int i = 0; i < sample_names_size; i++) {
-//         dir_entry = readdir(dir);
-//         if (dir_entry == NULL) {
-//             return ESP_FAIL;
-//         }
-//         sample_names[i] = malloc(MAX_SIZE * sizeof(char));
-//         sscanf(dir_entry -> d_name, "%[^.]", sample_names[i]);
-//     }
-//     return ESP_OK;
-// }  
-
-
 static esp_err_t sd_fs_init() {
-    char wav_path[128], json_path[128];
+    char wav_path[MAX_BUFF_SIZE/2], json_path[MAX_BUFF_SIZE/2];
     snprintf(wav_path, sizeof(wav_path), "%s/%s", GRVCHP_MNTPOINT, WAV_FILES_DIR);
     snprintf(json_path, sizeof(json_path), "%s/%s", GRVCHP_MNTPOINT, JSON_FILES_DIR);
 
     DIR *dir = opendir(wav_path);
     if (!dir) {
         ESP_LOGE(TAG, "Error: directory not found");
-        return ESP_FAIL;
+        return ESP_ERR_NOT_FOUND;
     }
 
     struct dirent* entry;
@@ -279,25 +251,34 @@ static esp_err_t sd_fs_init() {
     while ((entry = readdir(dir)) != NULL) {
         if (entry->d_name[0] == '.') continue;
 
+        
         //skip all files that don't end in .wav
         char *ext = strrchr(entry->d_name, '.');
-        if (!ext || (strcasecmp(ext, ".wav") != 0)) continue;
-
+        if (!ext || (strcasecmp(ext, ".wav") != 0)) {
+            ESP_LOGE(TAG, "Analyzed file is not a WAV file, ignoring");
+            continue;
+        }
+        
         //extract and truncate the file name
         char clean_name[MAX_SIZE];
         snprintf(clean_name, sizeof(clean_name), "%.*s", (int)(ext - entry->d_name), entry->d_name);
-
+        
         //if the name was truncated rename the original file
-        char full_old_path[256];
-        char full_new_path[256];
-        snprintf(full_old_path, sizeof(full_old_path)*2, "%s/%s", wav_path, entry->d_name);
-        snprintf(full_new_path, sizeof(full_new_path)*2, "%s/%s.wav", wav_path, clean_name);
-
-        if (strcmp(entry->d_name, clean_name) != 0 && !strstr(entry->d_name, clean_name)) {
-             if (rename(full_old_path, full_new_path) != 0) {
-                 ESP_LOGE(TAG, "Rename failed: %s", entry->d_name);
-                 continue; 
-             }
+        char full_old_path[MAX_BUFF_SIZE/2 + MAX_BUFF_SIZE + 1];
+        char full_new_path[MAX_BUFF_SIZE/2 + MAX_SIZE + WAV_EXTENSION_SIZE];
+        snprintf(full_old_path, sizeof(full_old_path), "%s/%s", wav_path, entry->d_name);
+        snprintf(full_new_path, sizeof(full_new_path), "%s/%s.wav", wav_path, clean_name);
+        
+        if (strcmp(entry->d_name, clean_name) != 0) {
+            char check_name[MAX_SIZE + WAV_EXTENSION_SIZE];
+            snprintf(check_name, sizeof(check_name), "%s.wav", clean_name);
+            
+            if (strcmp(entry->d_name, check_name) != 0) {
+                if (rename(full_old_path, full_new_path) != 0) {
+                    ESP_LOGE(TAG, "Rename failed for: %s", entry->d_name);
+                    continue; 
+                }
+            }
         }
 
         //copy the necessary information for the json
@@ -309,18 +290,22 @@ static esp_err_t sd_fs_init() {
 
             char json_file_path[256];
             snprintf(json_file_path, sizeof(json_file_path), "%s/%s.json", json_path, clean_name);
-
+            
+            printf("%s\n", json_file_path);
             FILE* check_fp;
-            if ((check_fp = fopen(json_file_path, "r"))) {
+            if ((check_fp = fopen(json_file_path, "r")) != NULL) {
                 fclose(check_fp);
                 count++;
                 continue;
             }
-            
-            set_json(json_file_path, false, DOWNSAMPLE_MAX, BIT_DEPTH_MAX, 1.0, 
+            fclose(check_fp);
+            set_json(json_file_path, false, 1, BIT_DEPTH_MAX, 1.0, 
                      false, DISTORTION_THRESHOLD_MAX, DISTORTION_GAIN_MAX, 0, header.data_size);
             
             count++; // Only increment count for valid processed WAVs
+        } else {
+            ESP_LOGE(TAG, "Error in opening the WAV file, %s", strerror(errno));
+            continue;
         }
     }
 
@@ -367,6 +352,8 @@ static esp_err_t sd_fs_init() {
 */
 
 static esp_err_t set_json(char* filename, bool bitcrusher_enabled, uint8_t downsample, uint8_t bit_depth, float pitch_factor, bool distortion_enabled, uint16_t threshold, float gain, float start_ptr, uint32_t end_ptr) {
+    printf("Start pointer: %f, End pointer: %ld\n", start_ptr, end_ptr);
+    printf("Gain: %f\n", gain);
 
     //strings to add in the JSON file
     char* bitcrusher_str = "bitcrusher";
@@ -410,6 +397,7 @@ static esp_err_t set_json(char* filename, bool bitcrusher_enabled, uint8_t downs
 
     //Conversion of the JSON object into a string to copy into the file
     char* json_str = cJSON_Print(metadata_json);
+    printf("%s\n", json_str);
 
     FILE* fp = fopen(filename, "w");
     if (fp == NULL) return ESP_FAIL;
@@ -446,7 +434,11 @@ static esp_err_t get_json(char *filename, bool* bitcrusher_enabled, uint8_t* dow
 
     //reading the content and store it in a buffer
     char buffer[MAX_JSON_SIZE];
-    if (fread(buffer, 1, sizeof(buffer), fp) == 0) return ESP_FAIL;
+    if (fread(buffer, 1, sizeof(buffer), fp) == 0) {
+        fclose(fp);
+        return ESP_FAIL;  
+    } 
+    
     fclose(fp);
 
     printf("%s\n", buffer);

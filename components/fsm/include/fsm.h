@@ -46,7 +46,6 @@ void joystick_handler(joystick_dir_t in_dir);
 void goto_gen_settings();
 void goto_effects();
 void goto_btn_settings();
-void goto_selection();
 void goto_bitcrusher();
 void goto_pitch();
 void goto_distortion();
@@ -60,7 +59,6 @@ void js_up_handler();
 void js_down_handler();
 void sink();
 void set_button_pressed(int pad_id);
-void set_new_pot_value (int* old_val);
 void save();
 void potentiometer_handler(int diff_percent_pot_value);
 void change_vol(int pot_value);
@@ -180,5 +178,7 @@ extern menu_t distortion_menu;
 extern menu_t* menu_navigation[];
 // extern const menu_pair_t PREV_MENU_GENERAL[];
 // extern const menu_pair_t PREV_MENU_PAD[];
+
+extern char* sample_names_bank[SAMPLE_NUM];
 
 #endif

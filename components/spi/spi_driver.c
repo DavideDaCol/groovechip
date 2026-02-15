@@ -8,6 +8,7 @@ esp_err_t sdspi_driver_init(sdmmc_card_t* out_card) {
         .mosi_io_num = GRVCHP_MOSI,
         .miso_io_num = GRVCHP_MISO,
         .sclk_io_num = GRVCHP_SCLK,
+        .max_transfer_sz = 4000
     };
 
     //res = return error of esp_err functions
