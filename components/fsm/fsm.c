@@ -299,6 +299,12 @@ CHOPPING MENU
 ***********************************************/
 opt_interactions_t chopping_handlers[] = {
     {
+        .first_line = "Scale: ",
+        .second_line = get_chopping_second_line,
+        .js_right_action = sink,
+        .pt_action = change_chopping_precision,
+    },
+    {
         .first_line = "Start: ",
         .second_line = get_chopping_second_line,
         .js_right_action = sink,
@@ -308,11 +314,9 @@ opt_interactions_t chopping_handlers[] = {
         .first_line = "End: ",
         .second_line = get_chopping_second_line,
         .js_right_action = sink,
-        .pt_action = change_chopping_end, //TODO
+        .pt_action = change_chopping_end,
     }
 };
-void change_chopping_start();
-void change_chopping_end();
 menu_t chopping_menu = {
     .curr_index = 0,
     .max_size = CHOPPING_NUM_OPT,
@@ -517,6 +521,10 @@ void get_chopping_second_line(char* out){
 
     if(bank_index == NOT_DEFINED) return;
     switch (menu_navigation[curr_menu]->curr_index){
+    case PRECISION:
+        uint8_t precision = get_chopping_precision();
+        sprintf(out, "%u", precision);
+        break;
     case START:
         uint32_t start_ptr = (float)get_sample_start_ptr(bank_index) / GRVCHP_SAMPLE_FREQ * 1000;
         sprintf(out, "%ld", start_ptr);
@@ -1047,7 +1055,7 @@ void change_metronome_bpm(int pot_value){
 
 void change_chopping_start(int pot_value){
     const uint8_t idx = get_sample_bank_index(pressed_button);
-    uint32_t new_start = pot_value * (((float)get_sample_total_frames(idx)) / 100.0);
+    uint32_t new_start = pot_value * (((float)get_sample_total_frames(idx)) / (2 * get_chopping_precision()) / 100.0);
     printf("New start: %ld\nPot value: %d\n", new_start, pot_value);
 
     if(get_sample_start_ptr(idx) != new_start){
@@ -1056,11 +1064,20 @@ void change_chopping_start(int pot_value){
 }
 void change_chopping_end(int pot_value){
     const uint8_t idx = get_sample_bank_index(pressed_button);
-    uint32_t new_end = pot_value * (((float)get_sample_total_frames(idx)) / 100.0);
+    uint32_t new_end = pot_value * (((float)get_sample_total_frames(idx)) / (2 * get_chopping_precision()) / 100.0);
     printf("New end: %ld\nPot value: %d\n", new_end, pot_value);
 
     if(get_sample_end_ptr(idx) != new_end){
         screen_has_to_change = set_sample_end_ptr(idx, (float)new_end);
+    }
+
+}
+
+void change_chopping_precision(int pot_value){
+    uint8_t new_precision = pot_value * ((float)MAX_CHOPPING_PRECISION / 100);
+    
+    if(screen_has_to_change){
+        set_chopping_precision(new_precision);
     }
 
 }

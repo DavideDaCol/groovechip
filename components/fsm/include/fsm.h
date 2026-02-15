@@ -26,7 +26,7 @@
 #define BITCRUSHER_NUM_OPT 3
 #define PITCH_NUM_OPT 1
 #define DISTORTION_NUM_OPT 3
-#define CHOPPING_NUM_OPT 2
+#define CHOPPING_NUM_OPT 3
 #define METRONOME_NUM_OPT 2
 #define PITCH_SCALE_VALUE 0.25f
 #define THRESHOLD_SCALE_VALUE 1000
@@ -91,6 +91,7 @@ void change_metronome_mute(int pot_value);
 void change_metronome_bpm(int pot_value);
 void change_chopping_start(int pot_value);
 void change_chopping_end(int pot_value);
+void change_chopping_precision(int pot_value);
 pb_mode_t next_mode(int pot_value);
 void sample_load();
 void send_message_to_fsm_queue(message_source_t source, int payload);
@@ -144,6 +145,7 @@ typedef enum {
 } metronome_menu_t;
 
 typedef enum{
+    PRECISION,
     START,
     END
 } chopping_menu_t;

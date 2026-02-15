@@ -30,6 +30,7 @@
 
 #define MAX_CLIPPING 32767
 #define MIN_CLIPPING -32768
+#define MAX_CHOPPING_PRECISION 5
 
 #pragma region TYPES
 
@@ -112,6 +113,8 @@ bool set_sample_start_ptr(uint8_t, float);
 uint32_t get_sample_end_ptr(uint8_t bank_index);
 uint32_t get_sample_start_ptr(uint8_t bank_index);
 uint32_t get_sample_total_frames(uint8_t bank_index);
+uint8_t get_chopping_precision();
+void set_chopping_precision(uint8_t precision);
 
 // volume
 void set_volume(uint8_t, float);

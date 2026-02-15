@@ -265,6 +265,8 @@ bool get_metronome_playback(){
 
 #pragma region SAMPLE CHOPPING
 
+static uint8_t chopping_precision = 1;
+
 uint32_t get_sample_end_ptr(uint8_t bank_index){
     return (uint32_t)sample_bank[bank_index]->end_ptr;
 }
@@ -291,6 +293,14 @@ bool set_sample_start_ptr(uint8_t bank_index, float new_start_ptr){
 }
 uint32_t get_sample_total_frames(uint8_t bank_index){
     return sample_bank[bank_index]->total_frames;
+}
+
+
+uint8_t get_chopping_precision(){
+    return chopping_precision;
+}
+void set_chopping_precision(uint8_t precision){
+    chopping_precision = precision;
 }
 #pragma endregion
 
