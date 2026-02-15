@@ -386,6 +386,7 @@ static void mixer_task_wip(void *args)
 
                     // add the pitch factor to the pointer
                     sample_bank[j]->playback_ptr += get_pitch_factor(j);
+                    printf("PLAYBACK PTR: %f\nEND_PTR: %ld\n", sample_bank[j]->playback_ptr, sample_bank[j]->end_ptr);
 
                     // case: playback pointer has reached EOF or the end_ptr
                     if (sample_bank[j]->playback_ptr > sample_bank[j]->end_ptr || sample_bank[j]->playback_ptr >= sample_bank[j]->total_frames) {
