@@ -64,8 +64,6 @@ static char strays[4][8] = {
 typedef struct {
     char first_row[17];
     char sec_row[17];
-    int full_boxes;
-    int strays_num;
 } lcd_msg_t;
 
 static void i2c_init() {
@@ -233,8 +231,6 @@ void print_double (char* first_in_row, char* sec_in_row) {
     // Copy the string content, not just the pointer address
     snprintf(new_msg.first_row, MAX_SIZE, "%s", first_in_row);
     snprintf(new_msg.sec_row, MAX_SIZE, "%s", sec_in_row); // Blank line
-    new_msg.full_boxes = -1;
-    new_msg.strays_num = -1;
 
     if (xQueueSend(lcd_queue, &new_msg, 0) != pdPASS){
         // free(new_msg);

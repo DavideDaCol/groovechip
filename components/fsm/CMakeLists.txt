@@ -9,4 +9,5 @@ idf_component_register(SRCS "fsm.c"
                     adc1
                     lcd
                     sd_reader
+                    recorder
                     INCLUDE_DIRS "include")

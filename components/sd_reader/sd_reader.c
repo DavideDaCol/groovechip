@@ -3,6 +3,16 @@
 #include <stdbool.h>
 #include <string.h>
 #include <errno.h>
+#include <cJSON.h>
+#include <dirent.h>
+#include "spi_driver.h" 
+#include "sdmmc_cmd.h"
+#include "esp_vfs_fat.h"
+#include "diskio_sdmmc.h"
+#include "mixer.h"
+#include "effects.h"
+#include "esp_psram.h"
+#include <sys/stat.h>
 
 const char* TAG = "SdReader";
 
@@ -11,43 +21,92 @@ int sample_names_size = 0;
 
 static sdmmc_card_t sd_card;
 
-/* Function to explore the mount point and to fill the sample_names array*/
-// static esp_err_t sd_exploration();
+/*
+@brief initializes the SD filesystem, checking if there are any new downloaded samples. It includes name's truncation and JSON creation
+*/
 static esp_err_t sd_fs_init();
-static esp_err_t set_json(char* dir_path, bool bitcrusher_enabled, uint8_t downsample, uint8_t bit_depth, float pitch_factor, bool distortion_enabled, uint16_t threshold, float gain, float start_ptr, uint32_t end_ptr);
+
+/*
+@brief creates the JSON file according to the sample's infos. The JSON content follows the parameter that are passed
+@param filename path of the JSON that will be generated. It corresponds to GRVCHP_MNTPOINT/JSON_FILES_DIR/<sample_name>.json
+@param bitcrusher_enabled sample's bitcrusher state
+@param downsample sample's downsample
+@param bit_depth sample's bit depth
+@param pitch_factor sample's pitch factor
+@param distortion_enabled sample's distortion state
+@param threshold sample's threshold
+@param gain sample's gain
+@param start_ptr sample's playback start pointer
+@param end_ptr sample's playback end pointer*/
+static esp_err_t set_json(char* filename, bool bitcrusher_enabled, uint8_t downsample, uint8_t bit_depth, float pitch_factor, bool distortion_enabled, uint16_t threshold, float gain, float start_ptr, uint32_t end_ptr);
+
+/*
+@brief extracts the informations about the sample from the JSON file.
+@param filename path of the JSON that will be analyzed. It corresponds to GRVCHP_MNTPOINT/JSON_FILES_DIR/<sample_name>.json, and containes the informations related to <sample_name>
+@param bitcrusher_enabled sample's bitcrusher state
+@param downsample sample's downsample
+@param bit_depth sample's bit depth
+@param pitch_factor sample's pitch factor
+@param distortion_enabled sample's distortion state
+@param threshold sample's threshold
+@param gain sample's gain
+@param start_ptr sample's playback start pointer
+@param end_ptr sample's playback end pointer
+*/
 static esp_err_t get_json(char *filename, bool* bitcrusher_enabled, uint8_t* downsample, uint8_t* bit_depth, float* pitch_factor, bool* distortion_enabled, uint16_t* threshold, float* gain, float* start_ptr, uint32_t* end_ptr);
+
+/*
+@brief truncates the original name to MAX_SIZE characters (max characters accepted from the screen) and eventually renames the file 
+@param wav_path path that leads to the directory containing all the wav files
+@param original_name current file's name
+@param out_clean_name result of the file's name truncation. It can remain the same or be truncated to MAX_SIZE characters
+*/
+static bool normalize_wav_file(const char* wav_path, const char* original_name, char* out_clean_name);
+
+/*
+@brief checks whether the JSON associated to a sample exists or not. If not, it creates one with default values
+@param wav_path path to the folder containing the WAV files
+@param json_path path to the folder containing the JSON files 
+@param clean_name name of the sample we want to create the JSON of
+*/
+static esp_err_t ensure_json_exists(const char* wav_path, const char* json_path, const char* clean_name);
+
+/*
+@brief generates an array with all the samples' names
+@param dir pointer to the directory containing all the WAV files
+@param count array's size
+*/
+static esp_err_t populate_sample_names_array(DIR *dir, int count);
 
 esp_err_t sd_reader_init() {
     esp_err_t res;
     
-    //SD SPI driver initialization
     res = sdspi_driver_init(&sd_card);
     if (res != ESP_OK)
         return res;
 
 
-    //Defining the mountpoint configuration
+    // defining the mountpoint configuration
     esp_vfs_fat_conf_t sd_mntpoint_conf = {
         .base_path = GRVCHP_MNTPOINT,
         .fat_drive = GRVCHP_FAT_DRIVE_STR,
         .max_files = GRVCHP_MAX_FILES
     };
 
-    //Pointer to the FAT table
     FATFS* fat_fs;
 
-    //Connecting the POSIX and C standard library IO function with FATFS.
+    // connecting the POSIX and C standard library IO function with FATFS.
     res = esp_vfs_fat_register_cfg(&sd_mntpoint_conf, &fat_fs);
     if (res != ESP_OK){
         ESP_ERROR_CHECK_WITHOUT_ABORT(res);
         return res;
     }
     
-    //SD diskio driver registration
-    //To provide function pointer and define how the driver has to act with the SD card
+    // SD diskio driver registration
+    // to provide function pointer and define how the driver has to act with the SD card
     ff_diskio_register_sdmmc(GRVCHP_FAT_DRIVE_INDEX, &sd_card);
 
-    //Registering the filesystem in the SD card to the FatFs module
+    // registering the filesystem in the SD card to the FatFs module
     FRESULT fat_res = f_mount(fat_fs, GRVCHP_FAT_DRIVE_STR, 1); 
     if (fat_res != FR_OK) {
         fprintf(stderr, "Error in mounting the SD card filesystem\n");
@@ -56,7 +115,6 @@ esp_err_t sd_reader_init() {
 
     ESP_ERROR_CHECK_WITHOUT_ABORT(sd_fs_init());
 
-    // ESP_ERROR_CHECK_WITHOUT_ABORT(sd_exploration());
     return ESP_OK;
 }
 
@@ -69,12 +127,12 @@ esp_err_t ld_sample(int in_bank_index, char* sample_name, sample_t** out_sample_
         heap_caps_free((*out_sample_ptr) -> raw_data);
         heap_caps_free((*out_sample_ptr));
     }
-    //Defining the file path to read from
+    // defining the file path to read from
     char file_path[MAX_BUFF_SIZE];
     snprintf(file_path, sizeof(file_path),"%s/%s/%s.wav", GRVCHP_MNTPOINT, WAV_FILES_DIR, sample_name);
     ESP_LOGI(TAG, "requested file path is %s", file_path);
     
-    //Opening the file in read mode
+    // opening the file in read mode
     FILE* fp = fopen(file_path, "rb");
     if (fp == NULL) {
         ESP_LOGE(TAG,"Sample not found");
@@ -82,7 +140,7 @@ esp_err_t ld_sample(int in_bank_index, char* sample_name, sample_t** out_sample_
     }
     
     printf("Available size: %d\n", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
-    //Allocating in the PSRAM the section of memory for the sample infos
+    // allocating in the PSRAM the section of memory for the sample infos
     // *out_sample_ptr = heap_caps_malloc(sizeof(sample_t), MALLOC_CAP_SPIRAM);
     *out_sample_ptr = heap_caps_malloc(sizeof(sample_t), MALLOC_CAP_SPIRAM);
     sample_t* out_sample = *out_sample_ptr;
@@ -91,10 +149,10 @@ esp_err_t ld_sample(int in_bank_index, char* sample_name, sample_t** out_sample_
         return ESP_ERR_NO_MEM;
     }
 
-    //Assigning the file's content to the pointer out_sample_ptr
+    // assigning the file's content to the pointer out_sample_ptr
     size_t read_cnt = fread(&(out_sample -> header), sizeof(wav_header_t), 1, fp);
 
-    //If the read doesn't succeed
+    // if the read doesn't succeed
     if (read_cnt != 1) {
         ESP_LOGE(TAG, "Error while reading the file\n");
 
@@ -104,8 +162,8 @@ esp_err_t ld_sample(int in_bank_index, char* sample_name, sample_t** out_sample_
     }
 
     
-    //Allocating the section of memory for the actual sample (wav buffer)
-    //out_sample -> raw_data = heap_caps_malloc((out_sample -> header).data_size, MALLOC_CAP_SPIRAM);
+    // allocating the section of memory for the actual sample (wav buffer)
+    // out_sample -> raw_data = heap_caps_malloc((out_sample -> header).data_size, MALLOC_CAP_SPIRAM);
     out_sample->raw_data = heap_caps_malloc(out_sample -> header.data_size, MALLOC_CAP_SPIRAM);
     if (out_sample->raw_data == NULL) {
         ESP_LOGE(TAG, "Failed to allocate SPIRAM for WAV data");
@@ -115,7 +173,7 @@ esp_err_t ld_sample(int in_bank_index, char* sample_name, sample_t** out_sample_
         return ESP_ERR_NO_MEM;
     }
     
-    //Reading the area of the file where the data is located
+    // reading the area of the file where the data is located
     read_cnt = fread(out_sample -> raw_data, 1, (out_sample -> header).data_size, fp);
 
     
@@ -128,14 +186,14 @@ esp_err_t ld_sample(int in_bank_index, char* sample_name, sample_t** out_sample_
         return ESP_FAIL;
     }
     
-    //getting the json filename
+    // getting the json filename
     char filename[MAX_BUFF_SIZE];
     snprintf(filename, sizeof(filename), "%s/%s/%s.json", GRVCHP_MNTPOINT, JSON_FILES_DIR, sample_name);
     
-    //Closing the file
+    // closing the file
     fclose(fp);
 
-    //declaring some useful variables for the json parsing
+    // declaring some useful variables for the json parsing
     bool bitcrusher_enabled;
     bool distortion_enabled;
     uint8_t downsample;
@@ -146,7 +204,7 @@ esp_err_t ld_sample(int in_bank_index, char* sample_name, sample_t** out_sample_
 
     out_sample -> bank_index = in_bank_index;
 
-    //json parsing 
+    // json parsing 
     get_json(
         filename,
         &bitcrusher_enabled,
@@ -160,22 +218,22 @@ esp_err_t ld_sample(int in_bank_index, char* sample_name, sample_t** out_sample_
         &(out_sample -> end_ptr) 
     );
 
-    //setting default values
+    // setting default values
     out_sample -> volume = 0.1f;
     out_sample -> playback_ptr = out_sample -> start_ptr;
     out_sample -> total_frames = (out_sample -> header).data_size / 2; 
 
-    //assigning bitcrusher values according to the infos in the json file
+    // assigning bitcrusher values according to the infos in the json file
     set_bit_crusher(in_bank_index, bitcrusher_enabled);
     set_bit_crusher_bit_depth(in_bank_index, bit_depth);
     set_bit_crusher_downsample(in_bank_index, downsample);
 
-    //same for distortion
+    // same for distortion
     set_distortion(in_bank_index, distortion_enabled);
     set_distortion_gain(in_bank_index, gain);
     set_distortion_threshold(in_bank_index, threshold);
 
-    //same for the pitch
+    // same for the pitch
     set_pitch_factor(in_bank_index, pitch_factor);
 
     return ESP_OK;
@@ -184,7 +242,7 @@ esp_err_t ld_sample(int in_bank_index, char* sample_name, sample_t** out_sample_
 esp_err_t st_sample(int in_bank_index, char *sample_name) {
     sample_t* curr_sample = sample_bank[in_bank_index];
 
-    //Defining the sample's file name, based on the id 
+    // defining the sample's file name, based on the id 
     char wav_file_path[MAX_BUFF_SIZE];
     snprintf(wav_file_path, sizeof(wav_file_path), "%s/%s/%s.wav", GRVCHP_MNTPOINT, WAV_FILES_DIR, sample_name);
 
@@ -193,30 +251,41 @@ esp_err_t st_sample(int in_bank_index, char *sample_name) {
 
     printf("%s, %s\n", wav_file_path, json_file_path);
 
-    //Opening the file in write-or-create mode
-    //If there's no file containing that sample, it will create one 
     FILE* wav_fp;
-    if ((wav_fp = fopen(wav_file_path, "r")) != NULL) {
+    // opening the file in write-or-create mode
+    // if there's no file containing that sample, it will create one 
+    if ((wav_fp = fopen(wav_file_path, "wb")) == NULL) {
+        ESP_LOGE(TAG, "Error in creating the new wav file");
+        return ESP_FAIL;
+    } 
+
+    wav_header_t local_header = curr_sample -> header;
+    // writing the sample inside the file
+    size_t write_cnt = fwrite(&local_header, sizeof(wav_header_t), 1, wav_fp);
+    if (write_cnt != 1) {
+        ESP_LOGE(TAG, "Error while writing the wav file's header");
         fclose(wav_fp);
-        if ((wav_fp = fopen(wav_file_path, "wb")) == NULL) {
-            ESP_LOGE(TAG, "Error in creating the new wav file");
-            return ESP_FAIL;
-        }
+        return ESP_FAIL;
+    }
 
-        //Writing the sample inside the file
-        size_t write_cnt = fwrite(&(curr_sample -> header), sizeof(wav_header_t), 1, wav_fp);
-        if (write_cnt != 1) {
-            ESP_LOGE(TAG, "Error while writing the wav file's header");
+    size_t bytes_remaining = curr_sample->header.data_size;
+    uint8_t* data_ptr = curr_sample->raw_data;
+    size_t chunk_size = 4096; // 4KB is optimal for FATFS and internal RAM bouncing
+
+    while (bytes_remaining > 0) {
+        size_t bytes_to_write = (bytes_remaining > chunk_size) ? chunk_size : bytes_remaining;
+        
+        // write the chunk
+        size_t written = fwrite(data_ptr, 1, bytes_to_write, wav_fp);
+        if (written != bytes_to_write) {
+            ESP_LOGE(TAG, "Error while writing the wav file data");
             fclose(wav_fp);
             return ESP_FAIL;
         }
-
-        write_cnt = fwrite(curr_sample -> raw_data, curr_sample -> header.data_size, 1, wav_fp);
-        if (write_cnt != 1) {
-            ESP_LOGE(TAG, "Error while writing the wav file");
-            fclose(wav_fp);
-            return ESP_FAIL;
-        }
+        
+        // move the pointer forward
+        data_ptr += bytes_to_write;
+        bytes_remaining -= bytes_to_write;
     }
     
     fclose(wav_fp);
@@ -249,90 +318,26 @@ static esp_err_t sd_fs_init() {
     }
 
     struct dirent* entry;
-    int count = 0;
+    int valid_wav_count = 0;
 
-    //read directory entries while you can
     while ((entry = readdir(dir)) != NULL) {
         if (entry->d_name[0] == '.') continue;
 
-        
-        //skip all files that don't end in .wav
-        char *ext = strrchr(entry->d_name, '.');
-        if (!ext || (strcasecmp(ext, ".wav") != 0)) {
-            ESP_LOGE(TAG, "Analyzed file is not a WAV file, ignoring");
-            continue;
-        }
-        
-        //extract and truncate the file name
         char clean_name[MAX_SIZE];
-        snprintf(clean_name, sizeof(clean_name), "%.*s", (int)(ext - entry->d_name), entry->d_name);
         
-        //if the name was truncated rename the original file
-        char full_old_path[MAX_BUFF_SIZE/2 + MAX_BUFF_SIZE + 1];
-        char full_new_path[MAX_BUFF_SIZE/2 + MAX_SIZE + WAV_EXTENSION_SIZE];
-        snprintf(full_old_path, sizeof(full_old_path), "%s/%s", wav_path, entry->d_name);
-        snprintf(full_new_path, sizeof(full_new_path), "%s/%s.wav", wav_path, clean_name);
-        
-        if (strcmp(entry->d_name, clean_name) != 0) {
-            char check_name[MAX_SIZE + WAV_EXTENSION_SIZE];
-            snprintf(check_name, sizeof(check_name), "%s.wav", clean_name);
-            
-            if (strcmp(entry->d_name, check_name) != 0) {
-                if (rename(full_old_path, full_new_path) != 0) {
-                    ESP_LOGE(TAG, "Rename failed for: %s", entry->d_name);
-                    continue; 
-                }
-            }
+        if (!normalize_wav_file(wav_path, entry->d_name, clean_name)) {
+            continue; // skip if it's not a WAV or rename failed
         }
 
-        //copy the necessary information for the json
-        wav_header_t header;
-        FILE* fp = fopen(full_new_path, "rb");
-        if (fp) {
-            fread(&header, sizeof(wav_header_t), 1, fp);
-            fclose(fp);
-
-            char json_file_path[256];
-            snprintf(json_file_path, sizeof(json_file_path), "%s/%s.json", json_path, clean_name);
-            
-            printf("%s\n", json_file_path);
-            FILE* check_fp;
-            if ((check_fp = fopen(json_file_path, "r")) != NULL) {
-                fclose(check_fp);
-                count++;
-                continue;
-            }
-            fclose(check_fp);
-            set_json(json_file_path, false, 1, BIT_DEPTH_MAX, 1.0, 
-                     false, DISTORTION_THRESHOLD_MAX, DISTORTION_GAIN_MAX, 0, header.data_size);
-            
-            count++; // Only increment count for valid processed WAVs
-        } else {
-            ESP_LOGE(TAG, "Error in opening the WAV file, %s", strerror(errno));
-            continue;
+        if (ensure_json_exists(wav_path, json_path, clean_name) == ESP_OK) {
+            valid_wav_count++; 
         }
     }
 
-    sample_names = malloc(count * sizeof(char*));
-    sample_names_size = count;
-
-    //get back to the beginning of the directory
-    rewinddir(dir);
-    int idx = 0;
-    while ((entry = readdir(dir)) != NULL && idx < count) {
-        if (entry->d_name[0] == '.') continue;
-        
-        char *ext = strrchr(entry->d_name, '.');
-        if (ext && strcasecmp(ext, ".wav") == 0) {
-            //create the list of samples that the fsm will read
-            sample_names[idx] = malloc(MAX_SIZE);
-            snprintf(sample_names[idx], MAX_SIZE, "%.*s", (int)(ext - entry->d_name), entry->d_name);
-            idx++;
-        }
-    }
-
+    esp_err_t res = populate_sample_names_array(dir, valid_wav_count);
+    
     closedir(dir);
-    return ESP_OK;
+    return res;
 }
 
 /*
@@ -359,7 +364,7 @@ static esp_err_t set_json(char* filename, bool bitcrusher_enabled, uint8_t downs
     printf("Start pointer: %f, End pointer: %ld\n", start_ptr, end_ptr);
     printf("Gain: %f\n", gain);
 
-    //strings to add in the JSON file
+    // strings to add in the JSON file
     char* bitcrusher_str = "bitcrusher";
     char* effects_str = "effects";
     char* downsample_str = "downsample";
@@ -373,7 +378,7 @@ static esp_err_t set_json(char* filename, bool bitcrusher_enabled, uint8_t downs
     char* end_ptr_str = "end_pointer";
     char* enabled_str = "enabled";
 
-    //JSON setup, according to the structure defined above
+    // JSON setup, according to the structure defined above
     cJSON* distortion_json = cJSON_CreateObject();
     cJSON_AddBoolToObject(distortion_json, enabled_str, (cJSON_bool) distortion_enabled);
     cJSON_AddNumberToObject(distortion_json, threshold_str, threshold);
@@ -399,7 +404,7 @@ static esp_err_t set_json(char* filename, bool bitcrusher_enabled, uint8_t downs
     cJSON_AddNumberToObject(metadata_json, start_ptr_str, start_ptr);
     cJSON_AddNumberToObject(metadata_json, end_ptr_str, end_ptr);
 
-    //Conversion of the JSON object into a string to copy into the file
+    // conversion of the JSON object into a string to copy into the file
     char* json_str = cJSON_Print(metadata_json);
     printf("%s\n", json_str);
 
@@ -419,7 +424,7 @@ static esp_err_t set_json(char* filename, bool bitcrusher_enabled, uint8_t downs
 
 static esp_err_t get_json(char *filename, bool* bitcrusher_enabled, uint8_t* downsample, uint8_t* bit_depth, float* pitch_factor, bool* distortion_enabled, uint16_t* threshold, float* gain, float* start_ptr, uint32_t* end_ptr) {
     
-    //fields in the JSON file
+    // fields in the JSON file
     char* bitcrusher_str = "bitcrusher";
     char* effects_str = "effects";
     char* downsample_str = "downsample";
@@ -433,10 +438,10 @@ static esp_err_t get_json(char *filename, bool* bitcrusher_enabled, uint8_t* dow
     char* end_ptr_str = "end_pointer";
     char* enabled_str = "enabled";
 
-    //opening the json file
+    // opening the json file
     FILE* fp = fopen(filename, "r");
 
-    //reading the content and store it in a buffer
+    // reading the content and store it in a buffer
     char buffer[MAX_JSON_SIZE];
     if (fread(buffer, 1, sizeof(buffer), fp) == 0) {
         fclose(fp);
@@ -447,7 +452,7 @@ static esp_err_t get_json(char *filename, bool* bitcrusher_enabled, uint8_t* dow
 
     printf("%s\n", buffer);
 
-    //parsing the document
+    // parsing the document
     cJSON* metadata_json = cJSON_Parse(buffer);
     if (metadata_json == NULL) {
         const char *error_ptr = cJSON_GetErrorPtr();
@@ -458,9 +463,9 @@ static esp_err_t get_json(char *filename, bool* bitcrusher_enabled, uint8_t* dow
         return ESP_FAIL;
     }
 
-    //getting start_ptr
+    // getting start_ptr
     cJSON* start_ptr_json = cJSON_GetObjectItemCaseSensitive(metadata_json, start_ptr_str);
-    //type checking
+    // type checking
     if (cJSON_IsNumber(start_ptr_json)) {
         *start_ptr = (float) start_ptr_json -> valuedouble;
     } else {
@@ -469,7 +474,7 @@ static esp_err_t get_json(char *filename, bool* bitcrusher_enabled, uint8_t* dow
         return ESP_FAIL;
     }
 
-    //getting end_ptr
+    // getting end_ptr
     cJSON* end_ptr_json = cJSON_GetObjectItemCaseSensitive(metadata_json, end_ptr_str); 
     if (cJSON_IsNumber(end_ptr_json)) {
         *end_ptr = (uint32_t) end_ptr_json -> valuedouble;
@@ -482,13 +487,13 @@ static esp_err_t get_json(char *filename, bool* bitcrusher_enabled, uint8_t* dow
     cJSON* effects_json = cJSON_GetObjectItemCaseSensitive(metadata_json, effects_str);
     if (cJSON_IsObject(effects_json)) {
         
-        //effects -> pitch parsing
+        // effects -> pitch parsing
         cJSON* pitch_json = cJSON_GetObjectItemCaseSensitive(effects_json, pitch_str);
         if (cJSON_IsObject(pitch_json)) {
 
-            //getting the effects -> pitch -> pitch factor
+            // getting the effects -> pitch -> pitch factor
             cJSON *pitch_factor_json = cJSON_GetObjectItemCaseSensitive(pitch_json, pitch_factor_str);
-            //type checking
+            // type checking
             if (cJSON_IsNumber(pitch_factor_json)) {
                 *pitch_factor = (float) pitch_factor_json -> valuedouble;
             } else {
@@ -498,13 +503,13 @@ static esp_err_t get_json(char *filename, bool* bitcrusher_enabled, uint8_t* dow
             }
         }
 
-        //effects -> distortion parsing
+        // effects -> distortion parsing
         cJSON *distortion_json = cJSON_GetObjectItemCaseSensitive(effects_json, distortion_str);
         if (cJSON_IsObject(distortion_json)) {
 
-            //getting the effects -> distortion -> enable value
+            // getting the effects -> distortion -> enable value
             cJSON *enabled_json = cJSON_GetObjectItemCaseSensitive(distortion_json, enabled_str);
-            //type checking
+            // type checking
             if (cJSON_IsBool(enabled_json)) {
                 *distortion_enabled = (bool) cJSON_IsTrue(enabled_json);
             } else {
@@ -513,9 +518,9 @@ static esp_err_t get_json(char *filename, bool* bitcrusher_enabled, uint8_t* dow
                 return ESP_FAIL;
             }
 
-            //getting the effects -> distortion -> gain
+            // getting the effects -> distortion -> gain
             cJSON *gain_json = cJSON_GetObjectItemCaseSensitive(distortion_json, gain_str);
-            //type checking
+            // type checking
             if (cJSON_IsNumber(gain_json)) {
                 *gain = (float) gain_json -> valuedouble;
             } else {
@@ -524,9 +529,9 @@ static esp_err_t get_json(char *filename, bool* bitcrusher_enabled, uint8_t* dow
                 return ESP_FAIL;
             }
 
-            //getting the effects -> distortion -> threshold
+            // getting the effects -> distortion -> threshold
             cJSON *threshold_json = cJSON_GetObjectItemCaseSensitive(distortion_json, threshold_str);
-            //type checking
+            // type checking
             if (cJSON_IsNumber(threshold_json)) {
                 *threshold = (float) threshold_json -> valuedouble;
             } else {
@@ -536,13 +541,13 @@ static esp_err_t get_json(char *filename, bool* bitcrusher_enabled, uint8_t* dow
             }
         }
 
-        //effects -> bitcrusher parsing
+        // effects -> bitcrusher parsing
         cJSON *bitcrusher_json = cJSON_GetObjectItemCaseSensitive(effects_json, bitcrusher_str);
         if (cJSON_IsObject(bitcrusher_json)) {
 
-            //getting the effects -> bitcrusher -> enable value
+            // getting the effects -> bitcrusher -> enable value
             cJSON *enabled_json = cJSON_GetObjectItemCaseSensitive(bitcrusher_json, enabled_str);
-            //type checking
+            // type checking
             if (cJSON_IsBool(enabled_json)) {
                 *bitcrusher_enabled = cJSON_IsTrue(enabled_json);
             } else {
@@ -551,9 +556,9 @@ static esp_err_t get_json(char *filename, bool* bitcrusher_enabled, uint8_t* dow
                 return ESP_FAIL;
             }
 
-            //getting the effects -> bitcrusher -> downsample
+            // getting the effects -> bitcrusher -> downsample
             cJSON *downsample_json = cJSON_GetObjectItemCaseSensitive(bitcrusher_json, downsample_str);
-            //type checking
+            // type checking
             if (cJSON_IsNumber(downsample_json)) {
                 *downsample = (uint8_t) downsample_json -> valuedouble;
             } else {
@@ -562,9 +567,9 @@ static esp_err_t get_json(char *filename, bool* bitcrusher_enabled, uint8_t* dow
                 return ESP_FAIL;
             }
 
-            //getting the effects -> bitcrusher -> bit depth
+            // getting the effects -> bitcrusher -> bit depth
             cJSON *bit_depth_json = cJSON_GetObjectItemCaseSensitive(bitcrusher_json, bit_depth_str);
-            //type checking
+            // type checking
             if (cJSON_IsNumber(bit_depth_json)) {
                 *bit_depth = (uint8_t) bit_depth_json -> valuedouble;
             } else {
@@ -576,5 +581,101 @@ static esp_err_t get_json(char *filename, bool* bitcrusher_enabled, uint8_t* dow
 
     }
     cJSON_Delete(metadata_json);
+    return ESP_OK;
+}
+
+static bool normalize_wav_file(const char* wav_path, const char* original_name, char* out_clean_name) {
+    char *ext = strrchr(original_name, '.');
+    if (!ext || (strcasecmp(ext, ".wav") != 0)) {
+        ESP_LOGW(TAG, "Analyzed file %s is not a WAV file, ignoring", original_name);
+        return false;
+    }
+
+    // extracting the base name (remove the .wav extension)
+    snprintf(out_clean_name, MAX_SIZE, "%.*s", (int)(ext - original_name), original_name);
+
+    // if the file name requires renaming (e.g., standardizing the extension string)
+    char full_old_path[MAX_BUFF_SIZE];
+    char full_new_path[MAX_BUFF_SIZE];
+    snprintf(full_old_path, sizeof(full_old_path), "%s/%s", wav_path, original_name);
+    snprintf(full_new_path, sizeof(full_new_path), "%s/%s.wav", wav_path, out_clean_name);
+    
+    char check_name[MAX_SIZE + WAV_EXTENSION_SIZE];
+    snprintf(check_name, sizeof(check_name), "%s.wav", out_clean_name);
+    
+    if (strcmp(original_name, check_name) != 0) {
+        if (rename(full_old_path, full_new_path) != 0) {
+            ESP_LOGE(TAG, "Rename failed for: %s", original_name);
+            return false; 
+        }
+    }
+    return true;
+}
+
+static esp_err_t ensure_json_exists(const char* wav_path, const char* json_path, const char* clean_name) {
+    char full_wav_path[MAX_BUFF_SIZE];
+    char full_json_path[MAX_BUFF_SIZE];
+    
+    snprintf(full_wav_path, sizeof(full_wav_path), "%s/%s.wav", wav_path, clean_name);
+    snprintf(full_json_path, sizeof(full_json_path), "%s/%s.json", json_path, clean_name);
+
+    // check if JSON already exists
+    FILE* check_fp = fopen(full_json_path, "r");
+    if (check_fp != NULL) {
+        fclose(check_fp);
+        return ESP_OK; // JSON exists, nothing to do
+    }
+
+    // JSON is missing: read WAV header to determine data size
+    wav_header_t header;
+    FILE* fp = fopen(full_wav_path, "rb");
+    if (!fp) {
+        ESP_LOGE(TAG, "Error opening WAV file %s: %s", full_wav_path, strerror(errno));
+        return ESP_FAIL;
+    }
+    fread(&header, sizeof(wav_header_t), 1, fp);
+    fclose(fp);
+
+    // generate the default JSON file
+    esp_err_t res = set_json(full_json_path, false, 1, BIT_DEPTH_MAX, 1.0, 
+                             false, DISTORTION_THRESHOLD_MAX, DISTORTION_GAIN_MAX, 0, header.data_size);
+    
+    if (res == ESP_OK) {
+        ESP_LOGI(TAG, "Created JSON file: %s", full_json_path);
+    }
+    return res;
+}
+
+static esp_err_t populate_sample_names_array(DIR *dir, int count) {
+    if (count == 0) {
+        sample_names = NULL;
+        sample_names_size = 0;
+        return ESP_OK;
+    }
+
+    sample_names = heap_caps_malloc(count * sizeof(char*), MALLOC_CAP_SPIRAM);
+    if (!sample_names) {
+        return ESP_ERR_NO_MEM;
+    }
+    
+    sample_names_size = count;
+
+    // get back to the beginning of the directory
+    rewinddir(dir);
+    struct dirent* entry;
+    int idx = 0;
+
+    while ((entry = readdir(dir)) != NULL && idx < count) {
+        if (entry->d_name[0] == '.') continue;
+        
+        char *ext = strrchr(entry->d_name, '.');
+        if (ext && strcasecmp(ext, ".wav") == 0) {
+            sample_names[idx] = malloc(MAX_SIZE);
+            if (sample_names[idx]) {
+                snprintf(sample_names[idx], MAX_SIZE, "%.*s", (int)(ext - entry->d_name), entry->d_name);
+                idx++;
+            }
+        }
+    }
     return ESP_OK;
 }

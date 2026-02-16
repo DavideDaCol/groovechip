@@ -3,7 +3,7 @@
 #include "esp_log.h"
 #include <math.h>
 
-static QueueHandle_t fsm_queue = NULL;
+QueueHandle_t fsm_queue = NULL;
 
 menu_types curr_menu = GEN_MENU;
 
@@ -415,7 +415,7 @@ void get_btn_settings_second_line(char* out){
     uint8_t bank_index = get_sample_bank_index(pressed_button);
     if(bank_index == NOT_DEFINED) return;
 
-    mode_t curr_mode = get_playback_mode(bank_index);
+    pb_mode_t curr_mode = get_playback_mode(bank_index);
     get_mode_stringify(curr_mode, out);
 }
 void get_metronome_second_line(char* out){
@@ -627,7 +627,8 @@ void main_fsm_task(void *pvParameters) {
             char line2[17] = "";
             
             (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).second_line(line2);
-            print_double(line1, line2);
+            // print_double(line1, line2);
+            printf("-----------------------%s-----------------------\n-----------------------%s-----------------------\n", line1, line2);
             screen_has_to_change = false;
         }
     }
@@ -643,6 +644,7 @@ void joystick_handler(joystick_dir_t in_dir) {
         case DOWN: js_down_handler(); break;
         case RIGHT: js_right_handler(); break;
         case UP: js_up_handler(); break;
+        case PRESS: recorder_fsm(); break;
         default: sink(); return;
     }
     printf("%s\n", (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).first_line);
@@ -773,6 +775,7 @@ void js_down_handler() {
 
 //Function to call when a button bound to a sample is pressed
 void set_button_pressed(int pad_id) {
+
     if(pad_id != pressed_button){
         clear_stack();
         pressed_button = pad_id;
@@ -1093,7 +1096,8 @@ void fsm_init(){
     char line2[17] = "";
     
     (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).second_line(line2);
-    print_double(line1, line2);
+    // print_double(line1, line2);
+    printf("-----------------------%s-----------------------\n-----------------------%s-----------------------\n", line1, line2);
 
     // create task
     xTaskCreate(main_fsm_task, "fsm_task", 4096, NULL, 5, NULL);

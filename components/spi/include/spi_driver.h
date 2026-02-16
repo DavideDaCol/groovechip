@@ -8,10 +8,7 @@
 #ifndef SPI_H
 #define SPI_H
 
-#include "driver/spi_common.h"
 #include "sdmmc_cmd.h"
-#include "driver/sdspi_host.h"
-#include "driver/gpio.h"
 
 //Ports used for the SPI communication 
 #define GRVCHP_SCLK GPIO_NUM_18
@@ -19,8 +16,9 @@
 #define GRVCHP_MISO GPIO_NUM_19
 #define GRVCHP_CS GPIO_NUM_5
 
-/* SD SPI initialization procedure
-*  - out_card (OUT): pointer to the card's info
+/*
+@brief initializes the SD SPI driver
+@param out_card pointer to the card's informations structure
 */
 esp_err_t sdspi_driver_init(sdmmc_card_t* out_card);
 

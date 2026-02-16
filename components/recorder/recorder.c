@@ -6,146 +6,258 @@
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "esp_log.h"
+#include "fsm.h"
+#include "lcd.h"
+#include "sd_reader.h"
+
+const char* TAG_REC = "REC";
 
 recorder_t g_recorder = {0};
 
+int record_number = 0;
+
+void add_to_sample_names(char *new_name);
+
 void recorder_init(void) {
+    // set all the parameters
     g_recorder.buffer_capacity = RECORD_BUFFER_SIZE;
     g_recorder.buffer_used = 0;
     g_recorder.state = REC_IDLE;
-    g_recorder.target_pad = -1;
-    g_recorder.target_sample_id = -1;
+    g_recorder.target_bank_index = -1;
     
-    printf("[DEBUG PRINT] Recorder initialized (buffer: %zu frames, %.1f sec max)\n",
-           RECORD_BUFFER_SIZE,
+    // logging action
+    ESP_LOGI(TAG_REC, "Recorder initialized (buffer: %zu frames, %.1f sec max)",
+           RECORD_BUFFER_SIZE / 2,
            (float)RECORD_MAX_DURATION_SEC);
 }
 
-// TODO serve solo per essere sicuri del flow di azioni (se tutto funziona bene si può togliere)
 void recorder_start_pad_selection(void) {
+    // logging action + skip if in wrong state
     if (g_recorder.state == REC_RECORDING) {
-        printf("Error: Already recording...\n");
+        ESP_LOGE(TAG_REC, "Already recording...");
         return;
     }
     
+    // print on lcd screen
+    // print_single("Select a pad...");
+    printf("-----------------------\nSelect a pad\n-----------------------");
+    
+
+    // change state
     g_recorder.state = REC_WAITING_PAD;
-    printf("[DEBUG PRINT] Click the pad in which you wanna save the new sample...\n");
+
+    // logging action
+    ESP_LOGI(TAG_REC, "Click the pad in which you wanna save the new sample...");
 }
 
-void recorder_select_pad(int pad_id, int bank_index) {
-    // TODO rimuovi se hai tolto lo step precedente (sostituisci con state != IDLE)
+void recorder_select_pad(int gpio) {
+    // logging action + skip if in wrong state
     if (g_recorder.state != REC_WAITING_PAD) {
+        ESP_LOGE(TAG_REC, "Tryng to select pad while not in REC_WAITING_PAD");
         return;
     }
     
-    g_recorder.target_pad = pad_id;
-    g_recorder.target_sample_id = bank_index;
+    // map pad to sample
+    g_recorder.target_bank_index = get_sample_bank_index(gpio);
+    if (g_recorder.target_bank_index == NOT_DEFINED){
+        g_recorder.target_bank_index = get_pad_num(gpio) - 1;
+        map_pad_to_sample(gpio, g_recorder.target_bank_index);
+    }
     
-    printf("[DEBUG PRINT] Sample slot: %d\n", bank_index);
-    
-    // Start recording
+    // logging action
+    ESP_LOGI(TAG_REC, "Sample slot: %d", g_recorder.target_bank_index);
+
+    // start recording
     recorder_start_recording();
 }
 
 void recorder_start_recording(void) {
+    // logging action + skip if in wrong state
     if (g_recorder.state != REC_WAITING_PAD && g_recorder.state != REC_IDLE) {
-        printf("Error: state not valid to start recording\n");
+        ESP_LOGE(TAG_REC, "State not valid to start recording");
         return;
     }
     
-    // Allocate space for buffer and reset fields
-    g_recorder.buffer = malloc(RECORD_BUFFER_SIZE * sizeof(int16_t));
+    // allocate space for buffer
+    g_recorder.buffer = heap_caps_malloc(RECORD_BUFFER_SIZE * sizeof(int16_t), MALLOC_CAP_SPIRAM);
+
+    // logging action + don't start recording if there is no space in PSRAM
     if (!g_recorder.buffer) {
-        printf("ERROR: cannot allocate record buffer\n");
+        ESP_LOGE(TAG_REC, "Cannot allocate record buffer");
         return;
     }
-
+    
+    // reset fields
     g_recorder.buffer_capacity = RECORD_BUFFER_SIZE;
     g_recorder.buffer_used = 0;
     g_recorder.start_time_ms = xTaskGetTickCount() * portTICK_PERIOD_MS;
+    
+    // print on lcd screen
+    // print_single("Recording...");
+    printf("-----------------------\nRecording\n------------------------");
+    
+    
+    // change state
     g_recorder.state = REC_RECORDING;
     
-    printf("[DEBUG PRINT] Recording started on pad %d (sample %d)\n",
-           g_recorder.target_pad,
-           g_recorder.target_sample_id);
+    // logging action
+    ESP_LOGI(TAG_REC, "Recording started on sample %d", g_recorder.target_bank_index);
 }
 
 void recorder_stop_recording(void) {
+    // logging action + skip if in wrong state
     if (g_recorder.state != REC_RECORDING) {
-        printf("Error: No active recording\n");
+        ESP_LOGE(TAG_REC, "Trying to stop a recording that did't start.");
         return;
     }
     
-    g_recorder.duration_ms = (xTaskGetTickCount() * portTICK_PERIOD_MS) - g_recorder.start_time_ms;
-    g_recorder.state = REC_RECORDED;
+    // change state
+    g_recorder.state = REC_IDLE;
     
-    uint32_t frames_recorded = g_recorder.buffer_used;
+    // sets some fields
+    uint32_t frames_recorded = g_recorder.buffer_used / 2;
+    g_recorder.duration_ms = (xTaskGetTickCount() * portTICK_PERIOD_MS) - g_recorder.start_time_ms;
     float duration_sec = (float)frames_recorded / RECORD_SAMPLE_RATE;
     
-    printf("[DEBUG PRINT] Recording stopped: %.2f seconds (%lu frames)\n", duration_sec, frames_recorded);
+    // logging action
+    ESP_LOGI(TAG_REC, "Recording stopped: %.2f seconds (%lu frames)", duration_sec, frames_recorded);
     
-    // Put the sample in sample_bank
-    if (g_recorder.target_sample_id >= 0 && g_recorder.target_sample_id < SAMPLE_NUM) {
-        sample_t *target = sample_bank[g_recorder.target_sample_id];
+    // put the sample in sample_bank if possible, otherwise log error
+    if (g_recorder.target_bank_index >= 0 && g_recorder.target_bank_index < SAMPLE_NUM) {
+        sample_t *target = sample_bank[g_recorder.target_bank_index];
 
-        // If there is already a sample bound to that bank_index 
+        // if not in memory allocate space
+        if (target == NULL){
+
+            //logging action
+            ESP_LOGI(TAG_REC, "Creating new sample_t for bank %d", g_recorder.target_bank_index);
+
+            target = heap_caps_calloc(1, sizeof(sample_t), MALLOC_CAP_SPIRAM);
+
+            // logging action + free memory + return
+            if (target == NULL) {
+                ESP_LOGE(TAG_REC, "Cannot allocate sample_t structure");
+                if (g_recorder.buffer) {
+                    heap_caps_free(g_recorder.buffer);
+                    g_recorder.buffer = NULL;
+                }
+                return;
+            }
+
+            // set some default values of the sample_t
+            sample_bank[g_recorder.target_bank_index] = target;
+            target->bank_index = g_recorder.target_bank_index;
+            target->volume = 0.1f;
+        }
+
+        // if there is already a sample bound to that bank_index 
         // and if it's not in flash memory then free it
-        if (target->raw_data && !is_flash_ptr((void *)(target->raw_data))) {
-            free((void *)(target->raw_data));
+        if (target->raw_data != NULL) {
+
+            //logging action
+            ESP_LOGE(TAG_REC, "Raw data is not NULL");
+            
+            // free memory
+            heap_caps_free((void *)(target->raw_data));
         }
         
+        // allocate space for the new sample in PSRAM
         size_t bytes = g_recorder.buffer_used * sizeof(int16_t);
-        int16_t *final_buffer = realloc(g_recorder.buffer, bytes);
-
+        int16_t *final_buffer = heap_caps_realloc(g_recorder.buffer, bytes, MALLOC_CAP_SPIRAM);
+        
+        // if final buffer is allocated associate it to the target raw data
+        // otherwise it means that there is no free space, so associates 
+        // directly the g_recorder.buffer to the target raw data
         if (final_buffer) {
             target -> raw_data = (unsigned char *)final_buffer;
         } else {
             target -> raw_data = (unsigned char *)g_recorder.buffer;
         }
 
-        // Manually create the WAV header
-        target->header.sample_rate = RECORD_SAMPLE_RATE;
-        target->header.num_channels = 1;
-        target->header.bits_per_sample = 16;
-        target->header.data_size = g_recorder.buffer_used * sizeof(int16_t);
-        
-        // Reset playback state
-        target->playback_ptr = 0;
-        target->playback_finished = false;
+        heap_caps_free(sample_names_bank[g_recorder.target_bank_index]);
 
-        // Reset the fields in the recording struct and free memory
+        // sets sample name
+        sample_names_bank[g_recorder.target_bank_index] = heap_caps_calloc(1, MAX_SIZE, MALLOC_CAP_SPIRAM);
+        sprintf(sample_names_bank[g_recorder.target_bank_index], "new_rec%d", record_number++);
+        add_to_sample_names(sample_names_bank[g_recorder.target_bank_index]);
+
+        // logging action
+        ESP_LOGI(TAG_REC, "Buffer used: %d", g_recorder.buffer_used);
+
+        uint32_t actual_data_size = g_recorder.buffer_used * sizeof(int16_t);
+
+        // manually fill the WAV header
+        memcpy(target->header.riff_section_id, "RIFF", 4);
+        target->header.size = sizeof(wav_header_t) - 8 + actual_data_size; 
+        memcpy(target->header.riff_format, "WAVE", 4);
+        
+        memcpy(target->header.format_id, "fmt ", 4); 
+        target->header.format_size = 16;
+        target->header.fmt_id = 1;
+        target->header.num_channels = 1;
+        target->header.sample_rate = GRVCHP_SAMPLE_FREQ;
+        
+        target->header.block_align = 2; 
+        target->header.byte_rate = target->header.block_align * GRVCHP_SAMPLE_FREQ;
+        target->header.bits_per_sample = 16;
+        
+        memcpy(target->header.data_id, "data", 4);
+        target->header.data_size = actual_data_size;
+        
+        target->total_frames = g_recorder.buffer_used; 
+        target->start_ptr = 0.0f;
+        target->end_ptr = (float)target->total_frames - 1.0f;
+        target->playback_ptr = 0.0f;
+        target->playback_finished = false;
+        target->volume = 0.1f;
+
+        // reset the fields in the recording struct and free memory
         g_recorder.buffer = NULL;
         g_recorder.buffer_used = 0;
+
         
-        printf("[DEBUG PRINT] Sample %d updated on pad %d.\n", g_recorder.target_sample_id, g_recorder.target_pad);
+        // logging action
+        ESP_LOGI(TAG_REC, "Sample %d updated.", g_recorder.target_bank_index);
+    } else {
+
+        // logging action
+        ESP_LOGE(TAG_REC, "Wrong bank index in record mode: %d.", g_recorder.target_bank_index);
     }
 }
 
 void recorder_cancel(void) {
+    // reset all the fields of the recording struct
     g_recorder.state = REC_IDLE;
     g_recorder.buffer_used = 0;
-    g_recorder.target_pad = -1;
-    g_recorder.target_sample_id = -1;
-    printf("[DEBUG PRINT] Recording canceled\n");
+    g_recorder.target_bank_index = -1;
+
+    // logging action
+    ESP_LOGI(TAG_REC, "Recording canceled.");
 }
 
 void recorder_capture_frame(int16_t sample) {
+    // logging action + skip if in wrong state
     if (g_recorder.state != REC_RECORDING) {
+        ESP_LOGE(TAG_REC, "Trying to capture frame while not recording.");
         return;
     }
     
-    // Check free space
+    // check free space and stop recording if the buffer is full
     if (g_recorder.buffer_used + 1 > g_recorder.buffer_capacity) {
-        printf("Error: Buffer full!\n");
+        ESP_LOGE(TAG_REC, "Buffer full!");
+        fsm_queue_msg_t msg = {
+            .payload = PRESS,
+            .source = JOYSTICK
+        };
         recorder_stop_recording();
+        xQueueSend(fsm_queue, &msg, 0);
         return;
     }
     
-    // Save the frame
+    // save the frame
     g_recorder.buffer[g_recorder.buffer_used++] = sample;
 }
-
-// Getters
 
 recorder_state_t recorder_get_state(void) {
     return g_recorder.state;
@@ -159,55 +271,64 @@ float recorder_get_duration_sec(void) {
     if (g_recorder.state == REC_RECORDING) {
         uint32_t elapsed_ms = (xTaskGetTickCount() * portTICK_PERIOD_MS) - g_recorder.start_time_ms;
         return (float)elapsed_ms / 1000.0f;
-    } else if (g_recorder.state == REC_RECORDED) {
+    } else if (g_recorder.state == REC_IDLE) {
         return (float)g_recorder.duration_ms / 1000.0f;
     }
     return 0.0f;
 }
 
-bool is_flash_ptr(void *p) {
-    return ((uintptr_t)p) >= 0x3F400000; // ESP32 FLASH region
-}
+void recorder_fsm(){
+    // start recording
 
-// TODO maybe in pad_section or in mixer
-bool rec_mode = false;
+    // logging action
+    ESP_LOGI(TAG_REC, "Recording state (expected 0 = IDLE/NOT STARTED): %d", g_recorder.state);
 
-void on_rec_button_press() {
-    if (recorder_is_recording()) {
-        recorder_stop_recording();
-        rec_mode = false;
-        printf("[DEBUG PRINT] Rec mode OFF");
-    } else {
-        rec_mode = !rec_mode;
-        if (rec_mode) {
-            recorder_start_pad_selection();
-            printf("[DEBUG PRINT] Rec mode ON\n");
-        }
-    }
-}
-
-void on_pad_press(int gpio_num) {
-    int bank_index = -1;
-    
-    // TODO non so come sono collegati bank_index e gpio_num
-    switch(gpio_num) {
-        case GPIO_BUTTON_1: bank_index = 0; break;
-        case GPIO_BUTTON_2: bank_index = 1; break;
-        case GPIO_BUTTON_3: bank_index = 2; break;
-        case GPIO_BUTTON_4: bank_index = 3; break;
-        case GPIO_BUTTON_5: bank_index = 4; break;
-        case GPIO_BUTTON_6: bank_index = 5; break;
-        case GPIO_BUTTON_7: bank_index = 6; break;
-        case GPIO_BUTTON_8: bank_index = 7; break;
-        default: return;
-    }
-    
-    // if rec mode is on but recorder is not recording then start recording
-    if (rec_mode && !recorder_is_recording()) {
-        recorder_select_pad(gpio_num, bank_index);
+    // logging action + skip if in wrong state
+    if (g_recorder.state != REC_IDLE){
+        ESP_LOGE(TAG_REC, "Trying to record while not in REC_IDLE state.");
         return;
     }
-    
-    // otherwise 
-    action_start_or_stop_sample(bank_index);
+
+    // start pad selection
+    recorder_start_pad_selection();
+
+    // logging action
+    ESP_LOGI(TAG_REC, "Recording state (expected 1 = WAITING FOR PAD): %d", g_recorder.state);
+
+    // wait for signal by the pressed button (which is the chosen pad)
+    fsm_queue_msg_t msg;
+    while(xQueueReceive(fsm_queue, &msg, portMAX_DELAY) && msg.source != PAD);
+
+    // select pad
+    recorder_select_pad(msg.payload);
+
+    // logging action
+    ESP_LOGI(TAG_REC, "Recording state (expected 2 = RECORDING): %d", g_recorder.state);
+
+    // recording...
+
+    // wait for signal by the recording button to stop recording
+    while(xQueueReceive(fsm_queue, &msg, portMAX_DELAY) && msg.source != JOYSTICK && msg.payload != PRESS);
+
+    // logging action + skip if in wrong state
+    // if (g_recorder.state != REC_RECORDING){
+    //     ESP_LOGE(TAG_REC, "Trying to stop recording while not in REC_RECORDING state.");
+    //     return;
+    // }
+
+    // stop recording
+    if (g_recorder.state != REC_IDLE)
+        recorder_stop_recording();
+
+    // logging action
+    ESP_LOGI(TAG_REC, "Recording state (expected 0 = IDLE/FINISHED): %d", g_recorder.state);
+}
+
+void add_to_sample_names(char *new_name) {
+    sample_names = heap_caps_realloc(sample_names, (++sample_names_size)*sizeof(char*), MALLOC_CAP_SPIRAM);
+    sample_names[sample_names_size - 1] = new_name;
+
+    for (int i = 0; i < sample_names_size; i++) {
+        printf("%s\n", sample_names[i]);
+    }
 }
