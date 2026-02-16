@@ -10,6 +10,7 @@
 #include "fsm.h"
 #include "lcd.h"
 #include "sd_reader.h"
+#include "effects.h"
 
 const char* TAG_REC = "REC";
 
@@ -184,45 +185,12 @@ void recorder_stop_recording(void) {
         // logging action
         ESP_LOGI(TAG_REC, "Buffer used: %d", g_recorder.buffer_used);
 
-        uint32_t actual_data_size = g_recorder.buffer_used * sizeof(int16_t);
-
-        // manually fill the WAV header
-        memcpy(target->header.riff_section_id, "RIFF", 4);
-        target->header.size = sizeof(wav_header_t) - 8 + actual_data_size; 
-        memcpy(target->header.riff_format, "WAVE", 4);
-        
-        memcpy(target->header.format_id, "fmt ", 4); 
-        target->header.format_size = 16;
-        target->header.fmt_id = 1;
-        target->header.num_channels = 1;
-        target->header.sample_rate = GRVCHP_SAMPLE_FREQ;
-        
-        target->header.block_align = 2; 
-        target->header.byte_rate = target->header.block_align * GRVCHP_SAMPLE_FREQ;
-        target->header.bits_per_sample = 16;
-        
-        memcpy(target->header.data_id, "data", 4);
-        target->header.data_size = actual_data_size;
-        
-        target->total_frames = g_recorder.buffer_used; 
-        target->start_ptr = 0.0f;
-        target->end_ptr = (float)target->total_frames - 1.0f;
-        target->playback_ptr = 0.0f;
-        target->playback_finished = false;
-        target->volume = 1.0f;
-
-        target->bank_index = g_recorder.target_bank_index;
 
         
         // reset the fields in the recording struct and free memory
         g_recorder.buffer = NULL;
         g_recorder.buffer_used = 0;
         
-        // for (int i = 0; i < sample_bank[g_recorder.target_bank_index] ->header.data_size; i++){
-        //     if (sample_bank[g_recorder.target_bank_index]->raw_data[i] != 0){
-        //         printf("%d\n", sample_bank[g_recorder.target_bank_index]->raw_data[i]);
-        //     }
-        // }
         
         // logging action
         ESP_LOGI(TAG_REC, "Sample %d updated.", g_recorder.target_bank_index);
@@ -315,12 +283,6 @@ void recorder_fsm(){
 
     // wait for signal by the recording button to stop recording
     while(xQueueReceive(fsm_queue, &msg, portMAX_DELAY) && msg.source != JOYSTICK && msg.payload != PRESS);
-    printf("EXIT FROM LOOP\n");
-    // logging action + skip if in wrong state
-    // if (g_recorder.state != REC_RECORDING){
-    //     ESP_LOGE(TAG_REC, "Trying to stop recording while not in REC_RECORDING state.");
-    //     return;
-    // }
 
     // stop recording
     if (g_recorder.state != REC_IDLE){

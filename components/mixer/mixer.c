@@ -511,3 +511,38 @@ void create_mixer(i2s_chan_handle_t channel){
     xTaskCreate(&mixer_task_wip, "Mixer task", 8192, (void*)channel, 5, NULL);
 }
 
+void sample_init (sample_t* in_sample) {
+    uint32_t actual_data_size = g_recorder.buffer_used * sizeof(int16_t);
+
+    // manually fill the WAV header
+    memcpy(target->header.riff_section_id, "RIFF", 4);
+    in_sample->header.size = sizeof(wav_header_t) - 8 + actual_data_size; 
+    memcpy(target->header.riff_format, "WAVE", 4);
+    
+    memcpy(target->header.format_id, "fmt ", 4); 
+    target->header.format_size = 16;
+    target->header.fmt_id = 1;
+    target->header.num_channels = 1;
+    target->header.sample_rate = GRVCHP_SAMPLE_FREQ;
+    
+    target->header.block_align = 2; 
+    target->header.byte_rate = target->header.block_align * GRVCHP_SAMPLE_FREQ;
+    target->header.bits_per_sample = 16;
+    
+    memcpy(target->header.data_id, "data", 4);
+    target->header.data_size = actual_data_size;
+    
+    target->total_frames = g_recorder.buffer_used; 
+    target->start_ptr = 0.0f;
+    target->end_ptr = (float)target->total_frames - 1.0f;
+    target->playback_ptr = 0.0f;
+    target->playback_finished = false;
+    target->volume = 1.0f;
+
+    target->bank_index = g_recorder.target_bank_index;
+
+    // initializing the effects
+    init_pitch(g_recorder.target_bank_index);
+    init_distortion(g_recorder.target_bank_index);
+    init_bit_crusher(g_recorder.target_bank_index);
+}

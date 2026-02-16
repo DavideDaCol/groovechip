@@ -54,74 +54,199 @@ effects_t* get_master_buffer_effects();
 
 #pragma region PITCH
 //=========================PITCH============================
+/*
+@brief initializes the pitch of the sample mapped to the bank_index
+@param bank_index bank index of the sample we want to initialize the pitch of
+*/
 void init_pitch(uint8_t bank_index);
 
+/*
+@brief
+@param
+*/
 void set_pitch_factor(uint8_t bank_index, float pitch_factor);
 
+/*
+@brief
+@param
+*/
 float get_pitch_factor(uint8_t bank_index);
 //==========================================================
 #pragma endregion
 #pragma region BIT CRUSHER
 //=========================BIT CRUSHER============================
-
+/*
+@brief
+@param
+*/
 void init_bit_crusher(uint8_t bank_index);
 
+/*
+@brief
+@param
+*/
 void set_bit_crusher(uint8_t bank_index, bool state);
 
+/*
+@brief
+@param
+*/
 void set_master_bit_crusher_enable(bool state);
 
+/*
+@brief
+@param
+*/
 bool get_bit_crusher_state(uint8_t bank_index);
 
+/*
+@brief
+@param
+*/
 bool get_master_bit_crusher_enable();
 
+/*
+@brief
+@param
+*/
 void set_bit_crusher_bit_depth(uint8_t bank_index, uint8_t bit_depth);
 
+/*
+@brief
+@param
+*/
 void set_bit_crusher_bit_depth_master_buffer(uint8_t bit_depth);
 
+/*
+@brief
+@param
+*/
 uint8_t get_bit_crusher_bit_depth(uint8_t bank_index);
 
+/*
+@brief
+@param
+*/
 uint8_t get_bit_crusher_bit_depth_master_buffer();
 
+/*
+@brief
+@param
+*/
 void set_bit_crusher_downsample(uint8_t bank_index, uint8_t downsample_value);
 
+/*
+@brief
+@param
+*/
 void set_bit_crusher_downsample_master_buffer(uint8_t downsample_value);
 
+/*
+@brief
+@param
+*/
 uint8_t get_bit_crusher_downsample(uint8_t bank_index);
 
+/*
+@brief
+@param
+*/
 uint8_t get_bit_crusher_downsample_master_buffer();
 
 //================================================================
 #pragma endregion
 #pragma region DISTORTION
 //=========================DISTORTION=============================
+/*
+@brief
+@param
+*/
 void init_distortion(uint8_t bank_index);
 
+/*
+@brief
+@param
+*/
 void set_distortion(uint8_t bank_index, bool state);
 
+/*
+@brief
+@param
+*/
 void set_master_distortion_enable(bool state);
 
+/*
+@brief
+@param
+*/
 bool get_distortion_state(uint8_t bank_index);
 
+/*
+@brief
+@param
+*/
 bool get_master_distortion_enable();
 
+/*
+@brief
+@param
+*/
 void set_distortion_gain(uint8_t bank_index, float gain);
 
+/*
+@brief
+@param
+*/
 void set_distortion_gain_master_buffer(float gain);
 
+/*
+@brief
+@param
+*/
 float get_distortion_gain(uint8_t bank_index);
 
+/*
+@brief
+@param
+*/
 float get_distortion_gain_master_buffer();
 
+/*
+@brief
+@param
+*/
 void set_distortion_threshold(uint8_t bank_index, int16_t threshold_value);
 
+/*
+@brief
+@param
+*/
 void set_distortion_threshold_master_buffer(int16_t threshold_value);
 
+/*
+@brief
+@param
+*/
 int16_t get_distortion_threshold(uint8_t bank_index);
 
+/*
+@brief
+@param
+*/
 int16_t get_distortion_threshold_master_buffer();
 
 //================================================================
+/*
+@brief
+@param
+*/
 void effects_init();
+
+/*
+@brief
+@param
+*/
+void smp_effects_init(int in_bank_index);
 
 #pragma endregion
 

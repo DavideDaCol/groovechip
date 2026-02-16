@@ -204,3 +204,9 @@ void effects_init(){
         init_distortion(i);
     }
 }
+
+void smp_effects_init(int in_bank_index){
+    init_pitch(in_bank_index);
+    init_bit_crusher(in_bank_index);
+    init_distortion(in_bank_index);
+}

@@ -5,6 +5,9 @@
 
 extern adc_oneshot_unit_handle_t adc1_handle;
 
+/*
+@brief initializes the ADC driver
+*/
 void adc1_init();
 
 #endif
