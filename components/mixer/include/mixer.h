@@ -134,4 +134,6 @@ float get_metronome_bpm();
 
 void create_mixer(i2s_chan_handle_t channel);
 
+void sample_init (sample_t* in_sample, int size, int bank_index);
+
 #endif

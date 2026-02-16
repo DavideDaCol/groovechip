@@ -15,11 +15,15 @@
 #include "fsm.h"
 #include "lcd.h"
 #include "sd_reader.h"
+#include "nvs.h"
+#include "nvs_flash.h"
+
 
 void app_main(void)
 {
+    nvs_flash_init();
     sd_reader_init();
-    // lcd_driver_init();
+    lcd_driver_init();
     adc1_init();
     fsm_init();
     pad_section_init();

@@ -511,38 +511,36 @@ void create_mixer(i2s_chan_handle_t channel){
     xTaskCreate(&mixer_task_wip, "Mixer task", 8192, (void*)channel, 5, NULL);
 }
 
-void sample_init (sample_t* in_sample) {
-    uint32_t actual_data_size = g_recorder.buffer_used * sizeof(int16_t);
-
+void sample_init (sample_t* in_sample, int size, int bank_index) {
+    sample_names_bank[bank_index] = NULL;
+    
     // manually fill the WAV header
-    memcpy(target->header.riff_section_id, "RIFF", 4);
-    in_sample->header.size = sizeof(wav_header_t) - 8 + actual_data_size; 
-    memcpy(target->header.riff_format, "WAVE", 4);
+    memcpy(in_sample->header.riff_section_id, "RIFF", 4);
+    in_sample->header.size = sizeof(wav_header_t) - 8 + size; 
+    memcpy(in_sample->header.riff_format, "WAVE", 4);
     
-    memcpy(target->header.format_id, "fmt ", 4); 
-    target->header.format_size = 16;
-    target->header.fmt_id = 1;
-    target->header.num_channels = 1;
-    target->header.sample_rate = GRVCHP_SAMPLE_FREQ;
+    memcpy(in_sample->header.format_id, "fmt ", 4); 
+    in_sample->header.format_size = 16;
+    in_sample->header.fmt_id = 1;
+    in_sample->header.num_channels = 1;
+    in_sample->header.sample_rate = GRVCHP_SAMPLE_FREQ;
     
-    target->header.block_align = 2; 
-    target->header.byte_rate = target->header.block_align * GRVCHP_SAMPLE_FREQ;
-    target->header.bits_per_sample = 16;
+    in_sample->header.block_align = 2; 
+    in_sample->header.byte_rate = in_sample->header.block_align * GRVCHP_SAMPLE_FREQ;
+    in_sample->header.bits_per_sample = 16;
     
-    memcpy(target->header.data_id, "data", 4);
-    target->header.data_size = actual_data_size;
+    memcpy(in_sample->header.data_id, "data", 4);
+    in_sample->header.data_size = size;
     
-    target->total_frames = g_recorder.buffer_used; 
-    target->start_ptr = 0.0f;
-    target->end_ptr = (float)target->total_frames - 1.0f;
-    target->playback_ptr = 0.0f;
-    target->playback_finished = false;
-    target->volume = 1.0f;
+    in_sample->total_frames = size / sizeof(uint16_t); 
+    in_sample->start_ptr = 0.0f;
+    in_sample->end_ptr = (float)in_sample->total_frames - 1.0f;
+    in_sample->playback_ptr = 0.0f;
+    in_sample->playback_finished = false;
+    in_sample->volume = 1.0f;
 
-    target->bank_index = g_recorder.target_bank_index;
+    in_sample->bank_index = bank_index;
 
     // initializing the effects
-    init_pitch(g_recorder.target_bank_index);
-    init_distortion(g_recorder.target_bank_index);
-    init_bit_crusher(g_recorder.target_bank_index);
+    smp_effects_init(bank_index);
 }

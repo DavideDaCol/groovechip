@@ -10,4 +10,5 @@ idf_component_register(
         sdmmc
         fatfs
         esp_psram
+        nvs_flash
 )

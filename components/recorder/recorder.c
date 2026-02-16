@@ -16,9 +16,6 @@ const char* TAG_REC = "REC";
 
 recorder_t g_recorder = {0};
 
-int record_number = 0;
-
-void add_to_sample_names(char *new_name);
 
 void recorder_init(void) {
     // set all the parameters
@@ -31,6 +28,7 @@ void recorder_init(void) {
     ESP_LOGI(TAG_REC, "Recorder initialized (buffer: %zu frames, %.1f sec max)",
            RECORD_BUFFER_SIZE / 2,
            (float)RECORD_MAX_DURATION_SEC);
+
 }
 
 void recorder_start_pad_selection(void) {
@@ -40,9 +38,7 @@ void recorder_start_pad_selection(void) {
         return;
     }
     
-    // print on lcd screen
-    // print_single("Select a pad...");
-    printf("-----------------------\nSelect a pad\n-----------------------");
+    print_single("Select a pad...");
     
 
     // change state
@@ -94,10 +90,7 @@ void recorder_start_recording(void) {
     g_recorder.buffer_used = 0;
     g_recorder.start_time_ms = xTaskGetTickCount() * portTICK_PERIOD_MS;
     
-    // print on lcd screen
-    // print_single("Recording...");
-    printf("-----------------------\nRecording\n------------------------");
-    
+    print_single("Recording...");
     
     // change state
     g_recorder.state = REC_RECORDING;
@@ -171,29 +164,25 @@ void recorder_stop_recording(void) {
         if (final_buffer) {
             target -> raw_data = (unsigned char *)final_buffer;
         } else {
-            printf("2\n");
             target -> raw_data = (unsigned char *)g_recorder.buffer;
         }
 
         heap_caps_free(sample_names_bank[g_recorder.target_bank_index]);
 
-        // sets sample name
-        sample_names_bank[g_recorder.target_bank_index] = heap_caps_calloc(1, MAX_SIZE, MALLOC_CAP_SPIRAM);
-        sprintf(sample_names_bank[g_recorder.target_bank_index], "new_rec%d", record_number++);
-        add_to_sample_names(sample_names_bank[g_recorder.target_bank_index]);
-
         // logging action
         ESP_LOGI(TAG_REC, "Buffer used: %d", g_recorder.buffer_used);
 
+        uint32_t actual_data_size = g_recorder.buffer_used * sizeof(int16_t);
 
+        sample_init(target, actual_data_size, g_recorder.target_bank_index);
         
         // reset the fields in the recording struct and free memory
         g_recorder.buffer = NULL;
         g_recorder.buffer_used = 0;
         
-        
         // logging action
         ESP_LOGI(TAG_REC, "Sample %d updated.", g_recorder.target_bank_index);
+
     } else {
 
         // logging action
@@ -292,13 +281,4 @@ void recorder_fsm(){
 
     // logging action
     ESP_LOGI(TAG_REC, "Recording state (expected 0 = IDLE/FINISHED): %d", g_recorder.state);
-}
-
-void add_to_sample_names(char *new_name) {
-    sample_names = heap_caps_realloc(sample_names, (++sample_names_size)*sizeof(char*), MALLOC_CAP_SPIRAM);
-    sample_names[sample_names_size - 1] = new_name;
-
-    for (int i = 0; i < sample_names_size; i++) {
-        printf("%s\n", sample_names[i]);
-    }
 }

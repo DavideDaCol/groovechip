@@ -14,8 +14,11 @@
 extern char **sample_names;
 extern int sample_names_size;
 
+// storage related infos
+#define STRG_NAMESPACE "storage"
+#define REC_NUM_ID "rec_num"
 
-//Default mountpoint
+// default mountpoint
 #define GRVCHP_MNTPOINT "/sdcard"
 #define GRVCHP_MNTPOINT_SIZE 7
 
@@ -23,27 +26,24 @@ extern int sample_names_size;
 #define GRVCHP_FAT_DRIVE_INDEX 0
 #define GRVCHP_FAT_DRIVE_STR "0:"
 
-//Maximum number of files that can be opened simultaneously
+// maximum number of files that can be opened simultaneously
 #define GRVCHP_MAX_FILES 1
 
-//Maximum size of the name that will be printed in the screen 
+// maximum size of the name that will be printed in the screen 
 #define MAX_SIZE 17
 
-//Directory containing all the samples' WAV files
+// directory containing all the samples' WAV files
 #define WAV_FILES_DIR "wav_files"
 #define WAV_FILES_DIR_SIZE 10
 #define WAV_EXTENSION_SIZE 4
 
-//Directory containing all the samples' JSON files
+// directory containing all the samples' JSON files
 #define JSON_FILES_DIR "json_files"
 #define JSON_FILES_DIR_SIZE 11
 #define JSON_EXTENSION_SIZE 5
 
 #define MAX_BUFF_SIZE 256
 #define MAX_JSON_SIZE 512
-
-#define WAV_EXTENSION_SIZE 4
-#define JSON_EXTENSION_SIZE 5
 
 #define FORMAT(S) "%" #S "[^.]"
 #define RESOLVE(S) FORMAT(S)
