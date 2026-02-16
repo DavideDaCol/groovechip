@@ -740,3 +740,4 @@ static esp_err_t rec_num_init() {
     nvs_close(rec_handler);
     return ESP_OK;
 }
+

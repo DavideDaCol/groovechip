@@ -14,6 +14,9 @@
 extern char **sample_names;
 extern int sample_names_size;
 
+// contains all the names of the samples
+extern char* sample_names_bank[SAMPLE_NUM];
+
 // storage related infos
 #define STRG_NAMESPACE "storage"
 #define REC_NUM_ID "rec_num"

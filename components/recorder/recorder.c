@@ -167,7 +167,7 @@ void recorder_stop_recording(void) {
             target -> raw_data = (unsigned char *)g_recorder.buffer;
         }
 
-        heap_caps_free(sample_names_bank[g_recorder.target_bank_index]);
+        sample_names_bank[g_recorder.target_bank_index] = NULL;
 
         // logging action
         ESP_LOGI(TAG_REC, "Buffer used: %d", g_recorder.buffer_used);

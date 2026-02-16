@@ -31,8 +31,6 @@ const char* TAG_FSM = "FSM";
 
 static int last_pot_value = 2000;
 
-char *sample_names_bank[SAMPLE_NUM];
-
 #pragma endregion
 
 #pragma region FUNCTION DECLARATIONS

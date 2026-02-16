@@ -200,8 +200,6 @@ extern menu_t distortion_menu;
 // contains all the possible menu
 extern menu_t* menu_navigation[];
 
-// contains all the names of the samples
-extern char* sample_names_bank[SAMPLE_NUM];
 
 #pragma endregion
 

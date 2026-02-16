@@ -13,6 +13,7 @@
 #include "esp_log.h"
 #include "recorder.h"
 #include "fsm.h"
+#include "sd_reader.h"
 
 static const char* TAG = "Mixer";
 
