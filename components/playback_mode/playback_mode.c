@@ -73,7 +73,7 @@ void get_mode_stringify(pb_mode_t mode, char* out){
 }
 
 uint8_t get_sample_bank_index(uint8_t pad_id){
-	if(pad_id >= 0 && pad_id < GPIO_NUM_MAX){
+	if(pad_id < GPIO_NUM_MAX){
 		return pad_to_sample_map[pad_id];
 	}
 	else return NOT_DEFINED;
