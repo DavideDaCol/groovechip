@@ -1074,8 +1074,8 @@ void change_chopping_end(int pot_value){
 }
 
 void change_chopping_precision(int pot_value){
-    uint8_t new_precision = pot_value * ((float)MAX_CHOPPING_PRECISION / 100);
-    
+    uint8_t new_precision = 1 + pot_value * (((float)MAX_CHOPPING_PRECISION - 1) / 100);
+    screen_has_to_change = new_precision != get_chopping_precision;
     if(screen_has_to_change){
         set_chopping_precision(new_precision);
     }
