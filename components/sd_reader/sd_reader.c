@@ -251,30 +251,41 @@ esp_err_t st_sample(int in_bank_index, char *sample_name) {
 
     printf("%s, %s\n", wav_file_path, json_file_path);
 
+    FILE* wav_fp;
     // opening the file in write-or-create mode
     // if there's no file containing that sample, it will create one 
-    FILE* wav_fp;
-    if ((wav_fp = fopen(wav_file_path, "r")) != NULL) {
+    if ((wav_fp = fopen(wav_file_path, "wb")) == NULL) {
+        ESP_LOGE(TAG, "Error in creating the new wav file");
+        return ESP_FAIL;
+    } 
+
+    wav_header_t local_header = curr_sample -> header;
+    // writing the sample inside the file
+    size_t write_cnt = fwrite(&local_header, sizeof(wav_header_t), 1, wav_fp);
+    if (write_cnt != 1) {
+        ESP_LOGE(TAG, "Error while writing the wav file's header");
         fclose(wav_fp);
-        if ((wav_fp = fopen(wav_file_path, "wb")) == NULL) {
-            ESP_LOGE(TAG, "Error in creating the new wav file");
-            return ESP_FAIL;
-        }
+        return ESP_FAIL;
+    }
 
-        // writing the sample inside the file
-        size_t write_cnt = fwrite(&(curr_sample -> header), sizeof(wav_header_t), 1, wav_fp);
-        if (write_cnt != 1) {
-            ESP_LOGE(TAG, "Error while writing the wav file's header");
+    size_t bytes_remaining = curr_sample->header.data_size;
+    uint8_t* data_ptr = curr_sample->raw_data;
+    size_t chunk_size = 4096; // 4KB is optimal for FATFS and internal RAM bouncing
+
+    while (bytes_remaining > 0) {
+        size_t bytes_to_write = (bytes_remaining > chunk_size) ? chunk_size : bytes_remaining;
+        
+        // write the chunk
+        size_t written = fwrite(data_ptr, 1, bytes_to_write, wav_fp);
+        if (written != bytes_to_write) {
+            ESP_LOGE(TAG, "Error while writing the wav file data");
             fclose(wav_fp);
             return ESP_FAIL;
         }
-
-        write_cnt = fwrite(curr_sample -> raw_data, curr_sample -> header.data_size, 1, wav_fp);
-        if (write_cnt != 1) {
-            ESP_LOGE(TAG, "Error while writing the wav file");
-            fclose(wav_fp);
-            return ESP_FAIL;
-        }
+        
+        // move the pointer forward
+        data_ptr += bytes_to_write;
+        bytes_remaining -= bytes_to_write;
     }
     
     fclose(wav_fp);
@@ -642,7 +653,7 @@ static esp_err_t populate_sample_names_array(DIR *dir, int count) {
         return ESP_OK;
     }
 
-    sample_names = malloc(count * sizeof(char*));
+    sample_names = heap_caps_malloc(count * sizeof(char*), MALLOC_CAP_SPIRAM);
     if (!sample_names) {
         return ESP_ERR_NO_MEM;
     }

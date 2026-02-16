@@ -619,7 +619,8 @@ void main_fsm_task(void *pvParameters) {
             char line2[17] = "";
             
             (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).second_line(line2);
-            print_double(line1, line2);
+            // print_double(line1, line2);
+            printf("-----------------------%s-----------------------\n-----------------------%s-----------------------\n", line1, line2);
             screen_has_to_change = false;
         }
     }
@@ -1078,7 +1079,8 @@ void fsm_init(){
     char line2[17] = "";
     
     (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).second_line(line2);
-    print_double(line1, line2);
+    // print_double(line1, line2);
+    printf("-----------------------%s-----------------------\n-----------------------%s-----------------------\n", line1, line2);
 
     // create task
     xTaskCreate(main_fsm_task, "fsm_task", 4096, NULL, 5, NULL);

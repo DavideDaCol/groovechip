@@ -80,11 +80,6 @@ void recorder_stop_recording(void);
 */
 void recorder_cancel(void);
 
-/*
-@brief function that checks if a pointer points to esp32-e flash memory.
-@param p pointer whose memory location has to be checked. 
-*/
-bool is_flash_ptr(void *p);
 
 /*
 @brief function that sets the new frame of the recording buffer using the

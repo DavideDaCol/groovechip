@@ -67,4 +67,5 @@ esp_err_t ld_sample(int in_bank_index, char* sample_name, sample_t** out_sample_
 @param sample_name name of the sample
 */
 esp_err_t st_sample(int in_bank_index, char *sample_name);
+
 #endif
