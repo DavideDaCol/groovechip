@@ -95,6 +95,8 @@ For the process of setting up ESP-IDF manually, please refer to the official doc
 
 ###Menu navigation:
 
+...
+.
 ├── general menu
 │       ├── Settings
 |       |       ├── Volume
@@ -132,6 +134,7 @@ For the process of setting up ESP-IDF manually, please refer to the official doc
         |       ├── Sample 2
         |       └── ...
         └── Save changes
+...
 
 ###Menu navigation flow
 
