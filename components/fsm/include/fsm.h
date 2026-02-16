@@ -505,6 +505,15 @@ on the pressed button by calling the correct helper function.
 */
 void change_chopping_end(int pot_value);
 
+
+/*
+@brief function that changes the chopping precision value based
+on the pressed button by calling the correct helper function.
+@param pot_value value of the potentiometer.
+*/
+void change_chopping_precision(int pot_value);
+
+
 /*
 @brief helper function that based on the potentiometer value
 returns a specific mode.

@@ -31,6 +31,10 @@ const char* TAG_FSM = "FSM";
 
 static int last_pot_value = 2000;
 
+static uint32_t start_chopping_ptrs[MAX_CHOPPING_PRECISION] = {0};
+
+static uint32_t end_chopping_ptrs[MAX_CHOPPING_PRECISION] = {0};
+
 #pragma endregion
 
 #pragma region FUNCTION DECLARATIONS
@@ -867,8 +871,17 @@ void set_button_pressed(int pad_id) {
         pressed_button = pad_id;
         btn_menu.curr_index = 0;
 
-        if(get_sample_bank_index(pad_id) != NOT_DEFINED)
+        uint8_t index = get_sample_bank_index(pad_id);
+
+        if(index != NOT_DEFINED){
             curr_menu = BTN_MENU; // normal menu
+            uint32_t total_frames = get_sample_total_frames(index);
+            
+            // fill chopping end ptrs with correct init value
+            for(int i = 0; i < MAX_CHOPPING_PRECISION; i++){
+                end_chopping_ptrs[i] = total_frames;
+            }
+        }
         else {
             // curr_menu = BTN_MENU_NO_SAMPLE; //in this case the user can only laod a sample
             sample_load_menu.curr_index = 0;
@@ -1142,9 +1155,6 @@ void change_metronome_bpm(int pot_value){
     set_metronome_bpm(new_bpm);
 }
 
-static uint32_t start_chopping_ptrs[MAX_CHOPPING_PRECISION] = {0};
-static uint32_t end_chopping_ptrs[MAX_CHOPPING_PRECISION] = {0};
-
 void change_chopping_start(int pot_value){
     const uint8_t idx = get_sample_bank_index(pressed_button);
     uint8_t precision = get_chopping_precision();
@@ -1161,7 +1171,7 @@ void change_chopping_start(int pot_value){
 void change_chopping_end(int pot_value){
     const uint8_t idx = get_sample_bank_index(pressed_button);
     uint8_t precision = get_chopping_precision();
-    uint32_t prev_ptr = (precision - 1) >= 0 ? end_chopping_ptrs[precision - 1] : 0;
+    uint32_t prev_ptr = (precision - 1) >= 0 ? end_chopping_ptrs[precision - 1] : get_sample_total_frames(idx);
 
     uint32_t new_end = prev_ptr - pot_value * (((float)get_sample_total_frames(idx)) / precision / 100.0);
     printf("New end: %ld\nPot value: %d\n", new_end, pot_value);
