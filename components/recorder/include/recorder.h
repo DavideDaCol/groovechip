@@ -4,9 +4,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include "fsm.h"
+#include "lcd.h"
 
 #define RECORD_SAMPLE_RATE 16000
-#define RECORD_MAX_DURATION_SEC 10  // TODO establish the max record duration (10 sec at the moment)
+#define RECORD_MAX_DURATION_SEC 3  // TODO establish the max record duration (10 sec at the moment)
 #define RECORD_MAX_FRAMES (RECORD_SAMPLE_RATE * RECORD_MAX_DURATION_SEC)
 #define RECORD_BUFFER_SIZE (RECORD_MAX_FRAMES) 
 
@@ -15,7 +17,6 @@ typedef enum {
     REC_IDLE,              // Idle state
     REC_WAITING_PAD,       // Waiting for the user to choose the pad
     REC_RECORDING,         // Currently recording
-    REC_RECORDED           // Sample ready
 } recorder_state_t;
 
 // Recorder struct
@@ -28,8 +29,7 @@ typedef struct {
     size_t buffer_used;      // How much of the buffer is used
     
     // Target pad for the new sample
-    int target_pad;
-    int target_sample_id;
+    int target_bank_index;
     
     // Timestamp // TODO remove when is no more needed for debugging
     uint32_t start_time_ms;
@@ -41,7 +41,7 @@ extern recorder_t g_recorder;
 
 void recorder_init(void);
 void recorder_start_pad_selection(void);
-void recorder_select_pad(int pad_id, int bank_index);
+void recorder_select_pad(int bank_index);
 void recorder_start_recording(void);
 void recorder_stop_recording(void);
 void recorder_cancel(void);
@@ -53,5 +53,7 @@ void recorder_capture_frame(int16_t sample);
 recorder_state_t recorder_get_state(void);
 bool recorder_is_recording(void);
 float recorder_get_duration_sec(void);
+
+void recorder_fsm();
 
 #endif

@@ -12,8 +12,11 @@
 #include "effects.h"
 #include "esp_log.h"
 #include "recorder.h"
+#include "fsm.h"
 
 static const char* TAG = "Mixer";
+
+TaskHandle_t fsm_task_handler;
 
 //currently active samples
 sample_bitmask now_playing;
@@ -30,6 +33,12 @@ float volume = 0.5f;
 #pragma region SAMPLE_ACTION
 
 void action_start_or_stop_sample(int bank_index){
+
+    if (g_recorder.state == REC_WAITING_PAD){
+        printf("AOAOAOAOOAOAOA\n");
+        return;
+    }
+
     printf("play/pause event was triggered from %i\n", bank_index);
     if(sample_bank[bank_index] != NULL){
         //either stop or play the sample
@@ -45,6 +54,12 @@ void action_start_or_stop_sample(int bank_index){
 }
 
 void action_start_sample(int bank_index){
+
+    if (g_recorder.state == REC_WAITING_PAD){
+        printf("AOAOAOAOOAOAOA\n");
+        return;
+    }
+
     printf("play event was triggered from %i\n", bank_index);
     if(sample_bank[bank_index] != NULL){
 	    //add the sample from the nowplaying bitmask

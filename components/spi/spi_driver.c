@@ -1,6 +1,9 @@
 #include "include/spi_driver.h"
+#include "driver/spi_common.h"
+#include "sdmmc_cmd.h"
+#include "driver/sdspi_host.h"
+#include "driver/gpio.h"
 
-//out_card = card-specific information
 esp_err_t sdspi_driver_init(sdmmc_card_t* out_card) {
     
     //Defining the SPI bus configuration 

@@ -14,6 +14,7 @@
 #include "joystick.h"
 #include "adc1.h"
 #include "lcd.h"
+#include "recorder.h"
 
 #define MENU_NUM 8
 #define GEN_MENU_NUM_OPT 2
@@ -42,6 +43,8 @@ typedef struct {
     message_source_t source;
     int payload;
 } fsm_queue_msg_t;
+
+extern QueueHandle_t fsm_queue;
 
 void main_fsm_task(void *pvParameters);
 void joystick_handler(joystick_dir_t in_dir);
