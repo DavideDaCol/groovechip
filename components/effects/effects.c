@@ -1,7 +1,10 @@
 #include "effects.h"
 #include "mixer.h"
 
+// effects associated to each sample in the bank
 static effects_t sample_effects[SAMPLE_NUM];
+
+// effects applied to the master
 effects_t master_buffer_effects;
 
 effects_t* get_sample_effect(uint8_t bank_index){
@@ -203,4 +206,10 @@ void effects_init(){
         init_bit_crusher(i);
         init_distortion(i);
     }
+}
+
+void smp_effects_init(int in_bank_index){
+    init_pitch(in_bank_index);
+    init_bit_crusher(in_bank_index);
+    init_distortion(in_bank_index);
 }

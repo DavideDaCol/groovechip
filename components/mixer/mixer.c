@@ -13,6 +13,7 @@
 #include "esp_log.h"
 #include "recorder.h"
 #include "fsm.h"
+#include "sd_reader.h"
 
 static const char* TAG = "Mixer";
 
@@ -521,3 +522,36 @@ void create_mixer(i2s_chan_handle_t channel){
     xTaskCreate(&mixer_task_wip, "Mixer task", 8192, (void*)channel, 5, NULL);
 }
 
+void sample_init (sample_t* in_sample, int size, int bank_index) {
+    sample_names_bank[bank_index] = NULL;
+    
+    // manually fill the WAV header
+    memcpy(in_sample->header.riff_section_id, "RIFF", 4);
+    in_sample->header.size = sizeof(wav_header_t) - 8 + size; 
+    memcpy(in_sample->header.riff_format, "WAVE", 4);
+    
+    memcpy(in_sample->header.format_id, "fmt ", 4); 
+    in_sample->header.format_size = 16;
+    in_sample->header.fmt_id = 1;
+    in_sample->header.num_channels = 1;
+    in_sample->header.sample_rate = GRVCHP_SAMPLE_FREQ;
+    
+    in_sample->header.block_align = 2; 
+    in_sample->header.byte_rate = in_sample->header.block_align * GRVCHP_SAMPLE_FREQ;
+    in_sample->header.bits_per_sample = 16;
+    
+    memcpy(in_sample->header.data_id, "data", 4);
+    in_sample->header.data_size = size;
+    
+    in_sample->total_frames = size / sizeof(uint16_t); 
+    in_sample->start_ptr = 0.0f;
+    in_sample->end_ptr = (float)in_sample->total_frames - 1.0f;
+    in_sample->playback_ptr = 0.0f;
+    in_sample->playback_finished = false;
+    in_sample->volume = 1.0f;
+
+    in_sample->bank_index = bank_index;
+
+    // initializing the effects
+    smp_effects_init(bank_index);
+}

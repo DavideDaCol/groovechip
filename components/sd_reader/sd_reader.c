@@ -13,13 +13,19 @@
 #include "effects.h"
 #include "esp_psram.h"
 #include <sys/stat.h>
+#include "nvs.h"
+#include "nvs_flash.h"
 
 const char* TAG = "SdReader";
 
 char** sample_names = NULL;
 int sample_names_size = 0;
 
+char *sample_names_bank[SAMPLE_NUM];
+
 static sdmmc_card_t sd_card;
+
+int record_number;
 
 /*
 @brief initializes the SD filesystem, checking if there are any new downloaded samples. It includes name's truncation and JSON creation
@@ -78,6 +84,17 @@ static esp_err_t ensure_json_exists(const char* wav_path, const char* json_path,
 */
 static esp_err_t populate_sample_names_array(DIR *dir, int count);
 
+/*
+@brief generates a new name and adds it to the sample names' list
+@param out_sample_name pointer to the newly generated string
+*/
+static void add_new_rec_to_sample_names(char **out_sample_name);
+
+/*
+@brief extracts the record number from the flash memory
+*/
+static esp_err_t rec_num_init();
+
 esp_err_t sd_reader_init() {
     esp_err_t res;
     
@@ -112,6 +129,8 @@ esp_err_t sd_reader_init() {
         fprintf(stderr, "Error in mounting the SD card filesystem\n");
         return ESP_FAIL;
     }
+
+    if (rec_num_init() != ESP_OK) return ESP_ERR_NO_MEM;
 
     ESP_ERROR_CHECK_WITHOUT_ABORT(sd_fs_init());
 
@@ -240,6 +259,9 @@ esp_err_t ld_sample(int in_bank_index, char* sample_name, sample_t** out_sample_
 }
 
 esp_err_t st_sample(int in_bank_index, char *sample_name) {
+    if (sample_name == NULL) {
+        add_new_rec_to_sample_names(&sample_name);
+    }
     sample_t* curr_sample = sample_bank[in_bank_index];
 
     // defining the sample's file name, based on the id 
@@ -679,3 +701,43 @@ static esp_err_t populate_sample_names_array(DIR *dir, int count) {
     }
     return ESP_OK;
 }
+
+static void add_new_rec_to_sample_names(char **out_sample_name) {
+    // sets sample name
+    *out_sample_name = heap_caps_calloc(1, MAX_SIZE, MALLOC_CAP_SPIRAM);
+    sprintf(*out_sample_name, "new_rec%d", record_number);
+
+    record_number++;
+    nvs_handle_t my_handle;
+    if (nvs_open(STRG_NAMESPACE, NVS_READWRITE, &my_handle) == ESP_OK) {
+        
+        nvs_set_i32(my_handle, REC_NUM_ID, (int32_t)record_number);
+        nvs_commit(my_handle); // This actually writes it to the physical flash chip
+        nvs_close(my_handle);
+        
+        ESP_LOGI(TAG, "Saved new record_number (%d) to flash", record_number);
+    }
+
+    sample_names = heap_caps_realloc(sample_names, (++sample_names_size)*sizeof(char*), MALLOC_CAP_SPIRAM);
+    sample_names[sample_names_size - 1] = *sample_names;
+
+}
+
+static esp_err_t rec_num_init() {
+    nvs_handle_t rec_handler;
+    if (nvs_open(STRG_NAMESPACE, NVS_READWRITE, &rec_handler) != ESP_OK) {
+        ESP_LOGE(TAG, "Flash not available");
+        return ESP_ERR_NO_MEM;
+    }
+
+    int32_t saved_num;
+    if (nvs_get_i32(rec_handler, REC_NUM_ID, &saved_num) == ESP_OK) {
+        record_number = saved_num;
+        ESP_LOGI(TAG, "Loaded record_number from flash: %d", record_number);
+    } else {
+        ESP_LOGI(TAG, "No record_number found in flash. Starting at 0.");
+    }
+    nvs_close(rec_handler);
+    return ESP_OK;
+}
+

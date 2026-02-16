@@ -1,7 +1,21 @@
+#pragma region INCLUDE SECTION
+
 #include "fsm.h"
 #include "sd_reader.h"
 #include "esp_log.h"
 #include <math.h>
+#include "effects.h"
+#include "mixer.h"
+#include "playback_mode.h"
+#include "pad_section.h"
+#include "joystick.h"
+#include "adc1.h"
+#include "lcd.h"
+#include "recorder.h"
+
+#pragma endregion
+
+#pragma region GLOBAL VARIABLES
 
 QueueHandle_t fsm_queue = NULL;
 
@@ -13,23 +27,96 @@ pb_mode_t mode = ONESHOT;
 
 static bool screen_has_to_change = false;
 
-void get_sample_load_second_line(char*);
-void get_volume_second_line(char*);
-void get_gen_menu_second_line(char* out);
-void get_btn_menu_or_btn_effects_second_line(char* out);
-void get_gen_settings_second_line(char* out);
-void get_btn_settings_second_line(char* out);
-void get_metronome_second_line(char* out);
-void get_bitcrusher_second_line(char* out);
-void get_distortion_second_line(char* out);
-void get_pitch_second_line(char* out);
-void get_chopping_second_line(char* out);
-
 const char* TAG_FSM = "FSM";
 
 static int last_pot_value = 2000;
 
-char *sample_names_bank[SAMPLE_NUM];
+#pragma endregion
+
+#pragma region FUNCTION DECLARATIONS
+
+/*
+@breif function that gets the second line of the screen 
+based on the sample that corrispond to the index.
+@param out the line that will be changed and then printed.
+*/
+void get_sample_load_second_line(char* out);
+
+/*
+@breif function that gets the second line of the screen 
+based on the volume.
+@param out the line that will be changed and then printed.
+*/
+void get_volume_second_line(char* out);
+
+/*
+@breif function that gets the second line of the screen 
+based on the option that corrispond to the index in the
+general menu.
+@param out the line that will be changed and then printed.
+*/
+void get_gen_menu_second_line(char* out);
+
+/*
+@breif function that gets the second line of the screen 
+based on the option that corrispond to the index in the
+button menu or the button effects menu.
+@param out the line that will be changed and then printed.
+*/
+void get_btn_menu_or_btn_effects_second_line(char* out);
+
+/*
+@breif function that gets the second line of the screen 
+based on the option that corrispond to the index in the
+general settings menu.
+@param out the line that will be changed and then printed.
+*/
+void get_gen_settings_second_line(char* out);
+
+/*
+@breif function that gets the second line of the screen 
+based on the option that corrispond to the index in the
+button settings menu.
+@param out the line that will be changed and then printed.
+*/
+void get_btn_settings_second_line(char* out);
+
+/*
+@breif function that gets the second line of the screen 
+based on the metronome menu.
+@param out the line that will be changed and then printed.
+*/
+void get_metronome_second_line(char* out);
+
+/*
+@breif function that gets the second line of the screen 
+based on the bit crusher menu.
+@param out the line that will be changed and then printed.
+*/
+void get_bitcrusher_second_line(char* out);
+
+/*
+@breif function that gets the second line of the screen 
+based on the distortion menu.
+@param out the line that will be changed and then printed.
+*/
+void get_distortion_second_line(char* out);
+
+/*
+@breif function that gets the second line of the screen 
+based on the pitch menu.
+@param out the line that will be changed and then printed.
+*/
+void get_pitch_second_line(char* out);
+
+/*
+@breif function that gets the second line of the screen 
+based on the chopping menu.
+@param out the line that will be changed and then printed.
+*/
+void get_chopping_second_line(char* out);
+
+#pragma endregion
 
 #pragma region GENERAL MENU
 /***********************************
@@ -628,7 +715,6 @@ void main_fsm_task(void *pvParameters) {
             
             (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).second_line(line2);
             print_double(line1, line2);
-            printf("-----------------------%s-----------------------\n-----------------------%s-----------------------\n", line1, line2);
             screen_has_to_change = false;
         }
     }
@@ -1108,7 +1194,6 @@ void fsm_init(){
     
     (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).second_line(line2);
     print_double(line1, line2);
-    printf("-----------------------%s-----------------------\n-----------------------%s-----------------------\n", line1, line2);
 
     // create task
     xTaskCreate(main_fsm_task, "fsm_task", 4096, NULL, 5, NULL);

@@ -14,5 +14,5 @@ idf_component_register(SRCS "main.c"
                         lcd
                         sd_reader
                         json
-                        sd_reader
+                        nvs_flash
                     INCLUDE_DIRS ".")

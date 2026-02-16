@@ -11,7 +11,7 @@
 #define RECORD_SAMPLE_RATE 16000
 
 // max duration of a sample in seconds
-#define RECORD_MAX_DURATION_SEC 5
+#define RECORD_MAX_DURATION_SEC 10
 
 // max number of frames that can be sampled
 #define RECORD_MAX_FRAMES (RECORD_SAMPLE_RATE * RECORD_MAX_DURATION_SEC)

@@ -6,9 +6,11 @@ Groovechip features:
 - simultaneous playback of up to 8 samples (10 seconds per sample)
 - high fidelity audio output via dedicated I2S peripherals
 - 4 different playback modes: hold, oneshot, oneshot-loop, loop
+- 2 lines I2C screen
 - (WIP) custom sample playback via SD
 - (WIP) custom-made effects pipeline
 - (WIP) sensor-based effect parameters modification
+- sample recording from previous samples
 
 ## Project structure
 
@@ -18,26 +20,41 @@ Groovechip features:
 
 ### Software components
 
-(TODO change this to the final structure)
 
 ```
+.
+├── CMakeFiles
+│   └── pkgRedirects
 ├── CMakeLists.txt
 ├── components
-│   ├── i2s                         # Drivers for I2S communication
-│   ├── mixer                       # Digital audio mixing from multiple sources
-│   ├── pad_section                 # ISR and logic for button presses
-│   ├── playback_mode               # button-to-mixer communication layer
-│   └── template
-├── dependencies.lock               # List of external libraries
-├── main                            # The core entry point
-│   ├── CMakeLists.txt
-│   ├── idf_component.yml
-│   └── main.c                      
+│   ├── adc1
+│   ├── effects
+│   ├── fsm
+│   ├── i2s
+│   ├── joystick
+│   ├── lcd
+│   ├── mixer
+│   ├── pad_section
+│   ├── playback_mode
+│   ├── potentiometer
+│   ├── recorder
+│   ├── sd_reader
+│   ├── spi
+│   └── template
+│       ├── CMakeLists.txt
+│       ├── example.c
+│       └── include
+│           └── example.h
+├── dependencies.lock
+├── main
+│   ├── CMakeLists.txt
+│   ├── idf_component.yml
+│   └── main.c
 ├── README.md
-├── remux.sh                        # script for wav file normalization
-└── sdkconfig                       # ESP32-specific hardware settings
+├── remux.sh
+├── sdkconfig
+└── sdkconfig.old
 ```
-
 
 
 ## Hardware requirements
@@ -47,6 +64,7 @@ Groovechip features:
 3. SPI SD card reader
 4. Joystick with integrated click button
 5. I2C digital screen
+6. Potentiometer
 
 ## Software requirements
 
@@ -75,7 +93,75 @@ For the process of setting up ESP-IDF manually, please refer to the official doc
 
 ## User Guide
 
-(TODO fill this once the menu is actually in place)
+### Menu navigation:
+
+```
+.
+├── general menu
+│       ├── Settings
+|       |       ├── Volume
+|       |       └── Metronome
+|       |               ├── On/Off
+|       |               └── Bpm
+│       └── Effects
+|       |       ├── Bitcrusher
+|       |       |       ├── On/Off
+|       |       |       ├── Bit depth
+|       |       |       └── Downsample
+|       |       └── Distortion
+|       |               ├── On/Off
+|       |               ├── Gain
+|       |               └── Threshold
+└── button menu
+        ├── Settings
+        |       ├── Volume
+        |       └── Mode
+        ├── Effects
+        |       ├── Bitcrusher
+        |       |       ├── On/Off
+        |       |       ├── Bit depth
+        |       |       └── Downsample
+        |       ├── Pitch
+        |       └── Distortion
+        |               ├── On/Off
+        |               ├── Gain
+        |               └── Threshold
+        ├── Chopping
+        |       ├── Start
+        |       └── End
+        ├── Sample load
+        |       ├── Sample 1
+        |       ├── Sample 2
+        |       └── ...
+        └── Save changes
+```
+
+### Menu navigation flow
+
+**Joystick up/down**:
+  - Move up and down in the menu
+
+**Joystick left**:
+  - Move to the previous menu
+
+**Joystick right**:
+  - Move to the selected menu
+
+**Joystick button**:
+  - Move to recording mode (see the flow below)
+
+**Button**:
+  - Move to the button menu if a sample is associated to that button
+  - Move to the sample load menu
+  - Select the button to record into if in record mode
+
+**Potentiometer**:
+  - Changes the value or toggle the option depending on the current menu
+
+
+### Recording flow
+
+Record button (start recording) -> Select button -> Record button/wait 5 sec (stop recording)
 
 ### Audio file normalization
 
