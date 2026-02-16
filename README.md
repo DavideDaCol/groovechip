@@ -139,19 +139,25 @@ For the process of setting up ESP-IDF manually, please refer to the official doc
 ### Menu navigation flow
 
 **Joystick up/down**:
-  - move up and down in the menu
+  - Move up and down in the menu
+
 **Joystick left**:
-  - move to the previous menu
+  - Move to the previous menu
+
 **Joystick right**:
-  - move to the selected menu
+  - Move to the selected menu
+
 **Joystick button**:
-  - move to recording mode (see the flow below)
+  - Move to recording mode (see the flow below)
+
 **Button**:
-  - move to the button menu if a sample is associated to that button
-  - move to the sample load menu
-  - select the button to record into if in record mode
+  - Move to the button menu if a sample is associated to that button
+  - Move to the sample load menu
+  - Select the button to record into if in record mode
+
 **Potentiometer**:
-  - changes the value or toggle the option depending on the current menu
+  - Changes the value or toggle the option depending on the current menu
+
 
 ### Recording flow
 
