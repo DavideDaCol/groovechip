@@ -168,8 +168,11 @@ void recorder_stop_recording(void) {
             target -> raw_data = (unsigned char *)g_recorder.buffer;
         }
 
+        heap_caps_free(sample_names_bank[g_recorder.target_bank_index]);
+
         // sets sample name
-        sprintf(sample_names_bank[g_recorder.target_bank_index], "new_recording%d", record_number++);
+        sample_names_bank[g_recorder.target_bank_index] = heap_caps_calloc(1, MAX_SIZE, MALLOC_CAP_SPIRAM);
+        printf(sample_names_bank[g_recorder.target_bank_index], "new_rec%d", record_number++);
 
         // logging action
         ESP_LOGI(TAG_REC, "Buffer used: %d", g_recorder.buffer_used);

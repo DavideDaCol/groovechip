@@ -92,7 +92,7 @@ buffer used parameter of the recording struct.
 @param frame frame from the master buffer that has to be copied into the
 recording buffer.
 */
-void recorder_capture_frame(int16_t left, int16_t right);
+void recorder_capture_frame(int16_t sample);
 
 /*
 @brief getter function for the recording state.
