@@ -3,6 +3,7 @@ idf_component_register(
     INCLUDE_DIRS "include"
     REQUIRES 
         mixer
+    PRIV_REQUIRES
         spi
         json
         effects

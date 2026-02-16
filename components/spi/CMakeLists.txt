@@ -3,8 +3,8 @@ idf_component_register(
     INCLUDE_DIRS "include"
     REQUIRES 
         sdmmc
-        driver
     PRIV_REQUIRES
         esp_driver_spi
         esp_driver_sdspi
+        driver
 )

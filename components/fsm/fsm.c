@@ -411,7 +411,7 @@ void get_btn_settings_second_line(char* out){
     uint8_t bank_index = get_sample_bank_index(pressed_button);
     if(bank_index == NOT_DEFINED) return;
 
-    mode_t curr_mode = get_playback_mode(bank_index);
+    pb_mode_t curr_mode = get_playback_mode(bank_index);
     get_mode_stringify(curr_mode, out);
 }
 void get_metronome_second_line(char* out){
