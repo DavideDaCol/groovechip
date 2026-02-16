@@ -80,7 +80,7 @@ void recorder_start_recording(void) {
     }
     
     // allocate space for buffer
-    g_recorder.buffer = heap_caps_malloc(RECORD_BUFFER_SIZE * sizeof(int16_t), MALLOC_CAP_SPIRAM);
+    g_recorder.buffer = heap_caps_calloc(1, RECORD_BUFFER_SIZE * sizeof(int16_t), MALLOC_CAP_SPIRAM);
 
     // logging action + don't start recording if there is no space in PSRAM
     if (!g_recorder.buffer) {
@@ -116,7 +116,7 @@ void recorder_stop_recording(void) {
     g_recorder.state = REC_IDLE;
     
     // sets some fields
-    uint32_t frames_recorded = g_recorder.buffer_used / 2;
+    uint32_t frames_recorded = g_recorder.buffer_used;
     g_recorder.duration_ms = (xTaskGetTickCount() * portTICK_PERIOD_MS) - g_recorder.start_time_ms;
     float duration_sec = (float)frames_recorded / RECORD_SAMPLE_RATE;
     
@@ -147,8 +147,6 @@ void recorder_stop_recording(void) {
 
             // set some default values of the sample_t
             sample_bank[g_recorder.target_bank_index] = target;
-            target->bank_index = g_recorder.target_bank_index;
-            target->volume = 0.1f;
         }
 
         // if there is already a sample bound to that bank_index 
@@ -172,6 +170,7 @@ void recorder_stop_recording(void) {
         if (final_buffer) {
             target -> raw_data = (unsigned char *)final_buffer;
         } else {
+            printf("2\n");
             target -> raw_data = (unsigned char *)g_recorder.buffer;
         }
 
@@ -210,12 +209,20 @@ void recorder_stop_recording(void) {
         target->end_ptr = (float)target->total_frames - 1.0f;
         target->playback_ptr = 0.0f;
         target->playback_finished = false;
-        target->volume = 0.1f;
+        target->volume = 1.0f;
 
+        target->bank_index = g_recorder.target_bank_index;
+
+        
         // reset the fields in the recording struct and free memory
         g_recorder.buffer = NULL;
         g_recorder.buffer_used = 0;
-
+        
+        // for (int i = 0; i < sample_bank[g_recorder.target_bank_index] ->header.data_size; i++){
+        //     if (sample_bank[g_recorder.target_bank_index]->raw_data[i] != 0){
+        //         printf("%d\n", sample_bank[g_recorder.target_bank_index]->raw_data[i]);
+        //     }
+        // }
         
         // logging action
         ESP_LOGI(TAG_REC, "Sample %d updated.", g_recorder.target_bank_index);
@@ -255,7 +262,6 @@ void recorder_capture_frame(int16_t sample) {
         return;
     }
     
-    // save the frame
     g_recorder.buffer[g_recorder.buffer_used++] = sample;
 }
 
@@ -309,7 +315,7 @@ void recorder_fsm(){
 
     // wait for signal by the recording button to stop recording
     while(xQueueReceive(fsm_queue, &msg, portMAX_DELAY) && msg.source != JOYSTICK && msg.payload != PRESS);
-
+    printf("EXIT FROM LOOP\n");
     // logging action + skip if in wrong state
     // if (g_recorder.state != REC_RECORDING){
     //     ESP_LOGE(TAG_REC, "Trying to stop recording while not in REC_RECORDING state.");
@@ -317,8 +323,9 @@ void recorder_fsm(){
     // }
 
     // stop recording
-    if (g_recorder.state != REC_IDLE)
+    if (g_recorder.state != REC_IDLE){
         recorder_stop_recording();
+    }
 
     // logging action
     ESP_LOGI(TAG_REC, "Recording state (expected 0 = IDLE/FINISHED): %d", g_recorder.state);
