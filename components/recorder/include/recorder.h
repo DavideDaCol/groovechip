@@ -4,8 +4,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
-#include "fsm.h"
-#include "lcd.h"
 
 // sample rate in kHz
 #define RECORD_SAMPLE_RATE 16000

@@ -7,6 +7,8 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
+#include "fsm.h"
+#include "lcd.h"
 
 const char* TAG_REC = "REC";
 
