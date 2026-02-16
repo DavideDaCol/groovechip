@@ -221,6 +221,7 @@ void recorder_capture_frame(int16_t sample) {
     // check free space and stop recording if the buffer is full
     if (g_recorder.buffer_used + 1 > g_recorder.buffer_capacity) {
         ESP_LOGE(TAG_REC, "Buffer full!");
+        recorder_stop_recording();
         fsm_queue_msg_t msg = {
             .payload = PRESS,
             .source = JOYSTICK
