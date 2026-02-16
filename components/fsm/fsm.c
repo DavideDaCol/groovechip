@@ -493,7 +493,6 @@ void get_gen_menu_second_line(char* out){
     sprintf(out, "General");
 }
 void get_btn_menu_or_btn_effects_second_line(char* out){
-    uint8_t bank_index = get_sample_bank_index(pressed_button);
     uint8_t pad_num = get_pad_num(pressed_button);
 
     sprintf(out, "Pad %u", pad_num); //button is presset

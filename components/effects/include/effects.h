@@ -252,5 +252,4 @@ void smp_effects_init(int in_bank_index);
 
 #pragma endregion
 
-
 #endif
