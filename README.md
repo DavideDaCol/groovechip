@@ -7,9 +7,9 @@ Groovechip features:
 - high fidelity audio output via dedicated I2S peripherals
 - 4 different playback modes: hold, oneshot, oneshot-loop, loop
 - 2 lines I2C screen
-- (WIP) custom sample playback via SD
-- (WIP) custom-made effects pipeline
-- (WIP) sensor-based effect parameters modification
+- custom sample playback via SD
+- custom-made sample manipulation and effects pipeline
+- sensor-based effect parameters modification
 - sample recording from previous samples
 
 ## Project structure
@@ -27,33 +27,31 @@ Groovechip features:
 │   └── pkgRedirects
 ├── CMakeLists.txt
 ├── components
-│   ├── adc1
-│   ├── effects
-│   ├── fsm
-│   ├── i2s
-│   ├── joystick
-│   ├── lcd
-│   ├── mixer
-│   ├── pad_section
-│   ├── playback_mode
-│   ├── potentiometer
-│   ├── recorder
-│   ├── sd_reader
-│   ├── spi
-│   └── template
+│   ├── adc1                    # ADC driver and settings
+│   ├── effects                 # custom audio effects pipeline
+│   ├── fsm                     # FSM to navigate in the menus
+│   ├── i2s                     # I2S driver and settings
+│   ├── joystick                # joystick init and position methods
+│   ├── lcd                     # I2C screen driver and methods
+│   ├── mixer                   # multi source audio mixer and metronome
+│   ├── pad_section             # ISR and FSM/playback communication layer
+│   ├── playback_mode           # handle different sample playback modes
+│   ├── potentiometer           # potentiometer init and position methods
+│   ├── recorder                # resample and save sample sequences
+│   ├── sd_reader               # explore, load and store files on an SD card
+│   ├── spi                     # SPI driver and settings
+│   └── template                # the basic structure of every module
 │       ├── CMakeLists.txt
 │       ├── example.c
 │       └── include
 │           └── example.h
 ├── dependencies.lock
-├── main
+├── main                        # code entry point
 │   ├── CMakeLists.txt
 │   ├── idf_component.yml
 │   └── main.c
 ├── README.md
-├── remux.sh
-├── sdkconfig
-└── sdkconfig.old
+└── remux.sh                    # script to convert audio files to the right format
 ```
 
 
@@ -65,6 +63,7 @@ Groovechip features:
 4. Joystick with integrated click button
 5. I2C digital screen
 6. Potentiometer
+7. 8x Keyboard Switches
 
 ## Software requirements
 
@@ -80,10 +79,13 @@ The project can either be built manually using ESP's tools directly or with the 
 
 1. [Follow the instructions](https://marketplace.visualstudio.com/items?itemName=espressif.esp-idf-extension) for downloading both the ESP-IDF extension for Visual Studio Code and ESP-IDF itself; ESP-IDF is the actual framework needed to build the application and it can be easily installed directly from the extension;
 2. Press `ctrl + shift + p` or `cmd + shift + p` to open the command palette;
-3. Click on `ESP-IDF: Add VS Code Configuration Folder` to create the necessary bindings for the extension to work properly;
-3. Click on `ESP-IDF: Build Your Project` to build the source code;
-4. Click on `ESP-IDF: Select Port to Use` and choose the interface that is currently being used by the ESP32 
-5. Click on `ESP-IDF: Build, Flash and Start a Monitor on Your Device` to directly upload the code to the ESP32 and view its logs
+3. Click on `ESP-IDF: SDK Configuration Editor (Menuconfig)` to open up the ESP32 hardware configuration menu;
+4. Toggle the following options: `Support for external, SPI-connected RAM`;
+5. From the option `Long file name support`, choose the option `Long file name buffer on stack`
+6. Open the command palette again and click on `ESP-IDF: Add VS Code Configuration Folder` to create the necessary bindings for the extension;
+7. Click on `ESP-IDF: Build Your Project` to build the source code;
+8. Click on `ESP-IDF: Select Port to Use` and choose the interface that is currently being used by the ESP32 
+9. Click on `ESP-IDF: Build, Flash and Start a Monitor on Your Device` to directly upload the code to the ESP32 and view its logs
 
 ### Using ESP-IDF directly
 
@@ -181,11 +183,18 @@ If FFmpeg has been installed correctly, a copy of the original file with the `_c
 
 ## Presentation
 
+[This](https://docs.google.com/presentation/d/1yq0pdCHPu5PAdPHmS2iA0H8TM23-hJxZ5sn-zSKQuF0/edit?usp=sharing) Is our Google Slides presentation of the project.
+
 ## Youtube Pitch Video
+
+(Video is done, awaiting upload)
 
 ## The Team
 
-- Tommaso Ascolani: (Add your contributions)
-- Davide Da Col: I2S driver, audio mixer, sample playback
-- Giovanni Sbalchiero: (Add your contributions)
-- Marco Zanatta: (Add your contributions)
+### Major contributions
+
+- Tommaso Ascolani: Joystick, Potentiometer, Recorder, FSM
+- Davide Da Col: I2S driver, Audio mixer, Sample playback, FSM
+- Giovanni Sbalchiero: Pad section, Playback mode, Effects, FSM
+- Marco Zanatta: SD reader, LCD Display, FSM
+
