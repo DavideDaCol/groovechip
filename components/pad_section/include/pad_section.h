@@ -24,14 +24,14 @@
 #define DEBOUNCE_MS 30000
 
 // pins
-#define GPIO_BUTTON_1     4
+#define GPIO_BUTTON_1     14
 #define GPIO_BUTTON_2     12
-#define GPIO_BUTTON_3     13
-#define GPIO_BUTTON_4     14
-#define GPIO_BUTTON_5     15
-#define GPIO_BUTTON_6     2
-#define GPIO_BUTTON_7     39
-#define GPIO_BUTTON_8     32
+#define GPIO_BUTTON_3     2
+#define GPIO_BUTTON_4     4
+#define GPIO_BUTTON_5     32
+#define GPIO_BUTTON_6     13
+#define GPIO_BUTTON_7     15
+#define GPIO_BUTTON_8     27
 #define PAD_NUM 8
 
 #define GPIO_INPUT_PIN_SEL  ((1ULL<<GPIO_BUTTON_1) | \

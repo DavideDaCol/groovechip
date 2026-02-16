@@ -40,7 +40,7 @@ void recorder_start_pad_selection(void) {
     }
     
     // print on lcd screen
-    // print_single("Select a pad...");
+    print_single("Select a pad...");
     printf("-----------------------\nSelect a pad\n-----------------------");
     
 
@@ -94,7 +94,7 @@ void recorder_start_recording(void) {
     g_recorder.start_time_ms = xTaskGetTickCount() * portTICK_PERIOD_MS;
     
     // print on lcd screen
-    // print_single("Recording...");
+    print_single("Recording...");
     printf("-----------------------\nRecording\n------------------------");
     
     

@@ -19,7 +19,7 @@
 void app_main(void)
 {
     sd_reader_init();
-    // lcd_driver_init();
+    lcd_driver_init();
     adc1_init();
     fsm_init();
     pad_section_init();

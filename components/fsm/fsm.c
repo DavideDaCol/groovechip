@@ -627,7 +627,7 @@ void main_fsm_task(void *pvParameters) {
             char line2[17] = "";
             
             (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).second_line(line2);
-            // print_double(line1, line2);
+            print_double(line1, line2);
             printf("-----------------------%s-----------------------\n-----------------------%s-----------------------\n", line1, line2);
             screen_has_to_change = false;
         }
@@ -1056,29 +1056,40 @@ void change_metronome_bpm(int pot_value){
     set_metronome_bpm(new_bpm);
 }
 
+static uint32_t start_chopping_ptrs[MAX_CHOPPING_PRECISION] = {0};
+static uint32_t end_chopping_ptrs[MAX_CHOPPING_PRECISION] = {0};
+
 void change_chopping_start(int pot_value){
     const uint8_t idx = get_sample_bank_index(pressed_button);
-    uint32_t new_start = pot_value * (((float)get_sample_total_frames(idx)) / (2 * get_chopping_precision()) / 100.0);
+    uint8_t precision = get_chopping_precision();
+    uint32_t prev_ptr = (precision - 1) >= 0 ? start_chopping_ptrs[precision - 1] : 0;
+
+    uint32_t new_start = prev_ptr + pot_value * (((float)get_sample_total_frames(idx)) / precision / 100.0);
     printf("New start: %ld\nPot value: %d\n", new_start, pot_value);
 
     if(get_sample_start_ptr(idx) != new_start){
         screen_has_to_change = set_sample_start_ptr(idx, (float)new_start);
+        start_chopping_ptrs[precision] = new_start;
     }
 }
 void change_chopping_end(int pot_value){
     const uint8_t idx = get_sample_bank_index(pressed_button);
-    uint32_t new_end = pot_value * (((float)get_sample_total_frames(idx)) / (2 * get_chopping_precision()) / 100.0);
+    uint8_t precision = get_chopping_precision();
+    uint32_t prev_ptr = (precision - 1) >= 0 ? end_chopping_ptrs[precision - 1] : 0;
+
+    uint32_t new_end = prev_ptr - pot_value * (((float)get_sample_total_frames(idx)) / precision / 100.0);
     printf("New end: %ld\nPot value: %d\n", new_end, pot_value);
 
     if(get_sample_end_ptr(idx) != new_end){
         screen_has_to_change = set_sample_end_ptr(idx, (float)new_end);
+        end_chopping_ptrs[precision] = new_end;
     }
 
 }
 
 void change_chopping_precision(int pot_value){
     uint8_t new_precision = 1 + pot_value * (((float)MAX_CHOPPING_PRECISION - 1) / 100);
-    screen_has_to_change = new_precision != get_chopping_precision;
+    screen_has_to_change = new_precision != get_chopping_precision();
     if(screen_has_to_change){
         set_chopping_precision(new_precision);
     }
@@ -1096,7 +1107,7 @@ void fsm_init(){
     char line2[17] = "";
     
     (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).second_line(line2);
-    // print_double(line1, line2);
+    print_double(line1, line2);
     printf("-----------------------%s-----------------------\n-----------------------%s-----------------------\n", line1, line2);
 
     // create task
