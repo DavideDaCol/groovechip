@@ -644,7 +644,6 @@ void get_volume_second_line(char* out) {
         volume = get_volume(get_sample_bank_index(pressed_button));
     }
 
-    //float volume = get_volume(get_sample_bank_index(pressed_button));
     //5 units of volume = 4 strays
     volume *= 80;
 
@@ -654,7 +653,13 @@ void get_volume_second_line(char* out) {
         volume -=5;
         i++;
     }
-    out[i] = round(volume) - 1;
+
+    if (round(volume) == 0){
+        out[i] = ' ';
+    } else {
+        out[i] = round(volume) - 1;
+    }
+
     out[i + 1] = '\0';
 }
 

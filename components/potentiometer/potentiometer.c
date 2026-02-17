@@ -104,11 +104,19 @@ void potentiometer_task(void *args) {
         
         // send message to the queue
         if (diff >= THRESHOLD_PERCENT || reaching_max(voltage, last_percentage) || reaching_min(voltage, last_percentage)) {
+
+            if (reaching_max(voltage, percent)) {
+                percent = 100;
+            }
+
+            if (reaching_min(voltage, percent)) {
+                percent = 0;
+            }
             
             ESP_LOGI(TAG_POT, "Changed: %d%% (raw: %d, %.2fV, diff: %+d%%)", 
                      percent, pot_value, voltage, percent - last_percentage);
             
-            send_message_to_fsm_queue(POTENTIOMETER, percent);
+            send_message_to_fsm_queue(POTENTIOMETER, abs(percent - 100));
             last_percentage = percent;
         }
         
