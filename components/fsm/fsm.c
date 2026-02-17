@@ -874,11 +874,6 @@ void set_button_pressed(int pad_id) {
         if(index != NOT_DEFINED){
             curr_menu = BTN_MENU; // normal menu
             uint32_t total_frames = get_sample_total_frames(index);
-            
-            // fill chopping end ptrs with correct init value
-            for(int i = 0; i < MAX_CHOPPING_PRECISION; i++){
-                end_chopping_ptrs[i] = total_frames;
-            }
         }
         else {
             // curr_menu = BTN_MENU_NO_SAMPLE; //in this case the user can only laod a sample
@@ -1163,20 +1158,24 @@ void change_chopping_start(int pot_value){
 
     if(get_sample_start_ptr(idx) != new_start){
         screen_has_to_change = set_sample_start_ptr(idx, (float)new_start);
-        start_chopping_ptrs[precision] = new_start;
+        for(int i = precision; i < MAX_CHOPPING_PRECISION; i++){
+            start_chopping_ptrs[i] = new_start;
+        }
     }
 }
 void change_chopping_end(int pot_value){
     const uint8_t idx = get_sample_bank_index(pressed_button);
     uint8_t precision = get_chopping_precision();
-    uint32_t prev_ptr = (precision - 1) >= 0 ? end_chopping_ptrs[precision - 1] : get_sample_total_frames(idx);
+    uint32_t prev_ptr = (precision - 1) >= 0 ? end_chopping_ptrs[precision - 1] : 0;
 
-    uint32_t new_end = prev_ptr - pot_value * (((float)get_sample_total_frames(idx)) / precision / 100.0);
+    uint32_t new_end = prev_ptr + pot_value * (((float)get_sample_total_frames(idx)) / precision / 100.0);
     printf("New end: %ld\nPot value: %d\n", new_end, pot_value);
 
     if(get_sample_end_ptr(idx) != new_end){
         screen_has_to_change = set_sample_end_ptr(idx, (float)new_end);
-        end_chopping_ptrs[precision] = new_end;
+        for(int i = precision; i < MAX_CHOPPING_PRECISION; i++){
+            end_chopping_ptrs[i] = new_end;
+        }
     }
 
 }

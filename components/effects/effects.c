@@ -199,6 +199,7 @@ int16_t get_distortion_threshold_master_buffer(){
 //================================================================
 #pragma endregion
 
+
 void effects_init(){
     //init effects to default values
     for(uint8_t i = 0; i < SAMPLE_NUM; i++){
