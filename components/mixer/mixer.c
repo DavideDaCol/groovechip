@@ -106,7 +106,7 @@ void action_start_or_stop_sample(int bank_index){
         //either stop or play the sample
         now_playing ^= (1 << bank_index);
         //reset the playback pointer if the sample was stopped
-        if (sample_bank[bank_index]->playback_finished){
+        if ((now_playing & (1 << bank_index)) == 0){
             sample_bank[bank_index]->playback_ptr = sample_bank[bank_index]->start_ptr;
             sample_bank[bank_index]->playback_finished = false;
         }
