@@ -94,7 +94,10 @@ void recorder_start_recording(void) {
     char line1[] = "Recording...";
     char line2[17] = "";
     
-    (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).second_line(line2);
+    uint8_t pad_num = g_recorder.target_bank_index + 1;
+
+    sprintf(line2, "Pad %u", pad_num); //button is presset
+
     print_double(line1, line2);
     
     // change state
