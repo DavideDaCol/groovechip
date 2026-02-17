@@ -187,7 +187,7 @@ The Google Slides presentation can be acccessed via the following [link](https:/
 
 ## Youtube Pitch Video
 
-(Video is done, awaiting upload)
+View the video [Here](https://www.youtube.com/watch?v=Dvpcw--CXRM)
 
 ## The Team
 
