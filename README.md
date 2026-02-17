@@ -183,7 +183,7 @@ If FFmpeg has been installed correctly, a copy of the original file with the `_c
 
 ## Presentation
 
-[This](https://docs.google.com/presentation/d/1yq0pdCHPu5PAdPHmS2iA0H8TM23-hJxZ5sn-zSKQuF0/edit?usp=sharing) Is our Google Slides presentation of the project.
+The Google Slides presentation can be acccessed via the following [link](https://docs.google.com/presentation/d/1rBkgObhUerDccWffgBKgwV3Ec6D0djwYr0yPqGNiFDw/edit?usp=sharing).
 
 ## Youtube Pitch Video
 
