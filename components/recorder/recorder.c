@@ -89,8 +89,13 @@ void recorder_start_recording(void) {
     g_recorder.buffer_capacity = RECORD_BUFFER_SIZE;
     g_recorder.buffer_used = 0;
     g_recorder.start_time_ms = xTaskGetTickCount() * portTICK_PERIOD_MS;
+
+    // print on screen
+    char line1[] = "Recording...";
+    char line2[17] = "";
     
-    print_single("Recording...");
+    (menu_navigation[curr_menu]->opt_handlers[menu_navigation[curr_menu]->curr_index]).second_line(line2);
+    print_double(line1, line2);
     
     // change state
     g_recorder.state = REC_RECORDING;

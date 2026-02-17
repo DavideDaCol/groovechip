@@ -98,11 +98,10 @@ static inline void apply_distortion_mono(distortion_params_t* dst_params, int16_
 void action_start_or_stop_sample(int bank_index){
 
     if (g_recorder.state == REC_WAITING_PAD){
-        printf("AOAOAOAOOAOAOA\n");
         return;
     }
 
-    printf("play/pause event was triggered from %i\n", bank_index);
+    ESP_LOGI(TAG, "play/pause event was triggered from %i\n", bank_index);
     if(sample_bank[bank_index] != NULL){
         //either stop or play the sample
         now_playing ^= (1 << bank_index);
@@ -119,7 +118,6 @@ void action_start_or_stop_sample(int bank_index){
 void action_start_sample(int bank_index){
 
     if (g_recorder.state == REC_WAITING_PAD){
-        printf("AOAOAOAOOAOAOA\n");
         return;
     }
 
