@@ -175,7 +175,7 @@ opt_interactions_t btn_handlers[] = {
     {
         .first_line = "Save changes",
         .second_line = get_btn_menu_or_btn_effects_second_line,
-        .js_right_action = save, //TODO
+        .js_right_action = save,
         .pt_action = sink
     },
     {
@@ -493,7 +493,6 @@ void get_gen_menu_second_line(char* out){
     sprintf(out, "General");
 }
 void get_btn_menu_or_btn_effects_second_line(char* out){
-    uint8_t bank_index = get_sample_bank_index(pressed_button);
     uint8_t pad_num = get_pad_num(pressed_button);
 
     sprintf(out, "Pad %u", pad_num); //button is presset
@@ -688,7 +687,6 @@ void main_fsm_task(void *pvParameters) {
     sample_load_menu.max_size = sample_names_size;
     sample_load_menu.opt_handlers = sample_load_actions;
 
-    // TODO make this nicer
     menu_navigation[SAMPLE_LOAD] = &sample_load_menu;
 
     while(1) {

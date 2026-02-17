@@ -25,9 +25,6 @@ sample_bitmask now_playing;
 // all samples that can be played
 sample_t* sample_bank[SAMPLE_NUM];
 
-//metronome object
-static metronome mtrn;
-
 // volume of master buffer
 float volume = 0.5f;
 
@@ -222,63 +219,6 @@ float get_master_volume(){
 
 #pragma endregion
 
-#pragma region METRONOME
-
-void init_metronome(){
-    mtrn.state = false;
-    mtrn.bpm = 120.;
-    mtrn.subdivisions = 1;
-    mtrn.playback_enabled = false;
-    set_metronome_tick();
-
-    mtrn.playback_ptr = 0;
-    memcpy(&mtrn.header, metronome_clean_wav, WAV_HDR_SIZE);
-    mtrn.raw_data = metronome_clean_wav + WAV_HDR_SIZE;
-}
-
-void set_metronome_state(bool new_state){
-    mtrn.state = new_state;
-}
-
-bool get_metronome_state(){
-    return mtrn.state;
-}
-
-void set_metronome_bpm(float new_bpm){
-    mtrn.bpm = new_bpm;
-    if (mtrn.bpm > MAX_METRONOME_BPM){
-        mtrn.bpm = MAX_METRONOME_BPM;
-    }
-    if (mtrn.bpm <= MIN_MOTRONOME_BPM){
-        mtrn.bpm = MIN_MOTRONOME_BPM;
-    }
-    set_metronome_tick();
-}
-
-float get_metronome_bpm(){
-    return mtrn.bpm;
-}
-
-void set_metronome_subdiv(int new_subdiv){
-    mtrn.subdivisions = new_subdiv;
-    set_metronome_tick();
-}
-void set_metronome_tick(){
-    float new_sample_per_subdiv = GRVCHP_SAMPLE_FREQ * ((60.0 / mtrn.bpm) / mtrn.subdivisions ); 
-    ESP_LOGI(TAG, "samples per subdivision: %f", new_sample_per_subdiv);
-    mtrn.samples_per_subdivision = new_sample_per_subdiv;
-}
-
-void set_metronome_playback(bool new_state){
-    mtrn.playback_enabled = new_state;
-}
-
-bool get_metronome_playback(){
-    return mtrn.playback_enabled;
-}
-
-#pragma endregion
-
 #pragma region SAMPLE CHOPPING
 
 static uint8_t chopping_precision = 1;
@@ -384,22 +324,16 @@ esp_err_t ld_sample_debug(int bank_index, const uint8_t* wav_data, const char* d
     return ESP_OK;
 }
 
-static void mixer_task_wip(void *args)
+static void mixer_task(void *args)
 {
     i2s_chan_handle_t out_channel = (i2s_chan_handle_t)args;
     assert(out_channel);
-
-    //initialize the sample bank
     
     //initialize the metronome
     init_metronome();
 
     //initialize the recording struct
     recorder_init();
-
-    //test metronome functions (equivalent to 120bpm)
-    set_metronome_bpm(60.0);
-    set_metronome_subdiv(2);
 
     size_t w_bytes = BUFF_SIZE;
 
@@ -417,11 +351,11 @@ static void mixer_task_wip(void *args)
 
             sample_lookahead += 1;
 
-            if (sample_lookahead >= mtrn.samples_per_subdivision) {
+            if (sample_lookahead >= get_samples_per_subdiv()) {
                 // unlock_metronome
                 set_metronome_playback(true);
                 //reset the metronome audio, in case the sample is too long for each tick
-                mtrn.playback_ptr = 0;
+                reset_mtrn();
                 sample_lookahead = 0;
             }
 
@@ -473,28 +407,24 @@ static void mixer_task_wip(void *args)
             // apply volume to master buffer
             master_buf[i] *= (volume * 2);
 
-            //limiter
-            if (master_buf[i] > MAX_CLIPPING) master_buf[i] = MAX_CLIPPING;
-            if (master_buf[i] < MIN_CLIPPING) master_buf[i] = MIN_CLIPPING;
-
             // capture the master frame for the recorded sample
             if (recorder_is_recording()){
                 recorder_capture_frame(master_buf[i]);
             }
 
-            if (mtrn.playback_enabled && mtrn.state) {
+            if (get_metronome_playback() && get_metronome_state()) {
                 // if the metronome is playing, but the sound has finished
-                if (mtrn.playback_ptr >= mtrn.header.data_size) {
+                if (is_metronome_tick()) {
                     //lock the metronome again
                     set_metronome_playback(false);
-                    mtrn.playback_ptr = 0;
+                    reset_mtrn();
                 } else {
                     // otherwise, keep on playing!
-                    int16_t mtrn_audio  = *(int16_t*)(mtrn.raw_data + mtrn.playback_ptr);
+                    int16_t mtrn_audio  = advance_metronome_audio();
 
                     master_buf[i] += mtrn_audio * 0.1;
 
-                    mtrn.playback_ptr += 2;
+                    advance_metronome_ptr();
                 }
                 
             }
@@ -519,7 +449,7 @@ void create_mixer(i2s_chan_handle_t channel){
         sample_bank[i] = NULL;
     }
 
-    xTaskCreate(&mixer_task_wip, "Mixer task", 8192, (void*)channel, 5, NULL);
+    xTaskCreate(&mixer_task, "Mixer task", 8192, (void*)channel, 5, NULL);
 }
 
 void sample_init (sample_t* in_sample, int size, int bank_index) {

@@ -16,14 +16,14 @@
 #define DEAD_ZONE_UP 2800
 #define DEAD_ZONE_LOW 1200
 
-#define DEBOUNCE_MS  30
+#define DEBOUNCE_MS_JS  30
 
 joystick_t my_joystick = { 0, 0, 1};
 
 void joystick_init() {
 
     // configuring the adc for X, Y
-    adc_oneshot_chan_cfg_t config = { // TODO .atten = ADC_ATTEN_DB_11 is deprecated -> need to change it
+    adc_oneshot_chan_cfg_t config = {
         .bitwidth = ADC_BITWIDTH_DEFAULT, // default is 12 bits -> 12 bits to represent analog input voltage -> not necessary but the "noise" makes less impact
         .atten = ADC_ATTEN_DB_12,        // 12DB makes the measurement range from 0V to 3.3V -> not sure it's necessary to navigate the menu
     };
@@ -48,8 +48,6 @@ void joystick_get_raw(){
     adc_oneshot_read(adc1_handle, ADC_CHANNEL_X, &my_joystick.x);
     adc_oneshot_read(adc1_handle, ADC_CHANNEL_Y, &my_joystick.y);
     my_joystick.sw = gpio_get_level(GPIO_SW);
-
-    // TODO maybe normalize the raw values? -> not needed if we only use the joystick to move in the menu (only up/down/left/right)
 }
 
 // converts the voltage to a direction
@@ -98,6 +96,6 @@ void joystick_task(void *args){
             last_dir = new_dir;
         }
 
-        vTaskDelay(pdMS_TO_TICKS(DEBOUNCE_MS)); // 30ms should be a good trade off between pollong at a good ratio and not wasting CPU cycles (polling 33Hz)
+        vTaskDelay(pdMS_TO_TICKS(DEBOUNCE_MS_JS)); // 30ms should be a good trade off between pollong at a good ratio and not wasting CPU cycles (polling 33Hz)
     }
 }
