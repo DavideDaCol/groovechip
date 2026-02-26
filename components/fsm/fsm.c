@@ -598,11 +598,21 @@ void get_distortion_second_line(char* out){
         break;
     }
 }
-void get_pitch_second_line(char* out){
+void get_pitch_second_line(char* out) {
     uint8_t bank_index = get_sample_bank_index(pressed_button);
-
     float factor = get_pitch_factor(bank_index);
-    sprintf(out, "%.2f", factor);
+
+    float semitones_float = 12.0f * (logf(factor) / logf(2.0f));
+
+    int semitones = (int)roundf(semitones_float);
+
+    if (semitones > 0) {
+        sprintf(out, "+%d st", semitones);
+    } else if (semitones < 0) {
+        sprintf(out, "%d st", semitones);
+    } else {
+        sprintf(out, "0 st (orig)");
+    }
 }
 
 void get_chopping_second_line(char* out){
@@ -939,13 +949,19 @@ void change_master_vol(int pot_value){
 // Function that changes the pitch
 void change_pitch(int pot_value){
     if (pressed_button == NOT_DEFINED) return;
+    
+    int semitones = (pot_value - 0) * (MAX_PITCH_SEMITONES - MIN_PITCH_SEMITONES) / (100 - 0) + MIN_PITCH_SEMITONES;
 
-    float new_pitch_factor = round(pot_value * PITCH_NORMALIZER_VALUE / PITCH_SCALE_VALUE) * PITCH_SCALE_VALUE;
+    // pitch factor, freq = 2^(n/12)
+    float new_pitch_factor = powf(2.0f, (float)semitones / 12.0f);
 
     uint8_t idx = get_sample_bank_index(pressed_button);
-    screen_has_to_change = (new_pitch_factor != get_pitch_factor(idx));
+    float current_pitch = get_pitch_factor(idx);
 
-    set_pitch_factor(idx, new_pitch_factor);
+    if (fabsf(new_pitch_factor - current_pitch) > 0.001f) {
+        screen_has_to_change = true;
+        set_pitch_factor(idx, new_pitch_factor);
+    }
 }
 
 void change_bit_crusher(int pot_value){
