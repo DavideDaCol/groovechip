@@ -14,7 +14,7 @@ extern int pot_value;
 
 #define POT_CHANNEL ADC_CHANNEL_0
 #define POT_READ_INTERVAL_MS 50        
-#define THRESHOLD_PERCENT 5            
+#define THRESHOLD_PERCENT 3            
 #define FILTER_SAMPLES 16
 
 void potentiometer_init();
